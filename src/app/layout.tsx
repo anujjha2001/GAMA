@@ -1,23 +1,12 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-display",
-  subsets: ["latin"],
-});
-
-
 export const metadata: Metadata = {
   title: "GAMA | Next-Generation AI-Powered Health Intelligence Platform",
   description: "An AI-first Health Operating System where LLMs, AI agents, automation, predictive analytics, and intelligent workflows power your health journey.",
+  manifest: "/manifest.json",
   openGraph: {
     title: "GAMA | Next-Generation AI Health Intelligence Platform",
     description: "An AI-first Health Operating System where LLMs, AI agents, automation, and predictive analytics power your health.",
@@ -39,7 +28,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col font-sans">
         <ThemeProvider
@@ -51,6 +40,19 @@ export default function RootLayout({
           {children}
           <Toaster position="top-right" richColors />
         </ThemeProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
