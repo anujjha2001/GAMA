@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+HEAD
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -38,4 +38,4 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 =======
 # GAMA
 Health tracker
->>>>>>> c60d1020e5b6440cff1b4a5a2da2e2b007dd6106
+c60d1020e5b6440cff1b4a5a2da2e2b007dd6106
