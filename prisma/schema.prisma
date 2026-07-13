@@ -1,0 +1,197 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model UserProfile {
+  id            String         @id @default(uuid())
+  userId        String         @unique // Supabase Auth User ID
+  email         String         @unique
+  fullName      String?
+  avatarUrl     String?
+  role          String         @default("user") // "user" | "admin" | "doctor"
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  healthRecords HealthRecord[]
+  workouts      Workout[]
+  nutrition     Nutrition[]
+  sleepLogs     SleepLog[]
+  medications   Medication[]
+  symptoms      Symptom[]
+  reports       MedicalReport[]
+  conversations AIConversation[]
+  goals         Goal[]
+  achievements  UserAchievement[]
+  notifications Notification[]
+  integrations  Integration[]
+  settings      Settings?
+}
+
+model Settings {
+  id                String       @id @default(uuid())
+  profileId         String       @unique
+  profile           UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  theme             String       @default("dark")
+  notifications     Boolean      @default(true)
+  language          String       @default("en")
+  privacyShareData  Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model HealthRecord {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  vitalityScore  Int          @default(100)
+  heartRate      Int?
+  bloodPressure  String?
+  weight         Float?
+  height         Float?
+  bloodSugar     Float?
+  oxygenLevel    Float?
+  recordedAt     DateTime     @default(now())
+}
+
+model Workout {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  type           String       // e.g. "Running", "Strength", "Yoga"
+  duration       Int          // in minutes
+  caloriesBurned Int
+  intensity      String       // "low" | "medium" | "high"
+  notes          String?
+  recordedAt     DateTime     @default(now())
+}
+
+model Nutrition {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  mealType       String       // "Breakfast" | "Lunch" | "Dinner" | "Snack"
+  foodName       String
+  calories       Int
+  protein        Float        // in grams
+  carbs          Float        // in grams
+  fat            Float        // in grams
+  waterIntakeMl  Int          @default(0)
+  recordedAt     DateTime     @default(now())
+}
+
+model SleepLog {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  durationHours  Float
+  deepSleepMin   Int
+  remSleepMin    Int
+  qualityScore   Int          // 1-100
+  recordedAt     DateTime     @default(now())
+}
+
+model Medication {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name           String
+  dosage         String       // e.g. "500mg"
+  frequency      String       // e.g. "once daily"
+  active         Boolean      @default(true)
+  startDate      DateTime     @default(now())
+  endDate        DateTime?
+}
+
+model Symptom {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name           String       // e.g. "Headache", "Fatigue"
+  severity       Int          // 1-10
+  notes          String?
+  recordedAt     DateTime     @default(now())
+}
+
+model MedicalReport {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  fileName       String
+  fileUrl        String
+  summary        String?      // AI-generated summary
+  structuredData Json?        // Extracted variables
+  analyzedAt     DateTime?
+  createdAt      DateTime     @default(now())
+}
+
+model AIConversation {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  agentType      String       // "general" | "nutrition" | "sleep" | "mental"
+  title          String       @default("New Conversation")
+  createdAt      DateTime     @default(now())
+  messages       AIMessage[]
+}
+
+model AIMessage {
+  id             String         @id @default(uuid())
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         String         // "user" | "assistant"
+  content        String
+  createdAt      DateTime       @default(now())
+}
+
+model Goal {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  category       String       // "sleep" | "nutrition" | "steps" | "exercise"
+  title          String
+  targetValue    Float
+  currentValue   Float        @default(0)
+  unit           String       // e.g. "hours", "kcal", "steps"
+  deadline       DateTime?
+  completed      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+}
+
+model UserAchievement {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  unlockedAt     DateTime     @default(now())
+}
+
+model Notification {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title          String
+  message        String
+  read           Boolean      @default(false)
+  type           String       @default("info") // "info" | "alert" | "recommendation"
+  createdAt      DateTime     @default(now())
+}
+
+model Integration {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  provider       String       // "AppleHealth" | "Fitbit" | "Garmin" | "Oura"
+  accessToken    String
+  refreshToken   String?
+  connected      Boolean      @default(true)
+  lastSyncedAt   DateTime     @default(now())
+}
