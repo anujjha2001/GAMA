@@ -478,6 +478,14 @@ export function DashboardView() {
                     {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                   </button>
 
+                  {/* GAMA Logo Send Button */}
+                  <button
+                    onClick={() => handleAuraQuery(askInput)}
+                    className="p-1 bg-orange-500 hover:bg-orange-400 text-black rounded-full cursor-pointer transition-all w-8 h-8 flex items-center justify-center overflow-hidden border border-orange-400/20 hover:scale-105"
+                  >
+                    <img src="/logo.jpg" alt="AURA Send" className="w-full h-full object-cover rounded-full" />
+                  </button>
+
                   {/* Animated Waveform Bars */}
                   {isListening && (
                     <div className="flex gap-[2px] items-center h-4 px-1">
@@ -653,9 +661,9 @@ export function DashboardView() {
                   />
                   <button
                     onClick={() => handleAuraQuery(askInput)}
-                    className="p-2.5 bg-orange-500 hover:bg-orange-400 text-black rounded-2xl cursor-pointer transition-colors"
+                    className="p-1 bg-orange-500 hover:bg-orange-400 text-black rounded-2xl cursor-pointer transition-colors w-9 h-9 flex items-center justify-center overflow-hidden border border-orange-400/20"
                   >
-                    <Send className="w-4 h-4" />
+                    <img src="/logo.jpg" alt="AURA Send" className="w-7 h-7 rounded-xl object-cover" />
                   </button>
                 </div>
               </motion.div>

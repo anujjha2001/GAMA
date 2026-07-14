@@ -1,10 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  Home, User, BarChart2, Inbox, Sliders, Settings, Award, ShieldAlert, Sparkles
+  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, Sparkles, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,18 +14,44 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
-  }, []);
+    // Protect dashboard routes on the client side
+    if (typeof window !== 'undefined') {
+      const hasCookie = document.cookie.includes('gama_session=true');
+      let hasLocalStorage = false;
+      try {
+        hasLocalStorage = localStorage.getItem('gama_session') === 'true';
+      } catch (e) {}
+      
+      const isDev = process.env.NODE_ENV === 'development';
+      
+      if (!hasCookie && !hasLocalStorage && !isDev) {
+        router.push('/login');
+      }
+    }
+  }, [router]);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth', { method: 'DELETE' });
+    } catch (e) {}
+    try {
+      localStorage.removeItem('gama_session');
+    } catch (e) {}
+    window.location.href = '/login';
+  };
 
   if (!mounted) return null;
 
   const navItems = [
-    { href: '/nexus', icon: Home, label: 'Nexus' },
+    { href: '/dashboard', icon: Home, label: 'Dashboard' },
     { href: '/twin', icon: User, label: 'Digital Twin' },
     { href: '/insights', icon: BarChart2, label: 'Insights' },
+    { href: '/schedule', icon: Calendar, label: 'Schedule' },
     { href: '/vault', icon: Inbox, label: 'Vault' },
     { href: '/settings', icon: Sliders, label: 'Settings' }
   ];
@@ -48,7 +74,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-1.5 md:flex-col shrink-0">
               <Link href="/" className="flex items-center gap-2 md:flex-col md:gap-1.5 group">
                 <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl overflow-hidden border border-border shadow-lg bg-black flex items-center justify-center cursor-pointer transition-transform group-hover:scale-105 duration-300">
-                  <img src="/logo.jpg" alt="GAMA Logo" className="w-full h-full object-cover" />
+                  <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-xs md:text-[9px] uppercase tracking-widest text-foreground">GAMA</span>
               </Link>
@@ -84,8 +110,15 @@ export default function DashboardLayout({
             </div>
 
             {/* Bottom/Right spacer or ambient element */}
-            <div className="hidden md:flex flex-col items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="System Online" />
+            <div className="flex flex-row md:flex-col items-center gap-3 md:gap-5 shrink-0">
+              <button
+                onClick={handleLogout}
+                title="Log Out"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-2xl md:rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 cursor-pointer"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+              <div className="hidden md:block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="System Online" />
             </div>
           </motion.aside>
 
@@ -103,7 +136,7 @@ export default function DashboardLayout({
             <div className="space-y-4 col-span-1 md:col-span-2">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden border border-border shadow-lg bg-black flex items-center justify-center">
-                  <img src="/logo.jpg" alt="GAMA Logo" className="w-full h-full object-cover" />
+                  <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-xl tracking-wider text-foreground">GAMA</span>
               </div>
@@ -115,7 +148,7 @@ export default function DashboardLayout({
             <div className="space-y-4">
               <h5 className="text-[10px] font-bold text-foreground opacity-60 uppercase tracking-widest">Platform</h5>
               <ul className="space-y-2 text-xs text-muted-foreground">
-                <li><Link href="/nexus" className="hover:text-foreground transition-colors">Overview</Link></li>
+                <li><Link href="/dashboard" className="hover:text-foreground transition-colors">Overview</Link></li>
                 <li><Link href="/twin" className="hover:text-foreground transition-colors">Digital Twin</Link></li>
                 <li><Link href="/insights" className="hover:text-foreground transition-colors">Insights</Link></li>
                 <li><Link href="/vault" className="hover:text-foreground transition-colors">Secure Vault</Link></li>

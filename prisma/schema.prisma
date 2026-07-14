@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,188 +7,228 @@ datasource db {
 }
 
 model UserProfile {
-  id            String         @id @default(uuid())
-  userId        String         @unique // Supabase Auth User ID
-  email         String         @unique
+  id            String            @id @default(uuid())
+  userId        String            @unique
+  email         String            @unique
   fullName      String?
   avatarUrl     String?
-  role          String         @default("user") // "user" | "admin" | "doctor"
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  // Relations
-  healthRecords HealthRecord[]
-  workouts      Workout[]
-  nutrition     Nutrition[]
-  sleepLogs     SleepLog[]
-  medications   Medication[]
-  symptoms      Symptom[]
-  reports       MedicalReport[]
+  role          String            @default("user")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   conversations AIConversation[]
   goals         Goal[]
-  achievements  UserAchievement[]
-  notifications Notification[]
+  healthRecords HealthRecord[]
   integrations  Integration[]
+  reports       MedicalReport[]
+  medications   Medication[]
+  notifications Notification[]
+  nutrition     Nutrition[]
   settings      Settings?
+  sleepLogs     SleepLog[]
+  symptoms      Symptom[]
+  achievements  UserAchievement[]
+  workouts      Workout[]
 }
 
 model Settings {
-  id                String       @id @default(uuid())
-  profileId         String       @unique
-  profile           UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  theme             String       @default("dark")
-  notifications     Boolean      @default(true)
-  language          String       @default("en")
-  privacyShareData  Boolean      @default(false)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  id               String      @id @default(uuid())
+  profileId        String      @unique
+  theme            String      @default("dark")
+  notifications    Boolean     @default(true)
+  language         String      @default("en")
+  privacyShareData Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  profile          UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model HealthRecord {
-  id             String       @id @default(uuid())
-  profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  vitalityScore  Int          @default(100)
-  heartRate      Int?
-  bloodPressure  String?
-  weight         Float?
-  height         Float?
-  bloodSugar     Float?
-  oxygenLevel    Float?
-  recordedAt     DateTime     @default(now())
+  id            String      @id @default(uuid())
+  profileId     String
+  vitalityScore Int         @default(100)
+  heartRate     Int?
+  bloodPressure String?
+  weight        Float?
+  height        Float?
+  bloodSugar    Float?
+  oxygenLevel   Float?
+  recordedAt    DateTime    @default(now())
+  profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Workout {
-  id             String       @id @default(uuid())
+  id             String      @id @default(uuid())
   profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  type           String       // e.g. "Running", "Strength", "Yoga"
-  duration       Int          // in minutes
+  type           String
+  duration       Int
   caloriesBurned Int
-  intensity      String       // "low" | "medium" | "high"
+  intensity      String
   notes          String?
-  recordedAt     DateTime     @default(now())
+  recordedAt     DateTime    @default(now())
+  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Nutrition {
-  id             String       @id @default(uuid())
-  profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  mealType       String       // "Breakfast" | "Lunch" | "Dinner" | "Snack"
-  foodName       String
-  calories       Int
-  protein        Float        // in grams
-  carbs          Float        // in grams
-  fat            Float        // in grams
-  waterIntakeMl  Int          @default(0)
-  recordedAt     DateTime     @default(now())
+  id            String      @id @default(uuid())
+  profileId     String
+  mealType      String
+  foodName      String
+  calories      Int
+  protein       Float
+  carbs         Float
+  fat           Float
+  waterIntakeMl Int         @default(0)
+  recordedAt    DateTime    @default(now())
+  profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model SleepLog {
-  id             String       @id @default(uuid())
-  profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  durationHours  Float
-  deepSleepMin   Int
-  remSleepMin    Int
-  qualityScore   Int          // 1-100
-  recordedAt     DateTime     @default(now())
+  id            String      @id @default(uuid())
+  profileId     String
+  durationHours Float
+  deepSleepMin  Int
+  remSleepMin   Int
+  qualityScore  Int
+  recordedAt    DateTime    @default(now())
+  profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Medication {
-  id             String       @id @default(uuid())
-  profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  name           String
-  dosage         String       // e.g. "500mg"
-  frequency      String       // e.g. "once daily"
-  active         Boolean      @default(true)
-  startDate      DateTime     @default(now())
-  endDate        DateTime?
+  id        String      @id @default(uuid())
+  profileId String
+  name      String
+  dosage    String
+  frequency String
+  active    Boolean     @default(true)
+  startDate DateTime    @default(now())
+  endDate   DateTime?
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Symptom {
-  id             String       @id @default(uuid())
-  profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  name           String       // e.g. "Headache", "Fatigue"
-  severity       Int          // 1-10
-  notes          String?
-  recordedAt     DateTime     @default(now())
+  id         String      @id @default(uuid())
+  profileId  String
+  name       String
+  severity   Int
+  notes      String?
+  recordedAt DateTime    @default(now())
+  profile    UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model MedicalReport {
-  id             String       @id @default(uuid())
+  id             String      @id @default(uuid())
   profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   fileName       String
   fileUrl        String
-  summary        String?      // AI-generated summary
-  structuredData Json?        // Extracted variables
+  summary        String?
+  structuredData Json?
   analyzedAt     DateTime?
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime    @default(now())
+  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model AIConversation {
-  id             String       @id @default(uuid())
-  profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  agentType      String       // "general" | "nutrition" | "sleep" | "mental"
-  title          String       @default("New Conversation")
-  createdAt      DateTime     @default(now())
-  messages       AIMessage[]
+  id        String      @id @default(uuid())
+  profileId String
+  agentType String
+  title     String      @default("New Conversation")
+  createdAt DateTime    @default(now())
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  messages  AIMessage[]
 }
 
 model AIMessage {
   id             String         @id @default(uuid())
   conversationId String
-  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         String         // "user" | "assistant"
+  sender         String
   content        String
   createdAt      DateTime       @default(now())
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }
 
 model Goal {
-  id             String       @id @default(uuid())
-  profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  category       String       // "sleep" | "nutrition" | "steps" | "exercise"
-  title          String
-  targetValue    Float
-  currentValue   Float        @default(0)
-  unit           String       // e.g. "hours", "kcal", "steps"
-  deadline       DateTime?
-  completed      Boolean      @default(false)
-  createdAt      DateTime     @default(now())
+  id           String      @id @default(uuid())
+  profileId    String
+  category     String
+  title        String
+  targetValue  Float
+  currentValue Float       @default(0)
+  unit         String
+  deadline     DateTime?
+  completed    Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  profile      UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model UserAchievement {
-  id             String       @id @default(uuid())
-  profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  title          String
-  description    String
-  unlockedAt     DateTime     @default(now())
+  id          String      @id @default(uuid())
+  profileId   String
+  title       String
+  description String
+  unlockedAt  DateTime    @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
-  id             String       @id @default(uuid())
-  profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  title          String
-  message        String
-  read           Boolean      @default(false)
-  type           String       @default("info") // "info" | "alert" | "recommendation"
-  createdAt      DateTime     @default(now())
+  id        String      @id @default(uuid())
+  profileId String
+  title     String
+  message   String
+  read      Boolean     @default(false)
+  type      String      @default("info")
+  createdAt DateTime    @default(now())
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Integration {
-  id             String       @id @default(uuid())
-  profileId      String
-  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  provider       String       // "AppleHealth" | "Fitbit" | "Garmin" | "Oura"
-  accessToken    String
-  refreshToken   String?
-  connected      Boolean      @default(true)
-  lastSyncedAt   DateTime     @default(now())
+  id           String      @id @default(uuid())
+  profileId    String
+  provider     String
+  accessToken  String
+  refreshToken String?
+  connected    Boolean     @default(true)
+  lastSyncedAt DateTime    @default(now())
+  profile      UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model profiles {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String?   @db.Uuid
+  bio        String?
+  occupation String?
+  language   String?
+  theme      String?
+  visibility String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String     @unique
+  phone          String?
+  full_name      String?
+  username       String?    @unique
+  avatar_url     String?
+  dob            DateTime?  @db.Date
+  gender         String?
+  height_cm      Decimal?   @db.Decimal
+  weight_kg      Decimal?   @db.Decimal
+  blood_group    String?
+  activity_level String?
+  goal           String?
+  country        String?
+  timezone       String?
+  created_at     DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?  @default(now()) @db.Timestamptz(6)
+  profiles       profiles[]
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime
 }

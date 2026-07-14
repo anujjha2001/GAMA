@@ -2,56 +2,141 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
-export default function AuthPage() {
+interface AuthPageProps {
+  initialMode?: AuthMode;
+}
+
+export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
   const router = useRouter();
-  const [authMode, setAuthMode] = React.useState<AuthMode>('login');
+  const [authMode, setAuthMode] = React.useState<AuthMode>(initialMode);
+
+  React.useEffect(() => {
+    setAuthMode(initialMode);
+    setShowOtpScreen(false);
+  }, [initialMode]);
 
   // Form states pre-filled with dummy data for instant testing
   const [email, setEmail] = React.useState('admin@gama.com');
   const [password, setPassword] = React.useState('admin123');
   const [confirmPassword, setConfirmPassword] = React.useState('admin123');
+  const [fullName, setFullName] = React.useState('');
+  const [otpCode, setOtpCode] = React.useState('');
+  const [showOtpScreen, setShowOtpScreen] = React.useState(false);
   const [rememberMe, setRememberMe] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasCookie = document.cookie.includes('gama_session=true');
+      let hasLocalStorage = false;
+      try {
+        hasLocalStorage = localStorage.getItem('gama_session') === 'true';
+      } catch (e) {}
+      if (hasCookie || hasLocalStorage) {
+        window.location.href = '/dashboard';
+      } else if (window.location.pathname === '/auth') {
+        window.location.href = '/login';
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
-      if (authMode === 'login') {
-        toast.success('Logged in successfully!');
-        router.push('/nexus');
-      } else if (authMode === 'register') {
+    if (authMode === 'register') {
+      if (!showOtpScreen) {
         if (password !== confirmPassword) {
           toast.error('Passwords do not match');
+          setIsLoading(false);
           return;
         }
-        toast.success('Account created successfully! Welcome to GAMA.');
-        router.push('/nexus');
+
+        try {
+          const res = await fetch('/api/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          const data = await res.json();
+          if (!data.success) {
+            throw new Error(data.error || 'Failed to send verification code');
+          }
+
+          toast.success('Verification code sent to your email!');
+          setShowOtpScreen(true);
+        } catch (err: any) {
+          toast.error(err.message || 'Failed to send verification code');
+        } finally {
+          setIsLoading(false);
+        }
       } else {
-        toast.success('Password reset link sent to your email!');
-        router.push('/nexus');
+        // Verification step
+        try {
+          const res = await fetch('/api/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code: otpCode, fullName }),
+          });
+          const data = await res.json();
+          if (!data.success) {
+            throw new Error(data.error || 'Verification failed');
+          }
+
+          try {
+            localStorage.setItem('gama_session', 'true');
+          } catch (e) {}
+
+          toast.success('Account created successfully! Welcome to GAMA.');
+          window.location.href = '/dashboard';
+        } catch (err: any) {
+          toast.error(err.message || 'Verification failed');
+        } finally {
+          setIsLoading(false);
+        }
       }
-    }, 1200);
+      return;
+    }
+
+    // Default Login flow
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: authMode, email, password }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
+      try {
+        localStorage.setItem('gama_session', 'true');
+      } catch (e) {}
+
+      setTimeout(() => {
+        setIsLoading(false);
+        toast.success('Logged in successfully!');
+        window.location.href = '/dashboard';
+      }, 1200);
+    } catch (err: any) {
+      setIsLoading(false);
+      toast.error(err.message || 'Failed to communicate with authentication service.');
+    }
   };
 
   return (
     <div className="min-h-screen w-full bg-[#07090e] flex items-center justify-center p-0 md:p-6 overflow-hidden select-none font-sans text-white">
-      {/* Container simulating a desktop application window */}
-      <motion.div
-        initial={false}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="w-full h-screen md:h-[680px] max-w-[1100px] bg-[#0c0f17] md:rounded-3xl border border-white/5 overflow-hidden flex flex-col md:flex-row shadow-[0px_24px_64px_rgba(0,0,0,0.6)] relative"
-      >
+      {/* 3D background effects and panels here */}
+      <div className="w-full max-w-[960px] h-full md:h-[600px] flex rounded-none md:rounded-3xl border-0 md:border border-white/5 shadow-[0_24px_80px_rgba(0,0,0,0.85)] bg-[#0c0f17]/90 backdrop-blur-3xl overflow-hidden relative">
 
-        {/* LEFT COLUMN: AUTH FORM */}
+        {/* LEFT COLUMN: AUTH FORMS */}
         <div className="w-full md:w-[48%] p-8 md:p-12 flex flex-col justify-between relative bg-[#0c0f17]">
 
           {/* Mock Window Controls (Mac Style) */}
@@ -65,109 +150,154 @@ export default function AuthPage() {
             {/* Logo Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-14 h-14 bg-black rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center justify-center">
-                <img src="/logo.jpg" alt="GAMA Logo" className="w-full h-full object-cover" />
+                <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
               </div>
             </div>
 
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={authMode}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-                className="text-center"
-              >
-                <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-white">s
-                  {authMode === 'login' && 'Welcome back'}
-                  {authMode === 'register' && 'Create Account'}
-                  {authMode === 'forgot' && 'Reset Password'}
-                </h1>
-                <p className="text-sm text-gray-400 mt-2 max-w-[280px] mx-auto">
-                  {authMode === 'login' && 'Sign in to access your Smart AI health tracker- your personal wellness companion'}
-                  {authMode === 'register' && 'Register your profile to begin your customized experience.'}
-                  {authMode === 'forgot' && 'Enter your registered email to recover your account access.'}
-                </p>
-              </motion.div>
-            </AnimatePresence>
-
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4 max-w-[320px] mx-auto">
-              <div>
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-[#151923] border border-white/5 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all placeholder-gray-500 text-white"
-                />
-              </div>
-
-              {authMode !== 'forgot' && (
-                <div>
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 bg-[#151923] border border-white/5 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all placeholder-gray-500 text-white"
-                  />
-                </div>
-              )}
-
-              {authMode === 'register' && (
-                <div>
-                  <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 bg-[#151923] border border-white/5 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all placeholder-gray-500 text-white"
-                  />
-                </div>
-              )}
-
-              {authMode === 'login' && (
-                <div className="flex items-center justify-between text-xs mt-2 px-1">
-                  <label className="flex items-center gap-2 cursor-pointer text-gray-400 hover:text-white">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="rounded bg-[#151923] border-white/10 text-blue-500 focus:ring-0 focus:ring-offset-0 h-4 w-4"
-                    />
-                    Remember me
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setAuthMode('forgot')}
-                    className="text-blue-500 hover:text-blue-400 font-medium transition-colors"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-              )}
-
-              {/* Submit Action Button with 3D press effect */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 mt-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl text-sm shadow-[0_4px_20px_rgba(59,130,246,0.3)] transition-all cursor-pointer flex justify-center items-center"
-              >
-                {isLoading ? (
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
+            <div className="text-center">
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
+                {showOtpScreen ? 'Security Verification' : (
                   <>
-                    {authMode === 'login' && 'Log in'}
-                    {authMode === 'register' && 'Register'}
-                    {authMode === 'forgot' && 'Send Code'}
+                    {authMode === 'login' && 'Welcome back'}
+                    {authMode === 'register' && 'Create Account'}
+                    {authMode === 'forgot' && 'Reset Password'}
                   </>
                 )}
-              </motion.button>
+              </h1>
+              <p className="text-sm text-gray-400 mt-2 max-w-[280px] mx-auto">
+                {showOtpScreen ? `Enter the 6-digit OTP code sent to ${email}` : (
+                  <>
+                    {authMode === 'login' && 'Sign in to access your Smart AI health tracker- your personal wellness companion'}
+                    {authMode === 'register' && 'Register your profile to begin your customized experience.'}
+                    {authMode === 'forgot' && 'Enter your registered email to recover your account access.'}
+                  </>
+                )}
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="mt-8 space-y-4 max-w-[320px] mx-auto">
+              {showOtpScreen ? (
+                <div className="space-y-4">
+                  <div>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="Verification Code"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      required
+                      className="w-full px-4 py-3 bg-[#151923] border border-white/5 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all placeholder-gray-500 text-white tracking-[0.15em] text-center font-mono"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3 mt-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl text-sm shadow-[0_4px_20px_rgba(59,130,246,0.3)] transition-all cursor-pointer flex justify-center items-center"
+                  >
+                    {isLoading ? 'Verifying...' : 'Verify & Enter'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOtpScreen(false);
+                      setOtpCode('');
+                    }}
+                    className="w-full text-center text-xs text-gray-400 hover:text-white transition-colors py-2"
+                  >
+                    Back to Registration
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {authMode === 'register' && (
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Full Name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 bg-[#151923] border border-white/5 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all placeholder-gray-500 text-white"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <input
+                      type="email"
+                      placeholder="Email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 bg-[#151923] border border-white/5 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all placeholder-gray-500 text-white"
+                    />
+                  </div>
+
+                  {authMode !== 'forgot' && (
+                    <div>
+                      <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 bg-[#151923] border border-white/5 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all placeholder-gray-500 text-white"
+                      />
+                    </div>
+                  )}
+
+                  {authMode === 'register' && (
+                    <div>
+                      <input
+                        type="password"
+                        placeholder="Confirm Password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 bg-[#151923] border border-white/5 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-all placeholder-gray-500 text-white"
+                      />
+                    </div>
+                  )}
+
+                  {authMode === 'login' && (
+                    <div className="flex items-center justify-between text-xs mt-2 px-1">
+                      <label className="flex items-center gap-2 cursor-pointer text-gray-400 hover:text-white">
+                        <input
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          className="rounded bg-[#151923] border-white/10 text-blue-500 focus:ring-0 focus:ring-offset-0 h-4 w-4"
+                        />
+                        Remember me
+                      </label>
+                      <Link
+                        href="/forgot-password"
+                        className="text-blue-500 hover:text-blue-400 font-medium transition-colors cursor-pointer"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                  )}
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3 mt-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl text-sm shadow-[0_4px_20px_rgba(59,130,246,0.3)] transition-all cursor-pointer flex justify-center items-center"
+                  >
+                    {isLoading ? (
+                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        {authMode === 'login' && 'Log in'}
+                        {authMode === 'register' && 'Register'}
+                        {authMode === 'forgot' && 'Send Code'}
+                      </>
+                    )}
+                  </motion.button>
+                </>
+              )}
             </form>
 
             {/* Social Logins */}
@@ -218,15 +348,25 @@ export default function AuthPage() {
             {authMode === 'login' && (
               <p>
                 Don't have account?{' '}
-                <button
-                  onClick={() => setAuthMode('register')}
+                <Link
+                  href="/register"
                   className="text-blue-500 hover:underline font-semibold cursor-pointer"
                 >
                   Sign up
-                </button>
+                </Link>
                 {' '}or{' '}
                 <button
-                  onClick={() => router.push('/nexus')}
+                  onClick={async () => {
+                    await fetch('/api/auth', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ action: 'bypass' }),
+                    });
+                    try {
+                      localStorage.setItem('gama_session', 'true');
+                    } catch (e) {}
+                    window.location.href = '/dashboard';
+                  }}
                   className="text-gray-300 hover:text-white hover:underline cursor-pointer"
                 >
                   Sign in Later
@@ -236,23 +376,23 @@ export default function AuthPage() {
             {authMode === 'register' && (
               <p>
                 Already have an account?{' '}
-                <button
-                  onClick={() => setAuthMode('login')}
+                <Link
+                  href="/login"
                   className="text-blue-500 hover:underline font-semibold cursor-pointer"
                 >
                   Sign in
-                </button>
+                </Link>
               </p>
             )}
             {authMode === 'forgot' && (
               <p>
                 Back to{' '}
-                <button
-                  onClick={() => setAuthMode('login')}
+                <Link
+                  href="/login"
                   className="text-blue-500 hover:underline font-semibold cursor-pointer"
                 >
                   Sign in
-                </button>
+                </Link>
               </p>
             )}
           </div>
@@ -280,7 +420,7 @@ export default function AuthPage() {
             <span className="text-[10px] uppercase font-bold tracking-wider text-gray-300">One More Gate</span>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

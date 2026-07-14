@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Activity, MessageSquare, User, BarChart3, FolderLock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type TabId = 'nexus' | 'aura' | 'twin' | 'insights' | 'vault';
+export type TabId = 'dashboard' | 'aura' | 'twin' | 'insights' | 'vault';
 
 export interface FloatingDockProps {
   activeTab: TabId;
@@ -14,7 +14,7 @@ export interface FloatingDockProps {
 
 export function FloatingDock({ activeTab, className }: FloatingDockProps) {
   const items = [
-    { id: 'nexus', label: 'Nexus', icon: Activity },
+    { id: 'dashboard', label: 'Dashboard', icon: Activity },
     { id: 'aura', label: 'Aura', icon: MessageSquare },
     { id: 'twin', label: 'Twin', icon: User },
     { id: 'insights', label: 'Insights', icon: BarChart3 },

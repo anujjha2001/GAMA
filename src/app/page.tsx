@@ -9,6 +9,7 @@ import {
   ArrowRight, Globe
 } from 'lucide-react';
 import { toast } from 'sonner'
+import AuthForm from '@/components/AuthForm';
 
 // Import the interactive 3D heart dynamically to prevent SSR hydration errors
 const HealthOrb3D = dynamic(() => import('@/components/shared/health-orb-3d'), {
@@ -36,7 +37,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg overflow-hidden border border-white/10 shadow-lg">
-              <img src="/logo.jpg" alt="GAMA Logo" className="w-full h-full object-cover" />
+              <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
             </div>
             <span className="font-extrabold text-xl tracking-wider text-white">GAMA</span>
           </div>
@@ -49,7 +50,7 @@ export default function HomePage() {
 
           <div className="flex items-center gap-4">
             <Link
-              href="/auth"
+              href="/login"
               className="px-5 py-2.5 bg-white hover:bg-white/95 text-black font-semibold rounded-2xl text-xs shadow-lg transition-all cursor-pointer"
             >
               Access Portal
@@ -63,6 +64,9 @@ export default function HomePage() {
         {/* Background Video Container */}
         <div className="absolute inset-0 w-full h-full overflow-hidden" style={{ zIndex: -1 }}>
           <video
+            ref={(el) => {
+              if (el) el.muted = true;
+            }}
             autoPlay
             loop
             muted
@@ -70,17 +74,15 @@ export default function HomePage() {
             preload="metadata"
             className="w-full h-full"
             style={{ objectFit: 'cover' }}
-          >
-            <source src="/fitness-tracker-demo.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+            src="/fitness-tracker-demo.mp4"
+          />
           {/* Semi-transparent dark overlay */}
           <div className="absolute inset-0 bg-black/60 bg-gradient-to-b from-transparent via-[#1c1d1f]/80 to-[#1c1d1f]" />
         </div>
 
         <div className="max-w-4xl mx-auto px-6 w-full relative z-10 py-12 flex flex-col items-center justify-center">
 
-          <div className="space-y-6 flex flex-col items-center">
+          <div className="space-y-6 flex flex-col items-center text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-400/20 text-[10px] font-bold text-amber-500 rounded-full uppercase tracking-widest">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
               Intelligence Shell Synchronized
@@ -96,7 +98,7 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
               <Link
-                href="/auth"
+                href="/login"
                 className="px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-2xl text-sm shadow-[0_4px_20px_rgba(245,158,11,0.3)] transition-all cursor-pointer flex items-center justify-center gap-2 group"
               >
                 Enter Portal
@@ -311,7 +313,7 @@ export default function HomePage() {
           <div className="space-y-4 col-span-1 md:col-span-2">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center">
-                <img src="/logo.jpg" alt="GAMA Logo" className="w-full h-full object-cover" />
+                <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
               </div>
               <span className="font-extrabold text-xl tracking-wider text-white">GAMA</span>
             </div>
@@ -323,7 +325,7 @@ export default function HomePage() {
           <div className="space-y-4">
             <h5 className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Platform</h5>
             <ul className="space-y-2 text-xs text-gray-400">
-              <li><Link href="/nexus" className="hover:text-white transition-colors">Overview</Link></li>
+              <li><Link href="/dashboard" className="hover:text-white transition-colors">Overview</Link></li>
               <li><Link href="/twin" className="hover:text-white transition-colors">Digital Twin</Link></li>
               <li><Link href="/insights" className="hover:text-white transition-colors">Insights</Link></li>
               <li><Link href="/vault" className="hover:text-white transition-colors">Secure Vault</Link></li>
