@@ -1,348 +1,375 @@
 'use client';
 
 import * as React from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Points, PointMaterial, Sparkles } from '@react-three/drei';
-import * as THREE from 'three';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Environment, ContactShadows } from '@react-three/drei';
 import { useHealthStore } from '@/lib/store';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Activity, Heart, Brain, Wind, Droplets, ShieldAlert, Sparkles as SparkleIcon, Sliders, Info, Zap
+import { motion } from 'framer-motion';
+import {
+  Heart, Brain, Wind, Droplets, Dna, Activity, Calendar, Moon, Watch, Search, Bell, AlertTriangle, ArrowRight, Zap
 } from 'lucide-react';
-import { toast } from 'sonner';
-
-// Custom 3D Cybernetic Organ Representation using Canvas
-function CyberOrganPoints({ activeOrgan }: { activeOrgan: string }) {
-  const pointsRef = React.useRef<THREE.Points>(null);
-
-  // Generate coordinate clouds mimicking organ nodes
-  const [positions, colorArray] = React.useMemo(() => {
-    const count = 600;
-    const pos = new Float32Array(count * 3);
-    const cols = new Float32Array(count * 3);
-
-    // Primary Colors for different organs
-    const colorsMap: Record<string, THREE.Color> = {
-      brain: new THREE.Color('#a855f7'), // Purple
-      heart: new THREE.Color('#f97316'), // Orange
-      lungs: new THREE.Color('#06b6d4'), // Cyan
-      gut: new THREE.Color('#10b981'), // Green
-      kidneys: new THREE.Color('#eab308'), // Yellow
-    };
-
-    const baseCol = colorsMap[activeOrgan] || new THREE.Color('#3b82f6');
-
-    for (let i = 0; i < count; i++) {
-      let x = 0, y = 0, z = 0;
-
-      if (activeOrgan === 'brain') {
-        // Double hemisphere sphere shape
-        const hemi = Math.random() > 0.5 ? 1 : -1;
-        const u = Math.random();
-        const v = Math.random();
-        const theta = u * 2.0 * Math.PI;
-        const phi = Math.acos(2.0 * v - 1.0);
-        const r = 0.5 + Math.random() * 0.3;
-        x = r * Math.sin(phi) * Math.cos(theta) + (hemi * 0.15);
-        y = r * Math.sin(phi) * Math.sin(theta) * 0.7 + 0.8;
-        z = r * Math.cos(phi) * 0.7;
-      } else if (activeOrgan === 'heart') {
-        // Tapered heart cloud shape
-        const theta = Math.random() * Math.PI * 2;
-        const r = 0.4 + Math.random() * 0.45;
-        x = Math.sin(theta) * r * 1.1;
-        y = (Math.random() - 0.5) * 1.2;
-        z = Math.cos(theta) * r;
-        if (y < 0) {
-          x *= (1 + y * 0.4);
-          z *= (1 + y * 0.4);
-        }
-      } else if (activeOrgan === 'lungs') {
-        // Dual lobe cylinders
-        const side = Math.random() > 0.5 ? 1 : -1;
-        const theta = Math.random() * Math.PI * 2;
-        const r = 0.25 + Math.random() * 0.25;
-        x = Math.cos(theta) * r + (side * 0.45);
-        y = (Math.random() - 0.5) * 1.3 - 0.1;
-        z = Math.sin(theta) * r;
-      } else {
-        // Gut/General: organic spiral cloud
-        const theta = i * 0.15;
-        const r = 0.15 + i * 0.0012;
-        x = Math.cos(theta) * r;
-        y = -0.5 + (i / count) * 0.8;
-        z = Math.sin(theta) * r;
-      }
-
-      pos[i * 3] = x;
-      pos[i * 3 + 1] = y;
-      pos[i * 3 + 2] = z;
-
-      // Color variation
-      const colVar = baseCol.clone().multiplyScalar(0.75 + Math.random() * 0.5);
-      cols[i * 3] = colVar.r;
-      cols[i * 3 + 1] = colVar.g;
-      cols[i * 3 + 2] = colVar.b;
-    }
-
-    return [pos, cols];
-  }, [activeOrgan]);
-
-  useFrame((state) => {
-    if (!pointsRef.current) return;
-    const time = state.clock.getElapsedTime();
-    pointsRef.current.rotation.y = time * 0.25;
-    // Add physiological pulse contraction
-    const pulseFactor = 1.0 + Math.sin(time * 3.5) * 0.025;
-    pointsRef.current.scale.set(pulseFactor, pulseFactor, pulseFactor);
-  });
-
-  return (
-    <Points ref={pointsRef} positions={positions} colors={colorArray} stride={3}>
-      <PointMaterial
-        vertexColors
-        transparent
-        size={0.065}
-        sizeAttenuation={true}
-        depthWrite={false}
-        opacity={0.8}
-        blending={THREE.AdditiveBlending}
-      />
-    </Points>
-  );
-}
-
-interface OrganData {
-  id: string;
-  name: string;
-  score: number;
-  status: 'optimal' | 'moderate' | 'action required';
-  icon: any;
-  insights: string[];
-  recommendation: string;
-}
+import { BodyHologram } from '@/components/twin/BodyHologram';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function DigitalTwinPage() {
   const [mounted, setMounted] = React.useState(false);
-  const [activeOrganId, setActiveOrganId] = React.useState('heart');
-  const { steps, sleepHours, hrv, stressLevel, heartRate } = useHealthStore();
+  const [activeSystemId, setActiveSystemId] = React.useState('nervous');
+  const { steps, sleepHours, hrv, stressLevel, heartRate, user } = useHealthStore();
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
+  React.useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
-  // Organ datasets computed from wearable states
-  const heartScore = Math.min(100, Math.max(30, Math.round(100 - (stressLevel * 8) - (heartRate - 60))));
-  const brainScore = Math.min(100, Math.max(30, Math.round((sleepHours / 8) * 60 + (80 - stressLevel * 10))));
-  const lungsScore = Math.min(100, Math.max(40, Math.round(hrv * 0.8 + 30)));
-  const gutScore = Math.min(100, Math.max(50, Math.round(steps / 250 + 40)));
-
-  const organs: OrganData[] = [
-    {
-      id: 'brain',
-      name: 'Nervous & Cognitive System',
-      score: brainScore,
-      status: brainScore > 80 ? 'optimal' : brainScore > 65 ? 'moderate' : 'action required',
-      icon: Brain,
-      insights: [
-        'Deep sleep latency: 18 minutes (optimal)',
-        'Cognitive load peak: 14:00 - 16:30',
-        'REM phase duration: 1.15 hours'
-      ],
-      recommendation: 'Alpha-wave stimulation suggested at 21:30 to counteract elevated stress levels.'
-    },
-    {
-      id: 'heart',
-      name: 'Cardiovascular Network',
-      score: heartScore,
-      status: heartScore > 80 ? 'optimal' : heartScore > 60 ? 'moderate' : 'action required',
-      icon: Heart,
-      insights: [
-        `Resting Heart Rate: ${heartRate} BPM`,
-        `Heart Rate Variability (HRV): ${hrv} ms`,
-        'Endothelial shear stress: low'
-      ],
-      recommendation: 'Targeted Zone 2 aerobic recovery run (30 min) today to optimize blood pressure resonance.'
-    },
-    {
-      id: 'lungs',
-      name: 'Respiratory Exchange',
-      score: lungsScore,
-      status: lungsScore > 80 ? 'optimal' : lungsScore > 60 ? 'moderate' : 'action required',
-      icon: Wind,
-      insights: [
-        'Oxygen saturation (SpO2): 98.4% average',
-        'Respiration rate: 12.8 breaths/min',
-        'Autonomic breathing pattern: balanced'
-      ],
-      recommendation: 'Perform 3 cycles of Box Breathing (4s inhale, 4s hold, 4s exhale, 4s hold) to stabilize parasympathetic drive.'
-    },
-    {
-      id: 'gut',
-      name: 'Metabolic & Digestive Core',
-      score: gutScore,
-      status: gutScore > 80 ? 'optimal' : gutScore > 65 ? 'moderate' : 'action required',
-      icon: Droplets,
-      insights: [
-        'Glycemic variability index: stable',
-        `Physical metabolic offset: +${(steps * 0.045).toFixed(0)} kcal`,
-        'Prebiotic nutrient balance: moderate'
-      ],
-      recommendation: 'Consume prebiotic whole grains at next meal window to feed active gut microbiome strain.'
-    }
+  // Mock data for charts
+  const nutritionData = [
+    { name: 'Protein', value: 30, color: '#3b82f6' },
+    { name: 'Fats', value: 20, color: '#a855f7' },
+    { name: 'Fiber', value: 15, color: '#f59e0b' },
+    { name: 'Carbs', value: 35, color: '#06b6d4' }
   ];
 
-  const activeOrgan = organs.find(o => o.id === activeOrganId) || organs[0];
+  const activityData = [
+    { day: 'Mon', steps: 4000 },
+    { day: 'Tue', steps: 6000 },
+    { day: 'Wed', steps: 5500 },
+    { day: 'Thu', steps: 8000 },
+    { day: 'Fri', steps: 4500 },
+    { day: 'Sat', steps: 9000 },
+    { day: 'Sun', steps: 5000 }
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col justify-between min-h-[160px] border border-white/10 hover:border-white/20 transition-all duration-300">
-        <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-cyan-500/10 via-transparent to-transparent pointer-events-none" />
-        <div className="space-y-2">
-          <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5" /> 3D Epigenetic Coordinate Map
-          </span>
-          <h1 className="text-3xl font-bold tracking-tight">Digital Twin Profile</h1>
-          <p className="text-xs text-muted-foreground max-w-xl">
-            Real-time cybernetic rendering of your physiological systems. Select an organ segment to isolate telemetry analysis.
-          </p>
+    <div className="min-h-[calc(100vh-100px)] w-full max-w-[1600px] mx-auto text-white">
+
+      {/* Top Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold flex items-center gap-2">Good Evenning, {user?.name || 'AURA User'} <span className="text-xl"></span></h1>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Search Anything..."
+              className="bg-black/40 border border-white/10 rounded-full pl-9 pr-4 py-2 text-sm w-64 focus:outline-none focus:border-cyan-500/50 transition-colors"
+            />
+          </div>
+          <button className="w-9 h-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
+            <Bell className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        
-        {/* Organ Selector Menu */}
-        <div className="lg:col-span-3 space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-2">Biological Systems</h3>
-          <div className="space-y-2">
-            {organs.map((organ) => {
-              const isActive = organ.id === activeOrganId;
-              const Icon = organ.icon;
-              return (
-                <button
-                  key={organ.id}
-                  onClick={() => setActiveOrganId(organ.id)}
-                  className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                    isActive 
-                      ? 'bg-white/10 border-cyan-500/30 shadow-md ring-1 ring-cyan-500/20 text-white' 
-                      : 'bg-black/35 border-white/5 hover:border-white/10 text-neutral-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 ${
-                      isActive 
-                        ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-500' 
-                        : 'bg-white/5 border-white/5 text-neutral-400'
-                    }`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold">{organ.name.split(' & ')[0]}</h4>
-                      <span className={`text-[8px] font-bold uppercase tracking-wider ${
-                        organ.status === 'optimal' 
-                          ? 'text-emerald-500' 
-                          : organ.status === 'moderate' 
-                          ? 'text-amber-500' 
-                          : 'text-rose-500'
-                      }`}>
-                        {organ.status}
-                      </span>
-                    </div>
-                  </div>
+      {/* 3-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
 
-                  <div className="text-right">
-                    <span className="text-xs font-extrabold">{organ.score}</span>
-                    <span className="text-[8px] text-muted-foreground block font-bold uppercase">Score</span>
+        {/* COLUMN 1: Health Analytics (Span 3) */}
+        <div className="lg:col-span-3 space-y-6 flex flex-col">
+
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Health<br />Analytics</h2>
+            <div className="px-3 py-1 bg-black/40 border border-white/10 rounded-full flex items-center gap-2 text-xs text-neutral-400">
+              <Calendar className="w-3 h-3" /> Today, 20 May
+            </div>
+          </div>
+
+          {/* Vital Signs Grid */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-neutral-300">Vital Signs</h3>
+              <button className="text-xs text-cyan-400 hover:text-cyan-300">View All</button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Heart Rate */}
+              <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex flex-col justify-between aspect-square hover:border-cyan-500/30 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center mb-2 text-violet-400">
+                  <Watch className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-2xl font-bold">{heartRate}</span>
+                    <span className="text-[10px] text-neutral-400 mb-1">bpm</span>
                   </div>
-                </button>
-              );
-            })}
+                  <span className="text-[10px] text-neutral-400">Heart Rate</span>
+                </div>
+              </div>
+
+              {/* Blood Pressure */}
+              <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex flex-col justify-between aspect-square hover:border-cyan-500/30 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center mb-2 text-cyan-400">
+                  <Droplets className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-2xl font-bold">120/80</span>
+                    <span className="text-[10px] text-neutral-400 mb-1">mmHg</span>
+                  </div>
+                  <span className="text-[10px] text-neutral-400">Blood Pressure</span>
+                </div>
+              </div>
+
+              {/* Blood Oxygen */}
+              <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex flex-col justify-between aspect-square hover:border-cyan-500/30 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2 text-emerald-400">
+                  <Activity className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-2xl font-bold">98%</span>
+                  </div>
+                  <span className="text-[10px] text-neutral-400">Blood Oxygen</span>
+                </div>
+              </div>
+
+              {/* Resting Heart Rate */}
+              <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex flex-col justify-between aspect-square hover:border-cyan-500/30 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center mb-2 text-amber-400">
+                  <Heart className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-2xl font-bold">60</span>
+                    <span className="text-[10px] text-neutral-400 mb-1">BPM</span>
+                  </div>
+                  <span className="text-[10px] text-neutral-400">Resting Heart Rate</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Nutrition Insight */}
+          <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-5 flex-1 flex flex-col relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-2xl rounded-full" />
+            <h3 className="text-sm font-semibold text-neutral-300 mb-4">Nutrition Insight</h3>
+
+            <div className="flex items-center gap-6 mb-4">
+              <div className="w-24 h-24 relative flex-shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={nutritionData}
+                      innerRadius={30}
+                      outerRadius={45}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {nutritionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-sm font-bold">1800</span>
+                  <span className="text-[8px] text-neutral-400">Kcal</span>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <span className="text-[10px] text-neutral-400 block mb-1">Calories Consumed Today</span>
+                {nutritionData.map(item => (
+                  <div key={item.name} className="flex items-center justify-between text-[10px]">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-neutral-300">{item.name}</span>
+                    </div>
+                    <span className="font-medium">{item.value}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button className="mt-auto w-full py-3 px-4 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-medium flex items-center justify-between transition-colors border border-white/5">
+              View Full Nutrition <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
-        {/* Interactive 3D Cybernetic Display */}
-        <div className="lg:col-span-5 rounded-[32px] bg-black/35 backdrop-blur-xl border border-white/10 h-[400px] lg:h-auto min-h-[350px] relative overflow-hidden flex items-center justify-center bg-black/10 hover:border-white/20 transition-all duration-300">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] opacity-35" />
-          
-          <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-white/5 backdrop-blur-md rounded-full text-[9px] font-bold text-cyan-500 uppercase tracking-widest">
-            <Zap className="w-3.5 h-3.5 animate-pulse" /> Resonator Active
+        {/* COLUMN 2: Body Overview (Span 5) */}
+        <div className="lg:col-span-5 bg-black/40 backdrop-blur-xl border border-white/10 rounded-[32px] relative overflow-hidden flex flex-col min-h-[600px]">
+
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.1),transparent_70%)] pointer-events-none" />
+
+          {/* Header */}
+          <div className="p-6 flex items-start justify-between absolute top-0 left-0 right-0 z-10">
+            <div>
+              <h2 className="text-lg font-bold flex items-center gap-2">Body Overview <Activity className="w-4 h-4 text-cyan-500" /></h2>
+              <p className="text-[10px] text-neutral-400">Real-time Health Scan</p>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-bold text-cyan-400">Live</span>
+              <span className="text-[10px] text-neutral-400">All System Normal</span>
+            </div>
           </div>
 
-          <div className="w-full h-full">
-            <Canvas camera={{ position: [0, 0.1, 2.2], fov: 45 }} className="w-full h-full">
+          {/* 3D Canvas */}
+          <div className="flex-1 relative w-full h-full">
+
+            {/* Floating Buttons Around the Body */}
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+              {/* Left Side Buttons */}
+              <div className="absolute left-6 top-1/3 space-y-12">
+                <button onClick={() => setActiveSystemId('cardiovascular')} className={`pointer-events-auto w-10 h-10 rounded-full border flex items-center justify-center transition-all ${activeSystemId === 'cardiovascular' ? 'bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : 'bg-black/50 border-white/10 text-neutral-400 hover:text-white'}`}>
+                  <Heart className="w-4 h-4" />
+                </button>
+                <button onClick={() => setActiveSystemId('respiratory')} className={`pointer-events-auto w-10 h-10 rounded-full border flex items-center justify-center transition-all ${activeSystemId === 'respiratory' ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'bg-black/50 border-white/10 text-neutral-400 hover:text-white'}`}>
+                  <Wind className="w-4 h-4" />
+                </button>
+                <button onClick={() => setActiveSystemId('metabolic')} className={`pointer-events-auto w-10 h-10 rounded-full border flex items-center justify-center transition-all ${activeSystemId === 'metabolic' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-black/50 border-white/10 text-neutral-400 hover:text-white'}`}>
+                  <Droplets className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Right Side Buttons */}
+              <div className="absolute right-6 top-1/4 space-y-16">
+                <button onClick={() => setActiveSystemId('nervous')} className={`pointer-events-auto w-10 h-10 rounded-full border flex items-center justify-center transition-all ${activeSystemId === 'nervous' ? 'bg-violet-500/20 border-violet-500/50 text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.3)]' : 'bg-black/50 border-white/10 text-neutral-400 hover:text-white'}`}>
+                  <Brain className="w-4 h-4" />
+                </button>
+                <button onClick={() => setActiveSystemId('musculoskeletal')} className={`pointer-events-auto w-10 h-10 rounded-full border flex items-center justify-center transition-all ${activeSystemId === 'musculoskeletal' ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-black/50 border-white/10 text-neutral-400 hover:text-white'}`}>
+                  <Dna className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <Canvas
+              camera={{ position: [0, 0, 4.5], fov: 45 }}
+              className="w-full h-full cursor-grab active:cursor-grabbing"
+              gl={{ antialias: true, alpha: true }}
+            >
               <ambientLight intensity={1.5} />
-              <pointLight position={[10, 10, 10]} intensity={2.0} color="#06b6d4" />
-              <directionalLight position={[5, 10, 5]} intensity={1.5} />
-              <CyberOrganPoints activeOrgan={activeOrganId} />
-              <Sparkles count={50} scale={2} size={2} speed={0.4} color="#06b6d4" />
+              <directionalLight position={[5, 10, 5]} intensity={1.5} color="#d26907ff" />
+              <directionalLight position={[-5, 5, -5]} intensity={0.8} color="#000000ff" />
+
+              <BodyHologram
+                activeSystem={activeSystemId}
+                stressLevel={stressLevel}
+                heartRate={heartRate}
+                hrv={hrv}
+                showPedestal={true}
+              />
+
+              <OrbitControls
+                enableZoom={false}
+                enablePan={false}
+                minPolarAngle={Math.PI / 2.2}
+                maxPolarAngle={Math.PI / 1.8}
+              />
             </Canvas>
           </div>
+
+          <div className="absolute bottom-6 left-0 right-0 flex justify-center z-10 pointer-events-none">
+            <span className="text-[10px] text-neutral-500 tracking-widest font-mono">LAST SCAN : TODAY, 8:30 PM</span>
+          </div>
         </div>
 
-        {/* Detailed Organ Telemetry */}
-        <div className="lg:col-span-4">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeOrgan.id}
-              initial={{ opacity: 0, x: 15 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -15 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-[32px] bg-black/35 backdrop-blur-xl p-6 border border-white/10 space-y-6 flex flex-col justify-between h-full hover:border-white/20 transition-all duration-300"
-            >
-              <div className="space-y-6">
-                <div>
-                  <span className="text-[9px] font-bold text-cyan-500 uppercase tracking-widest">System details</span>
-                  <h2 className="text-lg font-bold mt-0.5">{activeOrgan.name}</h2>
-                </div>
+        {/* COLUMN 3: Right Activities (Span 4) */}
+        <div className="lg:col-span-4 space-y-5 flex flex-col">
 
-                {/* Score Dial mockup */}
-                <div className="p-4 bg-white/5 border border-white/5 rounded-[24px] flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-semibold text-neutral-400 uppercase">Organ Efficiency</span>
-                    <h3 className="text-2xl font-black text-cyan-500">{activeOrgan.score}%</h3>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-xl text-[9px] font-bold uppercase tracking-wider ${
-                    activeOrgan.status === 'optimal'
-                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                      : activeOrgan.status === 'moderate'
-                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                      : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                  }`}>
-                    {activeOrgan.status}
-                  </span>
+          {/* Profile Card */}
+          <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full overflow-hidden p-0.5">
+                <div className="w-full h-full bg-black rounded-full flex items-center justify-center text-xs font-bold">
+                  {user?.name?.[0] || 'U'}
                 </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-bold">{user?.name || 'AURA User'}</h3>
+                <p className="text-[10px] text-neutral-400">Male • 23 Years</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-[9px] font-bold">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
+            </div>
+          </div>
 
-                {/* Biological Insights list */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
-                    <Info className="w-3.5 h-3.5" /> Biometrics Extracted
-                  </h4>
-                  <div className="space-y-2">
-                    {activeOrgan.insights.map((insight, idx) => (
-                      <div key={idx} className="text-xs py-2 px-3 bg-white/5 border border-white/5 rounded-xl text-neutral-350">
-                        {insight}
-                      </div>
+          {/* Upcoming Appointment / AURA Analysis */}
+          <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-5">
+            <div className="flex items-center gap-2 text-xs text-neutral-300 font-semibold mb-4">
+              <Zap className="w-4 h-4 text-cyan-400" /> AURA Intelligence
+            </div>
+            <h4 className="text-sm font-bold mb-1">Cardiology Consultation</h4>
+            <p className="text-[10px] text-neutral-400 mb-4">Jun 20, 2026 • 12:00 PM</p>
+            <button className="w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-semibold flex items-center justify-between border border-white/5 transition-colors">
+              Schedule Follow-up <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          {/* Recent Activities (Steps Chart) */}
+          <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Activity className="w-4 h-4" /> Recent Activities
+              </h3>
+              <span className="text-xs font-bold text-cyan-400">{steps.toLocaleString()} Steps</span>
+            </div>
+
+            <div className="h-28 w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={activityData}>
+                  <Tooltip
+                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                    contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '10px' }}
+                  />
+                  <Bar dataKey="steps" fill="#3b82f6" radius={[4, 4, 4, 4]} barSize={8}>
+                    {activityData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === 5 ? '#06b6d4' : '#3b82f6'} />
                     ))}
-                  </div>
-                </div>
-              </div>
+                  </Bar>
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#888' }} dy={10} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
 
-              {/* Recommendation */}
-              <div className="border-t border-white/5 pt-4 mt-6">
-                <span className="text-[9px] font-bold text-violet-500 uppercase tracking-widest flex items-center gap-1">
-                  <SparkleIcon className="w-3 h-3" /> AURA Recommendation
-                </span>
-                <p className="text-[11px] leading-relaxed text-neutral-300 mt-1 bg-violet-500/5 border border-violet-500/10 p-3.5 rounded-[18px]">
-                  {activeOrgan.recommendation}
-                </p>
+          {/* Sleep Analysis */}
+          <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Moon className="w-4 h-4" /> Sleep
+              </h3>
+              <span className="text-xs font-bold">{sleepHours}h 30m</span>
+            </div>
+
+            {/* Stacked bar visual */}
+            <div className="w-full h-3 rounded-full overflow-hidden flex mb-4">
+              <div className="h-full bg-indigo-500" style={{ width: '35%' }} />
+              <div className="h-full bg-cyan-400" style={{ width: '45%' }} />
+              <div className="h-full bg-amber-400" style={{ width: '20%' }} />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> <span className="text-neutral-400">Deep Sleep</span></div>
+                <span className="font-medium">2h 15min</span>
               </div>
-            </motion.div>
-          </AnimatePresence>
+              <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> <span className="text-neutral-400">Light Sleep</span></div>
+                <span className="font-medium">4h 45min</span>
+              </div>
+              <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-amber-400" /> <span className="text-neutral-400">REM Sleep</span></div>
+                <span className="font-medium">1h 30min</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Emergency Services */}
+          <div className="bg-gradient-to-br from-violet-600/40 to-indigo-600/40 border border-violet-500/30 rounded-3xl p-5 mt-auto flex flex-col justify-between relative overflow-hidden group hover:border-violet-400/50 transition-colors">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-violet-500/20 blur-2xl rounded-full" />
+            <div>
+              <h3 className="text-base font-bold mb-1 flex items-center gap-2">Emergency Services <AlertTriangle className="w-4 h-4 text-rose-400" /></h3>
+              <p className="text-[10px] text-violet-200">We're here for you 24/7</p>
+            </div>
+            <button className="mt-4 w-full py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors border border-white/10">
+              Contact Now <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
         </div>
+
       </div>
     </div>
   );
