@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AQ.Ab8RN6J3U1-4w23gNqbXoRJnqH28akKkfTvkhTHvnBNIgbVxaA';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'process.env.GCP_API_KEY';
 
 export async function POST(request: Request) {
   try {
@@ -15,9 +15,9 @@ export async function POST(request: Request) {
         { mealName: "Avocado Sourdough Toast", calories: 360, protein: 11, carbs: 42, fat: 18, imageUrl: "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&q=80" },
         { mealName: "Superberry Acai Protein Bowl", calories: 420, protein: 15, carbs: 65, fat: 12, imageUrl: "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=500&q=80" }
       ];
-      
+
       const selectedMeal = meals[Math.floor(Math.random() * meals.length)];
-      
+
       return NextResponse.json({
         success: true,
         text: `THE INSIGHT:\nI have scanned the food profile. Identifed: **${selectedMeal.mealName}**.\n\nTHE WHY:\nThis contains high-quality structural lipids and amino acids suited to your metabolic baseline.\n\nTHE ADJUSTMENT:\nLog this to track daily protein target tracking.\n\nTHE MICRO-WIN:\nDrink 250ml water to optimize gastric enzyme dilution before consuming this meal.`,
@@ -115,10 +115,10 @@ ${JSON.stringify(memoryTags || [])}
 
     } catch (apiError: any) {
       console.error("Gemini API call failed, using fallback:", apiError);
-      
+
       let answer = "";
       const lowerMsg = (message || "").toLowerCase();
-      
+
       if (lowerMsg.includes("tired") || lowerMsg.includes("exhausted") || lowerMsg.includes("sleep")) {
         answer = `I see you are asking about energy levels. Based on your active telemetries, you got ${dashboardState?.sleepHours || 7.75} hours of sleep last night, with a healthy HRV of ${dashboardState?.hrv || 80} ms. To combat fatigue, focus on proper hydration, light movement (aim for your steps target), and taking a 10-minute mindfulness break.`;
       } else if (lowerMsg.includes("eat") || lowerMsg.includes("food") || lowerMsg.includes("diet") || lowerMsg.includes("vitamin") || lowerMsg.includes("c")) {
