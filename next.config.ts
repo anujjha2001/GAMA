@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   devIndicators: {
     position: 'bottom-right',
   },
-  allowedDevOrigins: ['192.168.29.51', '192.168.10.164', 'localhost:3000'],
+  allowedDevOrigins: ['192.168.29.51', '192.168.10.164', '10.71.245.134', 'localhost:3000'],
   typescript: {
     ignoreBuildErrors: true,
   }

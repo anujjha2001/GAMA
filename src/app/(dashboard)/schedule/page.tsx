@@ -164,14 +164,17 @@ export default function SchedulePage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#0e0e11] text-white p-6 font-sans">
+    <div className="space-y-6">
       {/* Top Banner Navigation */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-6 h-6 text-orange-500" />
-          <h1 className="text-2xl font-bold tracking-tight">Schedule Coordinator</h1>
+      <div className="relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center min-h-[120px] border border-white/10 hover:border-white/20 transition-all duration-300">
+        <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-orange-500/10 via-transparent to-transparent pointer-events-none" />
+        <div className="space-y-2">
+          <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5" /> Chronobiological Schedule Loop
+          </span>
+          <h1 className="text-3xl font-bold tracking-tight">Schedule Coordinator</h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mt-4 md:mt-0">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-neutral-500">
               <Search className="w-4 h-4" />
@@ -182,7 +185,7 @@ export default function SchedulePage() {
               className="bg-white/5 border border-white/10 rounded-full pl-9 pr-4 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50"
             />
           </div>
-          <button className="flex items-center gap-1.5 px-4 py-1.5 bg-orange-500 hover:bg-orange-400 text-black font-semibold rounded-full text-xs transition-colors cursor-pointer">
+          <button className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-black font-semibold rounded-xl text-xs transition-all cursor-pointer shadow-lg shadow-orange-500/15">
             <Plus className="w-3.5 h-3.5" />
             <span>Add Event</span>
           </button>
@@ -190,7 +193,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Main Container mirroring the visual style */}
-      <div className="w-full bg-[#121316] border border-white/5 rounded-3xl p-6 shadow-2xl">
+      <div className="w-full bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 shadow-2xl hover:border-white/20 transition-all duration-300">
         
         {/* Calendar Filter Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-5 mb-6">

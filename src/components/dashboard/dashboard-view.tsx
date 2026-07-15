@@ -481,7 +481,7 @@ export function DashboardView() {
                   {/* GAMA Logo Send Button */}
                   <button
                     onClick={() => handleAuraQuery(askInput)}
-                    className="p-1 bg-orange-500 hover:bg-orange-400 text-black rounded-full cursor-pointer transition-all w-8 h-8 flex items-center justify-center overflow-hidden border border-orange-400/20 hover:scale-105"
+                    className="p-1 bg-orange-500 hover:bg-orange-400 text-black rounded-full cursor-pointer transition-all w-10 h-10 flex items-center justify-center overflow-hidden border border-orange-400/20 hover:scale-105"
                   >
                     <img src="/logo.jpg" alt="AURA Send" className="w-full h-full object-cover rounded-full" />
                   </button>
@@ -661,9 +661,9 @@ export function DashboardView() {
                   />
                   <button
                     onClick={() => handleAuraQuery(askInput)}
-                    className="p-1 bg-orange-500 hover:bg-orange-400 text-black rounded-2xl cursor-pointer transition-colors w-9 h-9 flex items-center justify-center overflow-hidden border border-orange-400/20"
+                    className="p-1 bg-orange-500 hover:bg-orange-400 text-black rounded-2xl cursor-pointer transition-colors w-11 h-11 flex items-center justify-center overflow-hidden border border-orange-400/20"
                   >
-                    <img src="/logo.jpg" alt="AURA Send" className="w-7 h-7 rounded-xl object-cover" />
+                    <img src="/logo.jpg" alt="AURA Send" className="w-9 h-9 rounded-xl object-cover" />
                   </button>
                 </div>
               </motion.div>

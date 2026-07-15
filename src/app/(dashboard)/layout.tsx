@@ -19,21 +19,7 @@ export default function DashboardLayout({
 
   React.useEffect(() => {
     setMounted(true);
-    // Protect dashboard routes on the client side
-    if (typeof window !== 'undefined') {
-      const hasCookie = document.cookie.includes('gama_session=true');
-      let hasLocalStorage = false;
-      try {
-        hasLocalStorage = localStorage.getItem('gama_session') === 'true';
-      } catch (e) {}
-      
-      const isDev = process.env.NODE_ENV === 'development';
-      
-      if (!hasCookie && !hasLocalStorage && !isDev) {
-        router.push('/login');
-      }
-    }
-  }, [router]);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -73,10 +59,10 @@ export default function DashboardLayout({
             {/* Logo at the top */}
             <div className="flex items-center gap-1.5 md:flex-col shrink-0">
               <Link href="/" className="flex items-center gap-2 md:flex-col md:gap-1.5 group">
-                <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl overflow-hidden border border-border shadow-lg bg-black flex items-center justify-center cursor-pointer transition-transform group-hover:scale-105 duration-300">
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden border border-border shadow-lg bg-black flex items-center justify-center cursor-pointer transition-transform group-hover:scale-105 duration-300">
                   <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
-                <span className="font-extrabold text-xs md:text-[9px] uppercase tracking-widest text-foreground">GAMA</span>
+                <span className="font-extrabold text-sm md:text-[11px] uppercase tracking-widest text-foreground">GAMA</span>
               </Link>
             </div>
 
@@ -135,10 +121,10 @@ export default function DashboardLayout({
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4 col-span-1 md:col-span-2">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl overflow-hidden border border-border shadow-lg bg-black flex items-center justify-center">
+                <div className="w-14 h-14 rounded-xl overflow-hidden border border-border shadow-lg bg-black flex items-center justify-center">
                   <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
-                <span className="font-extrabold text-xl tracking-wider text-foreground">GAMA</span>
+                <span className="font-extrabold text-2xl tracking-wider text-foreground">GAMA</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-sm">
                 Sovereign biological diagnostic dashboard and epigenetic modeling coordinate framework.

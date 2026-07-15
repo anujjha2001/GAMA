@@ -51,7 +51,7 @@ export default function InsightsPage() {
   return (
     <div className="space-y-6">
       {/* Header Panel */}
-      <div className="relative rounded-[32px] overflow-hidden glass-panel p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center min-h-[160px] border border-border">
+      <div className="relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center min-h-[160px] border border-white/10 hover:border-white/20 transition-all duration-300">
         <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
         <div className="space-y-2">
           <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1.5">
@@ -87,8 +87,8 @@ export default function InsightsPage() {
                     onClick={() => setActiveStoryId(story.id)}
                     className={`p-4 rounded-[24px] border transition-all duration-300 cursor-pointer ${
                       isActive 
-                        ? 'bg-card border-emerald-500/30 shadow-md ring-1 ring-emerald-500/20' 
-                        : 'bg-card/40 border-border hover:border-border/80'
+                        ? 'bg-white/10 border-emerald-500/30 shadow-md ring-1 ring-emerald-500/20 text-white' 
+                        : 'bg-black/35 border-white/5 hover:border-white/10 text-neutral-300 hover:text-white'
                     }`}
                   >
                     <div className="flex justify-between items-start gap-2 mb-2">
@@ -107,7 +107,7 @@ export default function InsightsPage() {
                     <h4 className="text-xs font-bold">{story.title}</h4>
                     <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{story.subtitle}</p>
 
-                    <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-border/40">
+                    <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-white/5">
                       <span className="text-[10px] font-semibold text-muted-foreground">Impact</span>
                       <span className={`text-[10px] font-bold flex items-center gap-0.5 ${
                         story.impactType === 'positive' ? 'text-emerald-500' : 'text-rose-500'
@@ -130,7 +130,7 @@ export default function InsightsPage() {
               key={activeStory.id}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[32px] glass-panel p-6 md:p-8 border border-border space-y-6 flex flex-col justify-between h-full min-h-[500px]"
+              className="rounded-[32px] bg-black/35 backdrop-blur-xl p-6 md:p-8 border border-white/10 space-y-6 flex flex-col justify-between h-full min-h-[500px] hover:border-white/20 transition-all duration-300"
             >
               <div className="space-y-6">
                 <div className="flex justify-between items-start gap-4">
@@ -150,14 +150,14 @@ export default function InsightsPage() {
                   </div>
                 </div>
 
-                <div className="p-4 bg-muted/50 rounded-2xl border border-border text-xs leading-relaxed">
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-xs leading-relaxed text-neutral-300">
                   {activeStory.content}
                 </div>
 
                 {/* Correlations Matrix */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 bg-card/40 border border-border rounded-[20px] space-y-2">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block">Wearable context</span>
+                  <div className="p-4 bg-white/5 border border-white/5 rounded-[20px] space-y-2">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">Wearable context</span>
                     <div className="flex justify-between items-center text-xs">
                       <span>HRV State:</span>
                       <span className="font-semibold">{hrv} ms</span>
@@ -168,8 +168,8 @@ export default function InsightsPage() {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-card/40 border border-border rounded-[20px] space-y-2">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block">Environment data</span>
+                  <div className="p-4 bg-white/5 border border-white/5 rounded-[20px] space-y-2">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">Environment data</span>
                     <div className="flex justify-between items-center text-xs">
                       <span>Temperature:</span>
                       <span className="font-semibold">{weather.temp}°C</span>
@@ -180,9 +180,9 @@ export default function InsightsPage() {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-card/40 border border-border rounded-[20px] space-y-2">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block">Global Medical Cross-ref</span>
-                    <div className="text-[10px] text-muted-foreground leading-normal flex items-start gap-1">
+                  <div className="p-4 bg-white/5 border border-white/5 rounded-[20px] space-y-2">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">Global Medical Cross-ref</span>
+                    <div className="text-[10px] text-neutral-450 leading-normal flex items-start gap-1">
                       <HelpCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                       <span>Validated against circadian cardiac rhythm guidelines.</span>
                     </div>
@@ -191,8 +191,8 @@ export default function InsightsPage() {
               </div>
 
               {/* Ask AURA about this story block */}
-              <div className="border-t border-border pt-6 mt-6">
-                <div className="flex items-center justify-between gap-4 bg-muted border border-border rounded-full pl-5 pr-2 py-2">
+              <div className="border-t border-white/5 pt-6 mt-6">
+                <div className="flex items-center justify-between gap-4 bg-white/5 border border-white/10 rounded-full pl-5 pr-2 py-2">
                   <input
                     type="text"
                     placeholder={`Ask AURA: "Why did my ${activeStory.metricType} drop?"`}
@@ -201,7 +201,7 @@ export default function InsightsPage() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleAskAura(activeStory.title);
                     }}
-                    className="flex-1 bg-transparent text-xs text-foreground placeholder-muted-foreground focus:outline-none py-1"
+                    className="flex-1 bg-transparent text-xs text-foreground placeholder-neutral-500 focus:outline-none py-1"
                   />
                   <button
                     onClick={() => handleAskAura(activeStory.title)}
@@ -213,7 +213,7 @@ export default function InsightsPage() {
               </div>
             </motion.div>
           ) : (
-            <div className="rounded-[32px] glass-panel border border-border p-12 text-center text-muted-foreground">
+            <div className="rounded-[32px] bg-black/35 backdrop-blur-xl border border-white/10 p-12 text-center text-muted-foreground hover:border-white/20 transition-all duration-300">
               Select a correlation story from the log to display analysis details.
             </div>
           )}

@@ -28,12 +28,12 @@ export async function POST(request: NextRequest) {
     // Check expiration
     if (new Date() > otpRecord.expiresAt) {
       // Clean up expired record
-      await prisma.otp.delete({ where: { id: otpRecord.id } }).catch(() => {});
+      await prisma.otp.delete({ where: { id: otpRecord.id } }).catch(() => { });
       return NextResponse.json({ success: false, error: 'Verification code has expired' }, { status: 401 });
     }
 
     // Clean up OTP record
-    await prisma.otp.delete({ where: { id: otpRecord.id } }).catch(() => {});
+    await prisma.otp.delete({ where: { id: otpRecord.id } }).catch(() => { });
 
     // Check if user already exists
     let user = await prisma.userProfile.findUnique({
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set('gama_session', 'true', {
       path: '/',
       maxAge: 86400,
-      sameSite: 'strict',
+      sameSite: 'lax',
       httpOnly: true,
     });
     return response;

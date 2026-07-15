@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set('gama_session', 'true', {
       path: '/',
       maxAge: 86400,
-      sameSite: 'strict',
+      sameSite: 'lax',
       httpOnly: true,
     });
     return response;

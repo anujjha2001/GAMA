@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip static assets and internal next paths
@@ -38,11 +38,10 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Get the authenticated user from Supabase session
-  const { data: { user } } = await supabase.auth.getUser();
-  const hasSession = !!user || request.cookies.has('gama_session');
+  // Get session state instantly using the local cookie (0ms latency, no blocking network requests)
+  const hasSession = request.cookies.has('gama_session');
 
-  const isDashboardRoute = ['/dashboard', '/twin', '/insights', '/vault', '/settings'].some(
+  const isDashboardRoute = ['/dashboard', '/twin', '/insights', '/schedule', '/vault', '/settings'].some(
     (path) => pathname === path || pathname.startsWith(path + '/')
   );
 

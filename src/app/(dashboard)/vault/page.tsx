@@ -73,7 +73,7 @@ export default function VaultPage() {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="relative rounded-[32px] overflow-hidden glass-panel p-6 md:p-8 flex flex-col justify-between min-h-[160px] border border-border">
+      <div className="relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col justify-between min-h-[160px] border border-white/10 hover:border-white/20 transition-all duration-300">
         <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-orange-500/10 via-transparent to-transparent pointer-events-none" />
         <div className="space-y-2">
           <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1.5">
@@ -94,7 +94,7 @@ export default function VaultPage() {
           {/* Upload Dropzone */}
           <div 
             className={`border-2 border-dashed rounded-[24px] p-6 text-center transition-all ${
-              isDragging ? 'border-orange-500 bg-orange-500/5' : 'border-border hover:border-orange-500/40 bg-card/25'
+              isDragging ? 'border-orange-500 bg-orange-500/5' : 'border-white/10 hover:border-orange-500/40 bg-black/35'
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
@@ -137,8 +137,8 @@ export default function VaultPage() {
                       onClick={() => setActiveDocId(doc.id)}
                       className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 justify-between ${
                         isActive 
-                          ? 'bg-card border-orange-500/30 shadow-md ring-1 ring-orange-500/20' 
-                          : 'bg-card/40 border-border hover:border-border/80'
+                          ? 'bg-white/10 border-orange-500/30 shadow-md ring-1 ring-orange-500/20 text-white' 
+                          : 'bg-black/35 border-white/5 hover:border-white/10 text-neutral-300 hover:text-white'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -147,7 +147,7 @@ export default function VaultPage() {
                         </div>
                         <div className="min-w-0">
                           <h4 className="text-xs font-bold truncate">{doc.name}</h4>
-                          <span className="text-[9px] text-muted-foreground block mt-0.5">{doc.uploadDate} • {doc.fileSize}</span>
+                          <span className="text-[9px] text-neutral-400 block mt-0.5">{doc.uploadDate} • {doc.fileSize}</span>
                         </div>
                       </div>
 
@@ -173,7 +173,7 @@ export default function VaultPage() {
               key={activeDoc.id}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[32px] glass-panel p-6 md:p-8 border border-border space-y-6 flex flex-col justify-between h-full min-h-[500px]"
+              className="rounded-[32px] bg-black/35 backdrop-blur-xl p-6 md:p-8 border border-white/10 space-y-6 flex flex-col justify-between h-full min-h-[500px] hover:border-white/20 transition-all duration-300"
             >
               <div className="space-y-6">
                 <div className="flex justify-between items-start gap-4">
@@ -211,10 +211,10 @@ export default function VaultPage() {
                   <>
                     {/* Actionable Goals list */}
                     <div className="space-y-3">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Extracted Goals</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">Extracted Goals</h3>
                       <div className="space-y-2">
                         {activeDoc.extractedGoals.map((goal, idx) => (
-                          <div key={idx} className="p-3 bg-muted/40 border border-border rounded-xl flex justify-between items-center gap-3">
+                          <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-xl flex justify-between items-center gap-3 text-neutral-300">
                             <span className="text-xs leading-normal">{goal}</span>
                             <button
                               onClick={() => handleSyncToMemory(goal)}
@@ -229,17 +229,17 @@ export default function VaultPage() {
 
                     {/* Action Schedule Plan */}
                     <div className="space-y-3">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Structured Action Plan</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">Structured Action Plan</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {activeDoc.actionPlan.map((plan, idx) => (
-                          <div key={idx} className="p-4 bg-card border border-border rounded-2xl space-y-2">
+                          <div key={idx} className="p-4 bg-white/5 border border-white/5 rounded-2xl space-y-2">
                             <div className="flex justify-between items-start gap-2">
                               <h4 className="text-xs font-bold">{plan.title}</h4>
                               <span className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-orange-500/10 text-orange-500 border border-orange-500/20">
                                 {plan.schedule}
                               </span>
                             </div>
-                            <p className="text-[10px] text-muted-foreground leading-normal">{plan.description}</p>
+                            <p className="text-[10px] text-neutral-400 leading-normal">{plan.description}</p>
                           </div>
                         ))}
                       </div>
@@ -249,14 +249,14 @@ export default function VaultPage() {
               </div>
 
               {activeDoc.status !== 'scanning' && (
-                <div className="border-t border-border pt-4 mt-6 flex justify-between items-center text-[10px] text-muted-foreground">
+                <div className="border-t border-white/5 pt-4 mt-6 flex justify-between items-center text-[10px] text-neutral-400">
                   <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> End-to-end encrypted</span>
                   <span>AURA Health System v0.1</span>
                 </div>
               )}
             </motion.div>
           ) : (
-            <div className="rounded-[32px] glass-panel border border-border p-12 text-center text-muted-foreground">
+            <div className="rounded-[32px] bg-black/35 backdrop-blur-xl border border-white/10 p-12 text-center text-muted-foreground hover:border-white/20 transition-all duration-300">
               Please upload or select a clinical document from the index.
             </div>
           )}

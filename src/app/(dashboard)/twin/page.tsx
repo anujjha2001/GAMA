@@ -199,7 +199,7 @@ export default function DigitalTwinPage() {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="relative rounded-[32px] overflow-hidden glass-panel p-6 md:p-8 flex flex-col justify-between min-h-[160px] border border-border">
+      <div className="relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col justify-between min-h-[160px] border border-white/10 hover:border-white/20 transition-all duration-300">
         <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-cyan-500/10 via-transparent to-transparent pointer-events-none" />
         <div className="space-y-2">
           <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest flex items-center gap-1.5">
@@ -227,15 +227,15 @@ export default function DigitalTwinPage() {
                   onClick={() => setActiveOrganId(organ.id)}
                   className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
                     isActive 
-                      ? 'bg-card border-cyan-500/30 shadow-md ring-1 ring-cyan-500/20' 
-                      : 'bg-card/40 border-border hover:border-border/80'
+                      ? 'bg-white/10 border-cyan-500/30 shadow-md ring-1 ring-cyan-500/20 text-white' 
+                      : 'bg-black/35 border-white/5 hover:border-white/10 text-neutral-300 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 ${
                       isActive 
                         ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-500' 
-                        : 'bg-muted border-border text-muted-foreground'
+                        : 'bg-white/5 border-white/5 text-neutral-400'
                     }`}>
                       <Icon className="w-4 h-4" />
                     </div>
@@ -264,7 +264,7 @@ export default function DigitalTwinPage() {
         </div>
 
         {/* Interactive 3D Cybernetic Display */}
-        <div className="lg:col-span-5 rounded-[32px] glass-panel border border-border h-[400px] lg:h-auto min-h-[350px] relative overflow-hidden flex items-center justify-center bg-black/10">
+        <div className="lg:col-span-5 rounded-[32px] bg-black/35 backdrop-blur-xl border border-white/10 h-[400px] lg:h-auto min-h-[350px] relative overflow-hidden flex items-center justify-center bg-black/10 hover:border-white/20 transition-all duration-300">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] opacity-35" />
           
           <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-white/5 backdrop-blur-md rounded-full text-[9px] font-bold text-cyan-500 uppercase tracking-widest">
@@ -291,7 +291,7 @@ export default function DigitalTwinPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -15 }}
               transition={{ duration: 0.3 }}
-              className="rounded-[32px] glass-panel p-6 border border-border space-y-6 flex flex-col justify-between h-full"
+              className="rounded-[32px] bg-black/35 backdrop-blur-xl p-6 border border-white/10 space-y-6 flex flex-col justify-between h-full hover:border-white/20 transition-all duration-300"
             >
               <div className="space-y-6">
                 <div>
@@ -300,9 +300,9 @@ export default function DigitalTwinPage() {
                 </div>
 
                 {/* Score Dial mockup */}
-                <div className="p-4 bg-muted/40 border border-border rounded-[24px] flex items-center justify-between">
+                <div className="p-4 bg-white/5 border border-white/5 rounded-[24px] flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">Organ Efficiency</span>
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase">Organ Efficiency</span>
                     <h3 className="text-2xl font-black text-cyan-500">{activeOrgan.score}%</h3>
                   </div>
                   <span className={`px-2.5 py-1 rounded-xl text-[9px] font-bold uppercase tracking-wider ${
@@ -318,12 +318,12 @@ export default function DigitalTwinPage() {
 
                 {/* Biological Insights list */}
                 <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
                     <Info className="w-3.5 h-3.5" /> Biometrics Extracted
                   </h4>
                   <div className="space-y-2">
                     {activeOrgan.insights.map((insight, idx) => (
-                      <div key={idx} className="text-xs py-2 px-3 bg-card/50 border border-border rounded-xl">
+                      <div key={idx} className="text-xs py-2 px-3 bg-white/5 border border-white/5 rounded-xl text-neutral-350">
                         {insight}
                       </div>
                     ))}
@@ -332,11 +332,11 @@ export default function DigitalTwinPage() {
               </div>
 
               {/* Recommendation */}
-              <div className="border-t border-border pt-4 mt-6">
+              <div className="border-t border-white/5 pt-4 mt-6">
                 <span className="text-[9px] font-bold text-violet-500 uppercase tracking-widest flex items-center gap-1">
                   <SparkleIcon className="w-3 h-3" /> AURA Recommendation
                 </span>
-                <p className="text-[11px] leading-relaxed text-muted-foreground mt-1 bg-violet-500/5 border border-violet-500/10 p-3.5 rounded-[18px]">
+                <p className="text-[11px] leading-relaxed text-neutral-300 mt-1 bg-violet-500/5 border border-violet-500/10 p-3.5 rounded-[18px]">
                   {activeOrgan.recommendation}
                 </p>
               </div>

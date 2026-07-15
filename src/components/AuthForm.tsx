@@ -65,7 +65,7 @@ export default function AuthForm() {
       if (error) throw error;
 
       // Set cookie session for GAMA compatibility
-      document.cookie = "gama_session=true; path=/; max-age=86400; SameSite=Strict";
+      document.cookie = "gama_session=true; path=/; max-age=86400; SameSite=Lax";
       try {
         localStorage.setItem('gama_session', 'true');
       } catch (e) {}
