@@ -1,6 +1,12 @@
 'use client';
 
 import * as React from 'react';
+ feature-dashboard
+import AuthPage from '../auth/page';
+
+export default function LoginPage() {
+  return <AuthPage initialMode="login" />;
+
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -205,4 +211,5 @@ export default function LoginPage() {
       </motion.div>
     </div>
   );
+ develop
 }
