@@ -63,8 +63,8 @@ export default function SettingsPage() {
                   toast.success('Pure Zen light theme activated');
                 }}
                 className={`py-3 rounded-xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${theme === 'light'
-                    ? 'bg-white/10 text-white shadow-md font-semibold'
-                    : 'text-neutral-400 hover:text-white'
+                  ? 'bg-white/10 text-white shadow-md font-semibold'
+                  : 'text-neutral-400 hover:text-white'
                   }`}
               >
                 <Sun className="w-5 h-5" />
@@ -76,8 +76,8 @@ export default function SettingsPage() {
                   toast.success('Deep Space Premium dark theme activated');
                 }}
                 className={`py-3 rounded-xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${theme === 'dark'
-                    ? 'bg-white/10 text-white shadow-md font-semibold'
-                    : 'text-neutral-400 hover:text-white'
+                  ? 'bg-white/10 text-white shadow-md font-semibold'
+                  : 'text-neutral-400 hover:text-white'
                   }`}
               >
                 <Moon className="w-5 h-5" />
@@ -181,7 +181,7 @@ export default function SettingsPage() {
                 <select
                   value={newTagCat}
                   onChange={(e: any) => setNewTagCat(e.target.value)}
-                  className="w-full bg-white/5 border border-white/5 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  className="w-full bg-grey/5 border border-grey/5 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
                 >
                   <option value="preference">Preference</option>
                   <option value="medical">Medical Condition</option>
@@ -222,12 +222,12 @@ export default function SettingsPage() {
                   >
                     <div className="flex items-center gap-3">
                       <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${tag.category === 'medical'
-                          ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                          : tag.category === 'preference'
-                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            : tag.category === 'dislike'
-                              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                              : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                        ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+                        : tag.category === 'preference'
+                          ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                          : tag.category === 'dislike'
+                            ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                            : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
                         }`}>
                         {tag.category}
                       </span>

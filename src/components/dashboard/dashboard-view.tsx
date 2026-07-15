@@ -12,16 +12,30 @@ import {
 import { toast } from 'sonner';
 
 import { useHealthStore } from '@/lib/store';
+import { HealthPipeline } from '@/lib/health-engine/orchestrator/health-pipeline';
+import { BaselineEngine } from '@/lib/health-engine/core/baseline';
+import { AppleProvider } from '@/lib/health-engine/providers/apple';
+import { GarminProvider } from '@/lib/health-engine/providers/garmin';
+import { FitbitProvider } from '@/lib/health-engine/providers/fitbit';
+import { OuraProvider } from '@/lib/health-engine/providers/oura';
+import { ManualProvider } from '@/lib/health-engine/providers/manual';
+import { MockProvider } from '@/lib/health-engine/providers/mock';
 
 export function DashboardView() {
   // --- Persistent Interactive States ---
   const [mounted, setMounted] = React.useState(false);
+  const [explainMetric, setExplainMetric] = React.useState<string | null>(null);
+  const [isManualInputOpen, setIsManualInputOpen] = React.useState(false);
+
   const {
     steps, setSteps,
     sleepHours, setSleepHours,
     hrv, setHrv,
     stressLevel, setStressLevel,
     heartRate, setHeartRate,
+    provider, setProvider,
+    simulatedHour, setSimulatedHour,
+    manualInputs, setManualInputs,
     memoryTags
   } = useHealthStore();
 
@@ -84,12 +98,32 @@ export function DashboardView() {
     }
   }, [steps, sleepHours, hrv, stressLevel, chatHistory, mounted]);
 
-  // --- Wellness Score Calculation ---
-  // Wellness = (Sleep * 10 + HRV + Steps / 250) / StressLevel
-  const sleepWeight = sleepHours * 10;
-  const stepsWeight = steps / 250;
-  const rawWellness = (sleepWeight + hrv + stepsWeight) / stressLevel;
-  const wellnessScore = Math.min(100, Math.max(10, Math.round(rawWellness)));
+  // --- Health Intelligence Engine Run ---
+  const getRawData = () => {
+    switch (provider) {
+      case 'apple': return AppleProvider.getHealthData();
+      case 'garmin': return GarminProvider.getHealthData();
+      case 'fitbit': return FitbitProvider.getHealthData();
+      case 'oura': return OuraProvider.getHealthData();
+      case 'manual': return ManualProvider.getHealthData(manualInputs);
+      case 'mock':
+      default: {
+        const baseMock = MockProvider.getHealthData(simulatedHour);
+        return {
+          ...baseMock,
+          steps,
+          sleepHours,
+          hrv,
+          currentHeartRate: heartRate,
+        };
+      }
+    }
+  };
+
+  const rawData = getRawData();
+  const baseline = BaselineEngine.getBaseline();
+  const pipelineState = HealthPipeline.run(rawData, baseline);
+  const wellnessScore = pipelineState.metrics.wellness.rawScore;
 
   // --- Proactive AURA Trigger ---
   React.useEffect(() => {
@@ -670,26 +704,76 @@ export function DashboardView() {
             )}
           </AnimatePresence>
 
+          {/* Health Alerts Warning Banner if rules find anomalies */}
+          {pipelineState.alerts.length > 0 && (
+            <div className="flex flex-col gap-3 p-4 bg-red-950/45 border border-red-500/20 rounded-3xl relative z-30">
+              {pipelineState.alerts.map((alert) => (
+                <div key={alert.id} className="flex items-start gap-3">
+                  <ShieldAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                  <div>
+                    <h5 className="font-extrabold text-xs text-red-400 uppercase tracking-wider">{alert.title}</h5>
+                    <p className="text-[11px] text-neutral-300 leading-relaxed mt-0.5">{alert.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Controls / Filter Bar */}
-          <div className="flex flex-wrap justify-end items-center gap-2.5 mt-4">
-            <button className="p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 text-neutral-300 hover:text-white transition-colors cursor-pointer">
-              <Search className="w-4 h-4" />
-            </button>
-            <button className="p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 text-neutral-300 hover:text-white transition-colors cursor-pointer">
-              <Edit2 className="w-4 h-4" />
-            </button>
+          <div className="flex flex-wrap justify-end items-center gap-3 mt-4 relative z-30">
+            {/* Sync quality badge */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{pipelineState.provider} sync: {pipelineState.quality}</span>
+            </div>
+
+            {/* Provider Adapter Selector */}
+            <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-3 py-1 text-xs font-semibold text-neutral-200">
+              <span className="text-[10px] text-neutral-400 uppercase tracking-widest mr-1">Source:</span>
+              <select
+                value={provider}
+                onChange={(e: any) => setProvider(e.target.value)}
+                className="bg-transparent border-0 text-white focus:outline-none cursor-pointer pr-4"
+              >
+                <option value="mock" className="bg-neutral-900 text-white">Mock Simulator</option>
+                <option value="apple" className="bg-neutral-900 text-white">Apple HealthKit</option>
+                <option value="garmin" className="bg-neutral-900 text-white">Garmin Connect</option>
+                <option value="fitbit" className="bg-neutral-900 text-white">Fitbit Premium</option>
+                <option value="oura" className="bg-neutral-900 text-white">Oura Ring</option>
+                <option value="manual" className="bg-neutral-900 text-white">Manual Input Mode</option>
+              </select>
+            </div>
+
+            {/* Simulated circadian hour slider if mock is selected */}
+            {provider === 'mock' && (
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs font-semibold text-neutral-200">
+                <span className="text-[10px] text-neutral-400 uppercase tracking-widest">Time: {simulatedHour}:00</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="23"
+                  value={simulatedHour}
+                  onChange={(e) => setSimulatedHour(parseInt(e.target.value))}
+                  className="w-20 accent-orange-500 h-1 bg-white/10 rounded-lg cursor-pointer"
+                />
+              </div>
+            )}
+
+            {/* Manual Override inputs button */}
+            {provider === 'manual' && (
+              <button
+                onClick={() => setIsManualInputOpen(!isManualInputOpen)}
+                className="px-4 py-1.5 bg-orange-500 hover:bg-orange-400 text-black font-extrabold rounded-full text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Log Biometrics
+              </button>
+            )}
 
             {/* Date Range Selector */}
             <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-neutral-200">
               <Calendar className="w-3.5 h-3.5 text-neutral-400" />
               <span>15 - 20 July, 2026</span>
             </div>
-
-            {/* Wallet Button */}
-            <button className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-xs font-medium text-neutral-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5">
-              <Plus className="w-3 h-3" />
-              <span>Add Wallet</span>
-            </button>
 
             {/* Create Report Button */}
             <button className="px-5 py-2 bg-white text-black hover:bg-neutral-100 rounded-full text-xs font-bold tracking-wide transition-colors cursor-pointer shadow-lg">
@@ -705,9 +789,11 @@ export function DashboardView() {
 
               {/* Row 1: Activity, Sleep, Heart */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
                 {/* 1. Activity Card */}
-                <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-white/20 transition-all duration-300 group">
+                <div 
+                  onClick={() => setExplainMetric("stress")} 
+                  className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 group cursor-pointer"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
@@ -716,7 +802,7 @@ export function DashboardView() {
                       <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">Activity</span>
                     </div>
                     {/* Add adjusters */}
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => setSteps(prev => Math.max(0, prev - 1000))} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">-</button>
                       <button onClick={() => setSteps(prev => prev + 1000)} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">+</button>
                     </div>
@@ -756,8 +842,8 @@ export function DashboardView() {
                   {/* Steps footer */}
                   <div className="flex justify-between items-end border-t border-white/5 pt-3">
                     <div>
-                      <h3 className="text-xl font-bold tracking-tight">{steps.toLocaleString()}</h3>
-                      <span className="text-[9px] text-neutral-400 uppercase font-semibold">Steps</span>
+                      <h3 className="text-xl font-bold tracking-tight">{rawData.steps.toLocaleString()}</h3>
+                      <span className="text-[9px] text-neutral-400 uppercase font-semibold">Steps ({pipelineState.metrics.stress.confidence}% conf)</span>
                     </div>
                     {/* Small vertical bar indicators */}
                     <div className="flex gap-1 items-end h-7">
@@ -770,7 +856,10 @@ export function DashboardView() {
                 </div>
 
                 {/* 2. Sleep Card */}
-                <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-white/20 transition-all duration-300">
+                <div 
+                  onClick={() => setExplainMetric("sleep")} 
+                  className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 group cursor-pointer"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
@@ -779,7 +868,7 @@ export function DashboardView() {
                       <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">Sleep</span>
                     </div>
                     {/* Sleep adjusters */}
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => setSleepHours(prev => Math.max(0, prev - 0.25))} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">-</button>
                       <button onClick={() => setSleepHours(prev => prev + 0.25)} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">+</button>
                     </div>
@@ -802,14 +891,17 @@ export function DashboardView() {
 
                   <div className="flex justify-between items-end border-t border-white/5 pt-3">
                     <div>
-                      <h3 className="text-xl font-bold tracking-tight">{sleepHours}h</h3>
-                      <span className="text-[9px] text-neutral-400 uppercase font-semibold">Duration Coordinates</span>
+                      <h3 className="text-xl font-bold tracking-tight">{pipelineState.metrics.sleep.displayValue}</h3>
+                      <span className="text-[9px] text-neutral-400 uppercase font-semibold">Sleep Score: {pipelineState.metrics.sleep.rawScore} ({pipelineState.metrics.sleep.confidence}% conf)</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 3. Heart Card */}
-                <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-white/20 transition-all duration-300">
+                <div 
+                  onClick={() => setExplainMetric("heart")} 
+                  className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 group cursor-pointer"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
@@ -818,7 +910,7 @@ export function DashboardView() {
                       <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">Heart (HRV)</span>
                     </div>
                     {/* HRV adjusters */}
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => setHrv(prev => Math.max(10, prev - 5))} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">-</button>
                       <button onClick={() => setHrv(prev => prev + 5)} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">+</button>
                     </div>
@@ -859,8 +951,8 @@ export function DashboardView() {
 
                   <div className="flex justify-between items-end border-t border-white/5 pt-3">
                     <div>
-                      <h3 className="text-xl font-bold tracking-tight">{heartRate} <span className="text-xs font-normal text-neutral-400">BPM</span></h3>
-                      <span className="text-[9px] text-neutral-400 uppercase font-semibold">{hrv} ms HRV</span>
+                      <h3 className="text-xl font-bold tracking-tight">{pipelineState.metrics.heart.displayValue}</h3>
+                      <span className="text-[9px] text-neutral-400 uppercase font-semibold">{pipelineState.metrics.hrv.displayValue} HRV ({pipelineState.metrics.heart.confidence}% conf)</span>
                     </div>
                   </div>
                 </div>
@@ -871,7 +963,10 @@ export function DashboardView() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* 4. Wellness Score Card */}
-                <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 h-[260px] flex flex-col justify-between relative overflow-hidden group hover:border-white/20 transition-all duration-300">
+                <div 
+                  onClick={() => setExplainMetric("wellness")} 
+                  className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 h-[260px] flex flex-col justify-between relative overflow-hidden group hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
+                >
                   {/* Elegant layered sine wave graphic representing frequency */}
                   <div className="absolute inset-x-0 bottom-14 h-24 pointer-events-none z-0 opacity-40">
                     <svg className="w-full h-full" viewBox="0 0 400 100" fill="none">
@@ -883,7 +978,7 @@ export function DashboardView() {
 
                   <div className="flex justify-between items-center relative z-10">
                     <span className="text-xs font-semibold uppercase tracking-wider text-neutral-300">Wellness Score</span>
-                    <button className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-semibold uppercase tracking-wider">
+                    <button className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-semibold uppercase tracking-wider" onClick={(e) => e.stopPropagation()}>
                       <span>Live</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
@@ -892,12 +987,12 @@ export function DashboardView() {
                   <div className="flex flex-col items-center justify-center my-auto relative z-10 text-center">
                     <h2 className="text-5xl font-black text-white tracking-tight leading-none text-glow">{wellnessScore}</h2>
                     <span className="text-xs font-bold text-orange-400 mt-1.5 uppercase tracking-wide">
-                      {wellnessScore >= 80 ? 'Optimal Performance' : wellnessScore >= 70 ? 'Stable Condition' : 'Critically Low Recovery'}
+                      {pipelineState.metrics.wellness.status === "Excellent" ? "Optimal Performance" : pipelineState.metrics.wellness.status === "Good" ? "Stable Condition" : "Requires Rest"}
                     </span>
                     <span className="text-[10px] text-neutral-400 mt-0.5">Responsive Bio-Logic Engine</span>
                   </div>
 
-                  <div className="flex justify-between items-center border-t border-white/5 pt-4 text-xs relative z-10">
+                  <div className="flex justify-between items-center border-t border-white/5 pt-4 text-xs relative z-10" onClick={(e) => e.stopPropagation()}>
                     <div className="text-left">
                       <span className="text-[8px] text-neutral-500 block uppercase tracking-wider font-bold">Sleep quality</span>
                       <span className="font-semibold text-neutral-200">{sleepHours}h</span>
@@ -920,7 +1015,10 @@ export function DashboardView() {
                 </div>
 
                 {/* 5. Focus Activity Card */}
-                <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 h-[260px] flex flex-col justify-between relative overflow-hidden group hover:border-white/20 transition-all duration-300">
+                <div 
+                  onClick={() => setExplainMetric("focus")} 
+                  className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 h-[260px] flex flex-col justify-between relative overflow-hidden group hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
+                >
 
                   {/* High density vertical signal strength graph representing focus flow */}
                   <div className="absolute inset-x-6 bottom-16 h-14 flex items-end justify-center gap-[3px] opacity-15 pointer-events-none">
@@ -932,19 +1030,19 @@ export function DashboardView() {
 
                   <div className="flex justify-between items-center relative z-10">
                     <span className="text-xs font-semibold uppercase tracking-wider text-neutral-300">Focus Activity</span>
-                    <button className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-semibold uppercase tracking-wider">
+                    <button className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-semibold uppercase tracking-wider" onClick={(e) => e.stopPropagation()}>
                       <span>Daily</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
                   <div className="flex flex-col items-center justify-center my-auto relative z-10 text-center">
-                    <h2 className="text-5xl font-black text-white tracking-tight leading-none">73</h2>
+                    <h2 className="text-5xl font-black text-white tracking-tight leading-none">{pipelineState.metrics.focus.rawScore}</h2>
                     <span className="text-xs font-bold text-orange-400 mt-1.5 uppercase tracking-wide">Focus Score</span>
-                    <span className="text-[10px] text-neutral-400 mt-0.5">Deep Work 14.5h</span>
+                    <span className="text-[10px] text-neutral-400 mt-0.5">Deep Work {(rawData.deepWorkMin ?? 240) / 60}h</span>
                   </div>
 
-                  <div className="flex justify-between items-center border-t border-white/5 pt-4 text-xs relative z-10">
+                  <div className="flex justify-between items-center border-t border-white/5 pt-4 text-xs relative z-10" onClick={(e) => e.stopPropagation()}>
                     <div className="text-left">
                       <span className="text-[8px] text-neutral-500 block uppercase tracking-wider font-bold">Avg Session</span>
                       <span className="font-semibold text-neutral-200">42 min</span>
@@ -955,7 +1053,7 @@ export function DashboardView() {
                     </button>
                     <div className="text-right">
                       <span className="text-[8px] text-neutral-500 block uppercase tracking-wider font-bold">Deep Work</span>
-                      <span className="font-semibold text-neutral-200">14.5h</span>
+                      <span className="font-semibold text-neutral-200">{(rawData.deepWorkMin ?? 240) / 60}h</span>
                     </div>
                   </div>
                 </div>
@@ -968,7 +1066,10 @@ export function DashboardView() {
             <div className="lg:col-span-4 h-full">
 
               {/* 6. Balanced Energy & Recovery State tall card */}
-              <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[36px] overflow-hidden flex flex-col justify-between h-full min-h-[540px] relative group hover:border-white/20 transition-all duration-300">
+              <div 
+                onClick={() => setExplainMetric("stress")} 
+                className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[36px] overflow-hidden flex flex-col justify-between h-full min-h-[540px] relative group hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
+              >
                 {/* Forest background at the bottom matching mockup */}
                 <div
                   className="absolute inset-0 bg-cover bg-bottom opacity-25 mix-blend-luminosity pointer-events-none z-0"
@@ -978,7 +1079,7 @@ export function DashboardView() {
                 />
 
                 {/* Top header row inside card: Pill buttons */}
-                <div className="p-5 relative z-10">
+                <div className="p-5 relative z-10" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-between items-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-full p-1.5 max-w-[285px] mx-auto shadow-inner">
                     {[
                       { icon: Flame, color: 'text-orange-500' },
@@ -1026,8 +1127,8 @@ export function DashboardView() {
                       <line
                         x1="100"
                         y1="110"
-                        x2={100 + Math.cos((Math.PI - (stressLevel - 1) * (Math.PI / 4))) * 48}
-                        y2={110 - Math.sin((Math.PI - (stressLevel - 1) * (Math.PI / 4))) * 48}
+                        x2={100 + Math.cos((Math.PI - (pipelineState.metrics.stress.gaugeValue - 1) * (Math.PI / 4))) * 48}
+                        y2={110 - Math.sin((Math.PI - (pipelineState.metrics.stress.gaugeValue - 1) * (Math.PI / 4))) * 48}
                         stroke="#ffffff"
                         strokeWidth="2.5"
                         strokeLinecap="round"
@@ -1038,12 +1139,12 @@ export function DashboardView() {
                     {/* Speedometer center text labels */}
                     <div className="absolute bottom-4 flex flex-col items-center">
                       <span className="text-[9px] text-neutral-400 uppercase tracking-widest font-semibold">Stress Index</span>
-                      <h2 className="text-3xl font-extrabold text-white tracking-tight">{stressLevel} / 5.0</h2>
+                      <h2 className="text-3xl font-extrabold text-white tracking-tight">{pipelineState.metrics.stress.displayValue}</h2>
                     </div>
                   </div>
 
                   {/* Stress Level adjusters */}
-                  <div className="flex justify-center gap-3 mt-2 relative z-20">
+                  <div className="flex justify-center gap-3 mt-2 relative z-20" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setStressLevel(prev => Math.max(1.0, parseFloat((prev - 0.2).toFixed(1))))}
                       className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[9px] transition-colors cursor-pointer uppercase font-bold text-neutral-300"
@@ -1083,6 +1184,224 @@ export function DashboardView() {
         </div>
 
       </div>
+
+      {/* --- EXPLAINABILITY DETAIL DIALOG --- */}
+      <AnimatePresence>
+        {explainMetric && pipelineState.metrics[explainMetric] && (
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg aura-overlay backdrop-blur-3xl rounded-[32px] p-6 border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.8)] text-white"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-white/5">
+                <div>
+                  <h4 className="font-extrabold text-base tracking-wider uppercase">{pipelineState.metrics[explainMetric].title} Intelligence</h4>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-widest">Algorithm Engine Version: 1.0.0</span>
+                </div>
+                <button
+                  onClick={() => setExplainMetric(null)}
+                  className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4.5 h-4.5" />
+                </button>
+              </div>
+
+              <div className="my-6 space-y-5">
+                <div className="flex justify-between items-end bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <div>
+                    <span className="text-[10px] text-neutral-400 block uppercase font-bold">Today's score</span>
+                    <span className="text-3xl font-black text-white">{pipelineState.metrics[explainMetric].displayValue}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-neutral-400 block uppercase font-bold">Calculation Confidence</span>
+                    <span className="text-sm font-extrabold text-orange-400">{pipelineState.metrics[explainMetric].confidence}%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h5 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">How was this calculated?</h5>
+                  <p className="text-xs text-neutral-300 leading-relaxed bg-black/25 p-3.5 rounded-xl border border-white/5">
+                    {pipelineState.metrics[explainMetric].explanation}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h5 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">Contributing Factors</h5>
+                  <div className="space-y-2">
+                    {pipelineState.metrics[explainMetric].factors.map((factor, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-xs bg-white/5 px-3.5 py-2.5 rounded-xl">
+                        <span className="text-neutral-300">{factor.metric}</span>
+                        <span className={`font-bold ${factor.contribution >= 0 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                          {factor.contribution >= 0 ? `+${factor.contribution}` : factor.contribution}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setExplainMetric(null)}
+                className="w-full py-3 bg-white hover:bg-neutral-100 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Close Explanation
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MANUAL BIOMETRICS INPUT OVERLAY --- */}
+      <AnimatePresence>
+        {isManualInputOpen && (
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-xl aura-overlay backdrop-blur-3xl rounded-[32px] p-6 border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.8)] text-white"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-white/5">
+                <div>
+                  <h4 className="font-extrabold text-base tracking-wider uppercase">Log Daily Biometrics</h4>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-widest">Manual entry will recalculate all GAMA scores</span>
+                </div>
+                <button
+                  onClick={() => setIsManualInputOpen(false)}
+                  className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4.5 h-4.5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 my-6 max-h-[380px] overflow-y-auto pr-2 scrollbar-thin">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Steps Counter</label>
+                  <input
+                    type="number"
+                    value={manualInputs.steps ?? 10000}
+                    onChange={(e) => setManualInputs({ steps: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Sleep Duration (hrs)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={manualInputs.sleepHours ?? 7.0}
+                    onChange={(e) => setManualInputs({ sleepHours: parseFloat(e.target.value) || 0 })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Heart Rate Variability (ms)</label>
+                  <input
+                    type="number"
+                    value={manualInputs.hrv ?? 60}
+                    onChange={(e) => setManualInputs({ hrv: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Resting Heart Rate (bpm)</label>
+                  <input
+                    type="number"
+                    value={manualInputs.restingHeartRate ?? 65}
+                    onChange={(e) => setManualInputs({ restingHeartRate: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Current Heart Rate (bpm)</label>
+                  <input
+                    type="number"
+                    value={manualInputs.currentHeartRate ?? 70}
+                    onChange={(e) => setManualInputs({ currentHeartRate: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Blood Oxygen Saturation (%)</label>
+                  <input
+                    type="number"
+                    value={manualInputs.bloodOxygen ?? 98}
+                    onChange={(e) => setManualInputs({ bloodOxygen: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Blood Pressure (Systolic)</label>
+                  <input
+                    type="number"
+                    value={manualInputs.systolic ?? 120}
+                    onChange={(e) => setManualInputs({ systolic: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Blood Pressure (Diastolic)</label>
+                  <input
+                    type="number"
+                    value={manualInputs.diastolic ?? 80}
+                    onChange={(e) => setManualInputs({ diastolic: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5 text-left">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Water Intake (ml)</label>
+                  <input
+                    type="number"
+                    value={manualInputs.waterIntakeMl ?? 1500}
+                    onChange={(e) => setManualInputs({ waterIntakeMl: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5 text-left">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold font-sans">Mood Rating (1 to 5)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={manualInputs.mood ?? 3}
+                    onChange={(e) => setManualInputs({ mood: parseInt(e.target.value) || 3 })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    toast.success("Manual biometrics successfully saved!");
+                    setIsManualInputOpen(false);
+                  }}
+                  className="flex-1 py-3 bg-orange-500 hover:bg-orange-400 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Save Log
+                </button>
+                <button
+                  onClick={() => setIsManualInputOpen(false)}
+                  className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer text-white"
+                >
+                  Discard
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
