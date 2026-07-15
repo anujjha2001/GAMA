@@ -1,6 +1,12 @@
 'use client';
 
 import * as React from 'react';
+feature-dashboard
+import AuthPage from '../auth/page';
+
+export default function RegisterPage() {
+  return <AuthPage initialMode="register" />;
+
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -196,4 +202,5 @@ export default function RegisterPage() {
       </motion.div>
     </div>
   );
+    develop
 }
