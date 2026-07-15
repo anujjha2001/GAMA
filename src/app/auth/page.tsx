@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
- feature-dashboard
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -422,21 +421,6 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
           {/* Dark gradient overlay to match image vibe */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#0c0f17] via-transparent to-transparent opacity-80" />
         </div>
-
-
-export default function AuthPage() {
-  const router = useRouter();
-
-  React.useEffect(() => {
-    router.replace('/login');
-  }, [router]);
-
-  return (
-    <div className="min-h-screen bg-[#07090e] flex items-center justify-center text-white">
-      <div className="flex flex-col items-center gap-4">
-        <span className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-gray-400">Redirecting to login portal...</p>
-develop
       </div>
     </div>
   );
