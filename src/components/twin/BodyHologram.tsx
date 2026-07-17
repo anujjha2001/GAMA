@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface BodyHologramProps {
@@ -10,184 +11,153 @@ interface BodyHologramProps {
   heartRate: number;
   hrv: number;
   showPedestal?: boolean;
+  onOrganClick?: (organ: string) => void;
 }
 
-export function BodyHologram({ activeSystem, stressLevel, heartRate, hrv, showPedestal = false }: BodyHologramProps) {
+// A component that displays the generated AI image as a glowing sprite
+function HologramSprite({ activeSystem, stressLevel, heartRate, onOrganClick }: { activeSystem: string, stressLevel: number, heartRate: number, onOrganClick?: (organ: string) => void }) {
   const groupRef = useRef<THREE.Group>(null);
-  const chestRef = useRef<THREE.Mesh>(null);
+  const spriteRef = useRef<THREE.Mesh>(null);
+  
+  // Load the AI-generated texture
+  const texture = useTexture('/hologram.png');
 
   useFrame((state) => {
     if (!groupRef.current) return;
     const time = state.clock.getElapsedTime();
     
-    // Slow cinematic rotation
-    groupRef.current.rotation.y = Math.sin(time * 0.2) * 0.2;
-    groupRef.current.position.y = Math.sin(time * 1.5) * 0.05; // Hover
+    // Slow cinematic hover
+    groupRef.current.position.y = Math.sin(time * 1.5) * 0.05; // Hover without dropping down
     
-    // Breathing animation on chest
-    if (chestRef.current) {
-      const breathRate = 1.0 + (stressLevel / 10);
-      const breath = Math.sin(time * breathRate) * 0.03;
-      chestRef.current.scale.set(1 + breath, 1 + breath * 0.5, 1 + breath * 1.5);
+    // Breathing animation on scale
+    const breathRate = 1.0 + (stressLevel / 10);
+    const breath = Math.sin(time * breathRate) * 0.015;
+    groupRef.current.scale.set(1 + breath, 1 + breath * 0.5, 1);
+
+    if (activeSystem === 'cardiovascular') {
+      const beatRate = (heartRate / 60) * Math.PI * 2;
+      const beat = Math.pow(Math.sin(time * beatRate), 8) * 0.02;
+      groupRef.current.scale.addScalar(beat);
     }
   });
 
-  // Base holographic material
-  const bodyMaterial = new THREE.MeshPhysicalMaterial({
-    color: '#0ea5e9',
-    emissive: '#0369a1',
-    emissiveIntensity: 0.5,
-    metalness: 0.8,
-    roughness: 0.2,
-    transmission: 0.9,
-    thickness: 0.5,
-    transparent: true,
-    opacity: 0.8,
-    wireframe: false,
-    clearcoat: 1,
-  });
-
-  // Inner core material (simulates glowing organs/energy)
-  const coreMaterial = new THREE.MeshBasicMaterial({
-    color: activeSystem === 'nervous' ? '#a855f7' : 
-           activeSystem === 'cardiovascular' ? '#f43f5e' : 
-           activeSystem === 'respiratory' ? '#06b6d4' : 
-           activeSystem === 'metabolic' ? '#10b981' : '#f59e0b',
-    transparent: true,
-    opacity: 0.6,
-    blending: THREE.AdditiveBlending
-  });
+  // Calculate dynamic color tint based on the active system
+  let tintColor = '#ffffff'; // Default base (texture colors are preserved)
+  if (activeSystem === 'nervous') tintColor = '#c084fc';
+  if (activeSystem === 'cardiovascular') tintColor = '#fb7185';
+  if (activeSystem === 'metabolic') tintColor = '#34d399';
+  if (activeSystem === 'musculoskeletal') tintColor = '#fbbf24';
 
   return (
-    <group position={[0, -0.5, 0]}>
-      <group ref={groupRef} position={[0, 0, 0]}>
-        
-        {/* Head */}
-        <mesh position={[0, 2.8, 0]} material={bodyMaterial}>
-          <sphereGeometry args={[0.3, 32, 32]} />
-          {activeSystem === 'nervous' && (
-            <mesh scale={0.8} material={coreMaterial}>
-              <sphereGeometry args={[0.3, 16, 16]} />
-            </mesh>
-          )}
-        </mesh>
-        
-        {/* Neck */}
-        <mesh position={[0, 2.4, 0]} material={bodyMaterial}>
-          <cylinderGeometry args={[0.1, 0.15, 0.3, 16]} />
-        </mesh>
+    <group ref={groupRef}>
+      <mesh ref={spriteRef}>
+        <planeGeometry args={[3, 3]} />
+        <meshBasicMaterial 
+          map={texture} 
+          transparent={true} 
+          blending={THREE.AdditiveBlending} 
+          depthWrite={false}
+          color={tintColor}
+        />
+      </mesh>
 
-        {/* Torso (Chest + Abdomen) */}
-        <mesh ref={chestRef} position={[0, 1.5, 0]} material={bodyMaterial}>
-          <capsuleGeometry args={[0.45, 0.8, 16, 32]} />
-          {/* Inner Core / Heart / Lungs */}
-          {(activeSystem === 'cardiovascular' || activeSystem === 'respiratory' || activeSystem === 'metabolic') && (
-            <mesh scale={0.7} position={[0, activeSystem === 'metabolic' ? -0.2 : 0.2, 0.1]} material={coreMaterial}>
-              <sphereGeometry args={[0.4, 16, 16]} />
-            </mesh>
-          )}
+      {/* Interactive Organ Hotspots */}
+      <group position={[0, 0, 0.1]}>
+        {/* Brain */}
+        <mesh 
+          position={[0, 1.25, 0]} 
+          onClick={(e) => { e.stopPropagation(); onOrganClick?.('nervous'); }}
+          onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
+          onPointerOut={(e) => { document.body.style.cursor = 'default'; }}
+          visible={false}
+        >
+          <sphereGeometry args={[0.2, 16, 16]} />
+          <meshBasicMaterial transparent opacity={0} />
         </mesh>
 
-        {/* Shoulders & Arms */}
-        {/* Left Arm */}
-        <group position={[-0.6, 2.0, 0]} rotation={[0, 0, -0.2]}>
-          <mesh position={[0, -0.4, 0]} material={bodyMaterial}>
-            <capsuleGeometry args={[0.12, 0.6, 16, 16]} />
-          </mesh>
-          <mesh position={[0, -1.2, 0]} material={bodyMaterial}>
-            <capsuleGeometry args={[0.1, 0.6, 16, 16]} />
-          </mesh>
-        </group>
-
-        {/* Right Arm */}
-        <group position={[0.6, 2.0, 0]} rotation={[0, 0, 0.2]}>
-          <mesh position={[0, -0.4, 0]} material={bodyMaterial}>
-            <capsuleGeometry args={[0.12, 0.6, 16, 16]} />
-          </mesh>
-          <mesh position={[0, -1.2, 0]} material={bodyMaterial}>
-            <capsuleGeometry args={[0.1, 0.6, 16, 16]} />
-          </mesh>
-        </group>
-
-        {/* Pelvis */}
-        <mesh position={[0, 0.6, 0]} material={bodyMaterial}>
-          <capsuleGeometry args={[0.4, 0.2, 16, 32]} />
+        {/* Lungs */}
+        <mesh 
+          position={[0, 0.7, 0]} 
+          onClick={(e) => { e.stopPropagation(); onOrganClick?.('respiratory'); }}
+          onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
+          onPointerOut={(e) => { document.body.style.cursor = 'default'; }}
+          visible={false}
+        >
+          <sphereGeometry args={[0.25, 16, 16]} />
+          <meshBasicMaterial transparent opacity={0} />
         </mesh>
 
-        {/* Legs */}
-        {/* Left Leg */}
-        <group position={[-0.25, 0.4, 0]} rotation={[0, 0, -0.05]}>
-          <mesh position={[0, -0.6, 0]} material={bodyMaterial}>
-            <capsuleGeometry args={[0.18, 0.8, 16, 16]} />
-          </mesh>
-          <mesh position={[0, -1.7, 0]} material={bodyMaterial}>
-            <capsuleGeometry args={[0.14, 0.9, 16, 16]} />
-          </mesh>
-        </group>
+        {/* Heart */}
+        <mesh 
+          position={[0.1, 0.6, 0.05]} 
+          onClick={(e) => { e.stopPropagation(); onOrganClick?.('cardiovascular'); }}
+          onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
+          onPointerOut={(e) => { document.body.style.cursor = 'default'; }}
+          visible={false}
+        >
+          <sphereGeometry args={[0.15, 16, 16]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
 
-        {/* Right Leg */}
-        <group position={[0.25, 0.4, 0]} rotation={[0, 0, 0.05]}>
-          <mesh position={[0, -0.6, 0]} material={bodyMaterial}>
-            <capsuleGeometry args={[0.18, 0.8, 16, 16]} />
-          </mesh>
-          <mesh position={[0, -1.7, 0]} material={bodyMaterial}>
-            <capsuleGeometry args={[0.14, 0.9, 16, 16]} />
-          </mesh>
-        </group>
+        {/* Gut / Metabolic */}
+        <mesh 
+          position={[0, 0.2, 0]} 
+          onClick={(e) => { e.stopPropagation(); onOrganClick?.('metabolic'); }}
+          onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
+          onPointerOut={(e) => { document.body.style.cursor = 'default'; }}
+          visible={false}
+        >
+          <sphereGeometry args={[0.3, 16, 16]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
 
+        {/* Musculoskeletal (Legs area hotspot) */}
+        <mesh 
+          position={[0, -0.6, 0]} 
+          onClick={(e) => { e.stopPropagation(); onOrganClick?.('musculoskeletal'); }}
+          onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
+          onPointerOut={(e) => { document.body.style.cursor = 'default'; }}
+          visible={false}
+        >
+          <boxGeometry args={[0.6, 1.2, 0.2]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
       </group>
-
-      {/* Sci-Fi Pedestal */}
-      {showPedestal && (
-        <group position={[0, -1.5, 0]}>
-          {/* Outer glowing ring */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[1.5, 1.55, 64]} />
-            <meshBasicMaterial color="#06b6d4" transparent opacity={0.5} side={THREE.DoubleSide} />
-          </mesh>
-          {/* Inner glowing ring */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-            <ringGeometry args={[1.2, 1.22, 64]} />
-            <meshBasicMaterial color="#3b82f6" transparent opacity={0.3} side={THREE.DoubleSide} />
-          </mesh>
-          {/* Dashed ring */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
-            <ringGeometry args={[1.0, 1.05, 32, 1, 0, Math.PI * 2]} />
-            <meshBasicMaterial color="#a855f7" transparent opacity={0.4} side={THREE.DoubleSide} wireframe />
-          </mesh>
-          {/* Ground glow */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
-            <circleGeometry args={[1.6, 64]} />
-            <meshBasicMaterial color="#06b6d4" transparent opacity={0.05} />
-          </mesh>
-        </group>
-      )}
     </group>
   );
 }
 
+export function BodyHologram({ activeSystem, stressLevel, heartRate, hrv, showPedestal = false, onOrganClick }: BodyHologramProps) {
+  return (
+    <group position={[0, 0.15, 0]} scale={1.25}>
+      
+      {/* The AI Generated 2D Hologram */}
+      <React.Suspense fallback={null}>
+        <HologramSprite activeSystem={activeSystem} stressLevel={stressLevel} heartRate={heartRate} onOrganClick={onOrganClick} />
+      </React.Suspense>
+
       {/* Sci-Fi Pedestal */}
       {showPedestal && (
-        <group position={[0, -2, 0]}>
+        <group position={[0, -1.45, 0]}>
           {/* Outer glowing ring */}
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[1.5, 1.55, 64]} />
-            <meshBasicMaterial color="#06b6d4" transparent opacity={0.5} side={THREE.DoubleSide} />
+            <meshBasicMaterial color="#f97316" transparent opacity={0.5} side={THREE.DoubleSide} />
           </mesh>
           {/* Inner glowing ring */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
             <ringGeometry args={[1.2, 1.22, 64]} />
-            <meshBasicMaterial color="#3b82f6" transparent opacity={0.3} side={THREE.DoubleSide} />
+            <meshBasicMaterial color="#f59e0b" transparent opacity={0.3} side={THREE.DoubleSide} />
           </mesh>
           {/* Dashed ring */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
             <ringGeometry args={[1.0, 1.05, 32, 1, 0, Math.PI * 2]} />
-            <meshBasicMaterial color="#a855f7" transparent opacity={0.4} side={THREE.DoubleSide} wireframe />
+            <meshBasicMaterial color="#fb923c" transparent opacity={0.4} side={THREE.DoubleSide} wireframe />
           </mesh>
           {/* Ground glow */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
             <circleGeometry args={[1.6, 64]} />
-            <meshBasicMaterial color="#06b6d4" transparent opacity={0.05} />
+            <meshBasicMaterial color="#f97316" transparent opacity={0.05} />
           </mesh>
         </group>
       )}

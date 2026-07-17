@@ -19,6 +19,15 @@ export default function DashboardLayout({
 
   React.useEffect(() => {
     setMounted(true);
+    // Fetch logged in user profile data to sync with database
+    fetch('/api/auth')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.user) {
+          localStorage.setItem('gama_user_name', data.user.fullName);
+        }
+      })
+      .catch((err) => console.error('Failed to sync user session:', err));
   }, []);
 
   const handleLogout = async () => {

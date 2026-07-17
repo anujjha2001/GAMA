@@ -14,9 +14,16 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer
 export default function DigitalTwinPage() {
   const [mounted, setMounted] = React.useState(false);
   const [activeSystemId, setActiveSystemId] = React.useState('nervous');
-  const { steps, sleepHours, hrv, stressLevel, heartRate, user } = useHealthStore();
+  const { steps, sleepHours, hrv, stressLevel, heartRate } = useHealthStore();
+  const [userName, setUserName] = React.useState('AURA User');
 
-  React.useEffect(() => setMounted(true), []);
+  React.useEffect(() => {
+    setMounted(true);
+    const storedName = localStorage.getItem('gama_user_name');
+    if (storedName) {
+      setUserName(storedName);
+    }
+  }, []);
   if (!mounted) return null;
 
   // Mock data for charts
@@ -43,7 +50,7 @@ export default function DigitalTwinPage() {
       {/* Top Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">Good Evenning, {user?.name || 'AURA User'} <span className="text-xl"></span></h1>
+          <h1 className="text-xl font-bold flex items-center gap-2">Good Evenning, {userName} <span className="text-xl"></span></h1>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -61,7 +68,7 @@ export default function DigitalTwinPage() {
       </div>
 
       {/* 3-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 h-full">
 
         {/* COLUMN 1: Health Analytics (Span 3) */}
         <div className="lg:col-span-3 space-y-6 flex flex-col">
@@ -69,7 +76,7 @@ export default function DigitalTwinPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Health<br />Analytics</h2>
             <div className="px-3 py-1 bg-black/40 border border-white/10 rounded-full flex items-center gap-2 text-xs text-neutral-400">
-              <Calendar className="w-3 h-3" /> Today, 20 May
+              <Calendar className="w-3 h-3" /> Today, 15 july
             </div>
           </div>
 
@@ -239,8 +246,8 @@ export default function DigitalTwinPage() {
               gl={{ antialias: true, alpha: true }}
             >
               <ambientLight intensity={1.5} />
-              <directionalLight position={[5, 10, 5]} intensity={1.5} color="#d26907ff" />
-              <directionalLight position={[-5, 5, -5]} intensity={0.8} color="#000000ff" />
+              <directionalLight position={[5, 10, 5]} intensity={1.5} color="#d26907" />
+              <directionalLight position={[-5, 5, -5]} intensity={0.8} color="#000000" />
 
               <BodyHologram
                 activeSystem={activeSystemId}
@@ -272,11 +279,11 @@ export default function DigitalTwinPage() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full overflow-hidden p-0.5">
                 <div className="w-full h-full bg-black rounded-full flex items-center justify-center text-xs font-bold">
-                  {user?.name?.[0] || 'U'}
+                  {userName?.[0] || 'U'}
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-bold">{user?.name || 'AURA User'}</h3>
+                <h3 className="text-sm font-bold">{userName || 'AURA User'}</h3>
                 <p className="text-[10px] text-neutral-400">Male • 23 Years</p>
               </div>
             </div>
