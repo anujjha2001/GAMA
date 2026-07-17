@@ -23,6 +23,12 @@ export async function executeTool(toolName: string, args: any): Promise<ToolResu
       case 'CalculateProtein':
         return { toolName, data: { target: '150g', consumed: '80g', remaining: '70g' } };
 
+      case 'GetRecovery':
+        return { toolName, data: { score: 82, reasons: ['Slept well', 'Hydration good'] } };
+
+      case 'GetRecommendations':
+        return { toolName, data: { recommendations: ['Focus on zone 2 cardio today', 'Increase water intake'] } };
+
       // Add remaining tools...
       default:
         console.warn(`[AURA Tools] Tool ${toolName} not registered or implemented.`);

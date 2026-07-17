@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useHealthStore, VaultDoc } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   FileText, Upload, Sparkles, Plus, Check, Clock, ShieldCheck, Download, Calendar, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -33,36 +33,56 @@ export default function VaultPage() {
     triggerScanSimulation(file.name, sizeString);
   };
 
-  const triggerScanSimulation = (name: string, size: string) => {
+  const triggerScanSimulation = async (name: string, size: string) => {
     // 1. Upload to store as scanning
     uploadDocument(name, size);
     toast.info(`Uploading and indexing "${name}"...`);
 
     // Let the new document be the active one
     setTimeout(() => {
-      // Find the newly added doc (it is at index 0 because of uploadDocument logic)
       const latestDoc = useHealthStore.getState().documents[0];
       if (latestDoc) setActiveDocId(latestDoc.id);
     }, 100);
 
-    // 2. Scan simulation timeline
-    setTimeout(() => {
-      const latestDoc = useHealthStore.getState().documents[0];
-      if (!latestDoc) return;
+    try {
+      const res = await fetch('/api/analyze-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: name, fileSize: size })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
 
-      const mockGoals = [
+      // Extract goals and plan from database response
+      const extractedGoals = data.result.summary.goals || [
         'Maintain daily activity volume above 12,000 steps',
         'Incorporate 25g dietary fiber daily to assist digestion',
         'Limit caffeine intake after 14:00'
       ];
-      const mockPlan = [
+      const actionPlan = data.result.summary.plan || [
         { title: 'Aerobic volume maintenance', description: 'Consistent active minutes during daylight peak', schedule: 'Daily' },
         { title: 'Fiber Enrichment Focus', description: 'Incorporate ground flaxseeds, chia, and raw greens', schedule: 'Meals' }
       ];
 
-      updateDocStatus(latestDoc.id, 'analyzed', mockGoals, mockPlan);
+      updateDocStatus(data.report.id, 'analyzed', extractedGoals, actionPlan);
       toast.success(`AURA finished scanning "${name}". Extracted health plan successfully!`);
-    }, 3500);
+    } catch (e: any) {
+      console.error(e);
+      // Fallback local timeout if server fails
+      setTimeout(() => {
+        const latestDoc = useHealthStore.getState().documents[0];
+        if (!latestDoc) return;
+        const mockGoals = [
+          'Maintain daily activity volume above 12,000 steps',
+          'Incorporate 25g dietary fiber daily to assist digestion'
+        ];
+        const mockPlan = [
+          { title: 'Aerobic volume maintenance', description: 'Consistent active minutes during daylight peak', schedule: 'Daily' }
+        ];
+        updateDocStatus(latestDoc.id, 'analyzed', mockGoals, mockPlan);
+        toast.success(`AURA finished scanning "${name}" (local fallback).`);
+      }, 3500);
+    }
   };
 
   const handleSyncToMemory = (goal: string) => {
@@ -92,10 +112,9 @@ export default function VaultPage() {
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-2">Secure Upload Portal</h3>
 
           {/* Upload Dropzone */}
-          <div 
-            className={`border-2 border-dashed rounded-[24px] p-6 text-center transition-all ${
-              isDragging ? 'border-orange-500 bg-orange-500/5' : 'border-white/10 hover:border-orange-500/40 bg-black/35'
-            }`}
+          <div
+            className={`border-2 border-dashed rounded-[24px] p-6 text-center transition-all ${isDragging ? 'border-orange-500 bg-orange-500/5' : 'border-white/10 hover:border-orange-500/40 bg-black/35'
+              }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={(e) => {
@@ -126,7 +145,7 @@ export default function VaultPage() {
           {/* Document list */}
           <div className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-2">Document Index</h3>
-            
+
             <div className="space-y-2">
               <AnimatePresence>
                 {documents.map((doc) => {
@@ -135,11 +154,10 @@ export default function VaultPage() {
                     <motion.div
                       key={doc.id}
                       onClick={() => setActiveDocId(doc.id)}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 justify-between ${
-                        isActive 
-                          ? 'bg-white/10 border-orange-500/30 shadow-md ring-1 ring-orange-500/20 text-white' 
-                          : 'bg-black/35 border-white/5 hover:border-white/10 text-neutral-300 hover:text-white'
-                      }`}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 justify-between ${isActive
+                        ? 'bg-white/10 border-orange-500/30 shadow-md ring-1 ring-orange-500/20 text-white'
+                        : 'bg-black/35 border-white/5 hover:border-white/10 text-neutral-300 hover:text-white'
+                        }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-9 h-9 rounded-xl bg-orange-500/5 border border-orange-500/20 flex items-center justify-center text-orange-500 shrink-0">
@@ -179,17 +197,16 @@ export default function VaultPage() {
                 <div className="flex justify-between items-start gap-4">
                   <div className="space-y-1">
                     <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Extracted Clinical Insights
+                      Extracted Clinical Insights
                     </span>
                     <h2 className="text-xl font-bold">{activeDoc.name}</h2>
                     <p className="text-xs text-muted-foreground">Uploaded: {activeDoc.uploadDate} • {activeDoc.fileSize}</p>
                   </div>
-                  
-                  <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider ${
-                    activeDoc.status === 'scanning'
-                      ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
-                      : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                  }`}>
+
+                  <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider ${activeDoc.status === 'scanning'
+                    ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
+                    : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                    }`}>
                     {activeDoc.status}
                   </span>
                 </div>

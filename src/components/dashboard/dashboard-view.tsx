@@ -4,8 +4,9 @@ import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Moon, Heart, Search, Edit2, Plus, Calendar, ChevronRight,
-  Flame, Zap, Award, Mic, MicOff, Camera, RefreshCw, Send, Check, X, ShieldAlert
+  Flame, Zap, Award, Mic, MicOff, Camera, RefreshCw, Send, Check, X, ShieldAlert, TrendingUp, Play, ActivitySquare, HeartPulse, Sparkles, BrainCircuit
 } from 'lucide-react';
+import { AuraChatPanel } from '@/components/aura/AuraChatPanel';
 import {
   ResponsiveContainer, AreaChart, Area
 } from 'recharts';
@@ -138,7 +139,13 @@ export function DashboardView() {
             <span className="text-xs font-bold uppercase tracking-widest">AURA Proactive Alert</span>
           </div>
           <p className="text-xs text-neutral-200 leading-normal">
-            Your recovery metrics are low today, Alvie. I've adjusted your training plan to a light stretch to optimize your heart rate variability.
+            Your recovery metrics are low today, {(() => {
+              if (typeof window !== 'undefined') {
+                const storedName = localStorage.getItem('gama_user_name');
+                if (storedName) return storedName.split(' ')[0];
+              }
+              return 'Alvie';
+            })()}. I've adjusted your training plan to a light stretch to optimize your heart rate variability.
           </p>
           <div className="flex gap-2">
             <button
@@ -558,151 +565,27 @@ export function DashboardView() {
               <div className="flex items-center gap-2.5">
                 <img
                   src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=120&auto=format&fit=crop"
-                  alt="Alvie Wahed"
+                  alt="User Avatar"
                   className="w-8 h-8 rounded-full object-cover border border-white/20"
                 />
                 <div className="text-left">
-                  <h4 className="text-xs font-semibold text-white leading-tight">Alvie Wahed</h4>
-                  <span className="text-[9px] text-neutral-400 leading-none">Product Manager</span>
+                  <h4 className="text-xs font-semibold text-white leading-tight">
+                    {(() => {
+                      if (typeof window !== 'undefined') {
+                        const storedName = localStorage.getItem('gama_user_name');
+                        if (storedName) return storedName;
+                      }
+                      return 'Alvie Wahed';
+                    })()}
+                  </h4>
+                  <span className="text-[9px] text-neutral-400 leading-none"></span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* --- AURA GLASSMORPHIC CHAT OVERLAY --- */}
-          <AnimatePresence>
-            {isChatOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="w-full max-w-4xl mx-auto aura-overlay backdrop-blur-3xl rounded-[32px] border border-white/10 p-5 md:p-6 shadow-2xl relative z-40 mt-1 flex flex-col gap-4 overflow-hidden"
-              >
-                <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                    <span className="text-[10px] font-extrabold text-orange-500 uppercase tracking-widest">AURA Biometric Brain Coordinates</span>
-                  </div>
-                  <button
-                    onClick={() => setIsChatOpen(false)}
-                    className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer font-bold uppercase tracking-wider"
-                  >
-                    Minimize
-                  </button>
-                </div>
-
-                {/* Chat Message Window */}
-                <div className="max-h-[300px] overflow-y-auto space-y-4 pr-2 scrollbar-thin">
-                  {chatHistory.length === 0 ? (
-                    <div className="text-center py-8 text-neutral-400 space-y-3">
-                      <p className="text-sm font-light">"AURA is initialized and contextually synchronized to GAMA."</p>
-                      <div className="flex flex-wrap justify-center gap-2 pt-2">
-                        {["What should I eat to boost my Vitamin C?", "I am feeling tired today", "Explain my Wellness Score"].map((hint, i) => (
-                          <button
-                            key={i}
-                            onClick={() => handleAuraQuery(hint)}
-                            className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 rounded-full text-[10px] transition-colors cursor-pointer text-neutral-300"
-                          >
-                            {hint}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    chatHistory.map((item, idx) => (
-                      <div key={idx} className="space-y-3">
-                        <div className={`flex gap-3 ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[80%] rounded-2xl p-4 text-xs leading-relaxed ${item.role === 'user'
-                            ? 'bg-orange-500 text-black font-semibold'
-                            : 'bg-white/5 border border-white/5 text-neutral-200'
-                            }`}>
-                            {item.content}
-                          </div>
-                        </div>
-
-                        {/* Rendering Rich Food Media Grid payload if response matches */}
-                        {item.gridPayload && (
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                            {item.gridPayload.map((food: any, fIdx: number) => (
-                              <div
-                                key={fIdx}
-                                className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-2xl overflow-hidden flex flex-col justify-between hover:border-white/10 transition-colors shadow-lg"
-                              >
-                                <div className="h-28 w-full relative">
-                                  <img
-                                    src={food.imageUrl}
-                                    alt={food.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <div className="p-3.5 space-y-3 flex-1 flex flex-col justify-between">
-                                  <div className="space-y-1">
-                                    <h5 className="font-extrabold text-white text-xs tracking-wide uppercase">{food.name}</h5>
-                                    <p className="text-[10px] text-neutral-400 leading-normal">{food.desc}</p>
-                                  </div>
-
-                                  <div className="border-t border-white/5 pt-2 text-[9px] text-neutral-400 space-y-1">
-                                    <div className="flex justify-between">
-                                      <span>Calories:</span>
-                                      <span className="text-white font-bold">{food.calories}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Macros:</span>
-                                      <span className="text-white">{food.macros.protein} P | {food.macros.carbs} C</span>
-                                    </div>
-                                    {Object.entries(food.micronutrients).map(([k, v]: any) => (
-                                      <div key={k} className="flex justify-between text-orange-400">
-                                        <span>{k}:</span>
-                                        <span>{v}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  <button
-                                    onClick={() => handleAddToPlan(food)}
-                                    className="w-full py-2 bg-white hover:bg-neutral-100 text-black font-extrabold rounded-xl text-[9px] uppercase tracking-wider transition-colors cursor-pointer"
-                                  >
-                                    Add to Meal Plan
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
-
-                  {isAuraTyping && (
-                    <div className="flex gap-2 items-center text-xs text-neutral-400 pl-3">
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-orange-500" />
-                      <span>AURA is coordinating data...</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Chat Inline Reply Box */}
-                <div className="flex gap-2 items-center border-t border-white/5 pt-3">
-                  <input
-                    type="text"
-                    placeholder="Provide follow-up health coordinates..."
-                    value={askInput}
-                    onChange={(e) => setAskInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleAuraQuery(askInput);
-                    }}
-                    className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-orange-500/50 transition-colors"
-                  />
-                  <button
-                    onClick={() => handleAuraQuery(askInput)}
-                    className="p-1 bg-orange-500 hover:bg-orange-400 text-black rounded-2xl cursor-pointer transition-colors w-11 h-11 flex items-center justify-center overflow-hidden border border-orange-400/20"
-                  >
-                    <img src="/logo.jpg" alt="AURA Send" className="w-9 h-9 rounded-xl object-cover" />
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <AuraChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
 
           {/* Health Alerts Warning Banner if rules find anomalies */}
           {pipelineState.alerts.length > 0 && (
@@ -781,7 +664,76 @@ export function DashboardView() {
             </button>
           </div>
 
-          {/* Cards Grid */}
+          {/* --- PHASE 2 INTELLIGENCE HEADER WIDGETS --- */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 w-full">
+            {/* 1. AI Morning Brief Widget Banner */}
+            <div className="md:col-span-2 relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-white/10 hover:border-orange-500/30 transition-all duration-300 w-full group">
+              <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-orange-500/10 via-transparent to-transparent pointer-events-none group-hover:from-orange-500/20 transition-all" />
+              <div className="space-y-2.5 text-left max-w-2xl relative z-10">
+                <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 animate-pulse" /> AURA Morning Briefing
+                </span>
+                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white">"You slept 1.5 hours less than your weekly average."</h2>
+                <p className="text-xs text-neutral-400 leading-relaxed">
+                  This may reduce recovery today. HRV index is suppressed at {hrv}ms. Consider avoiding intense aerobic training and target Zone 2 movement intervals. Prioritize 500ml mineralized water before 2:00 PM.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsChatOpen(true);
+                  handleAuraQuery("Analyze my recovery deficit options");
+                }}
+                className="px-5 py-3 bg-white hover:bg-neutral-100 text-black font-extrabold rounded-2xl text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-lg shrink-0 relative z-10"
+              >
+                Interactive Audit
+              </button>
+            </div>
+
+            {/* 2. Burnout Risk & Medical Summary Column */}
+            <div className="flex flex-col gap-4">
+              {/* Burnout Risk Dial */}
+              <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[24px] p-4 flex items-center gap-4 hover:border-orange-500/20 transition-all cursor-pointer">
+                <div className="relative w-12 h-12 shrink-0">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                    <path
+                      className="text-white/10"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                    />
+                    <path
+                      className="text-orange-500"
+                      strokeDasharray="45, 100"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">45</div>
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Burnout Risk</h4>
+                  <p className="text-sm font-extrabold text-white">Medium</p>
+                  <span className="text-[9px] text-orange-400">Sleep debt detected</span>
+                </div>
+              </div>
+
+              {/* Recent Medical Report */}
+              <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[24px] p-4 flex items-start gap-3 hover:border-white/20 transition-all cursor-pointer">
+                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <Activity className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Lipid Panel</h4>
+                  <p className="text-xs font-semibold text-white leading-tight mt-0.5">LDL slightly high (140 mg/dL)</p>
+                  <span className="text-[9px] text-neutral-500 block mt-1">Analyzed yesterday • 96% Conf</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4 items-stretch">
 
             {/* LEFT CONTAINER (8 Cols) */}
@@ -790,8 +742,8 @@ export function DashboardView() {
               {/* Row 1: Activity, Sleep, Heart */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* 1. Activity Card */}
-                <div 
-                  onClick={() => setExplainMetric("stress")} 
+                <div
+                  onClick={() => setExplainMetric("stress")}
                   className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 group cursor-pointer"
                 >
                   <div className="flex justify-between items-start">
@@ -856,8 +808,8 @@ export function DashboardView() {
                 </div>
 
                 {/* 2. Sleep Card */}
-                <div 
-                  onClick={() => setExplainMetric("sleep")} 
+                <div
+                  onClick={() => setExplainMetric("sleep")}
                   className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 group cursor-pointer"
                 >
                   <div className="flex justify-between items-start">
@@ -898,8 +850,8 @@ export function DashboardView() {
                 </div>
 
                 {/* 3. Heart Card */}
-                <div 
-                  onClick={() => setExplainMetric("heart")} 
+                <div
+                  onClick={() => setExplainMetric("heart")}
                   className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 group cursor-pointer"
                 >
                   <div className="flex justify-between items-start">
@@ -963,8 +915,8 @@ export function DashboardView() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* 4. Wellness Score Card */}
-                <div 
-                  onClick={() => setExplainMetric("wellness")} 
+                <div
+                  onClick={() => setExplainMetric("wellness")}
                   className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 h-[260px] flex flex-col justify-between relative overflow-hidden group hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
                 >
                   {/* Elegant layered sine wave graphic representing frequency */}
@@ -1015,8 +967,8 @@ export function DashboardView() {
                 </div>
 
                 {/* 5. Focus Activity Card */}
-                <div 
-                  onClick={() => setExplainMetric("focus")} 
+                <div
+                  onClick={() => setExplainMetric("focus")}
                   className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 h-[260px] flex flex-col justify-between relative overflow-hidden group hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
                 >
 
@@ -1066,8 +1018,8 @@ export function DashboardView() {
             <div className="lg:col-span-4 h-full">
 
               {/* 6. Balanced Energy & Recovery State tall card */}
-              <div 
-                onClick={() => setExplainMetric("stress")} 
+              <div
+                onClick={() => setExplainMetric("stress")}
                 className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[36px] overflow-hidden flex flex-col justify-between h-full min-h-[540px] relative group hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
               >
                 {/* Forest background at the bottom matching mockup */}
@@ -1175,6 +1127,26 @@ export function DashboardView() {
                   <span className="text-[10px] text-neutral-400 mt-1 block">Dynamic Biometric Stability Index</span>
                 </div>
 
+              </div>
+
+              {/* 7. Burnout risk indicator widget */}
+              <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[36px] overflow-hidden p-6 mt-6 space-y-4 hover:border-orange-500/20 transition-all duration-300">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-neutral-300">Burnout Prediction</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-orange-500/10 text-orange-500 border border-orange-500/20">Risk: MEDIUM</span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-full border-2 border-orange-500/30 border-t-orange-500 flex items-center justify-center relative shrink-0">
+                    <span className="text-[10px] font-extrabold text-white">42%</span>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold text-white">Mild Sleep Debt Accumulated</h4>
+                    <p className="text-[10px] text-neutral-400 leading-normal">
+                      HRV patterns display normal vagal base tone but sleep levels dropped by 18%. Target a 30m wind-down schedule tonight to avoid exhaustion triggers.
+                    </p>
+                  </div>
+                </div>
               </div>
 
             </div>
