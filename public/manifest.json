@@ -1,0 +1,24 @@
+{
+  "name": "GAMA Health Intelligence",
+  "short_name": "GAMA",
+  "description": "Proactive AI Longevity and Health Tracker",
+  "start_url": "/nexus",
+  "display": "standalone",
+  "background_color": "#08080a",
+  "theme_color": "#f97316",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
