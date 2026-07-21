@@ -142,7 +142,7 @@ export function BodyHologram({ activeSystem, stressLevel, heartRate, hrv, showPe
           {/* Outer glowing ring */}
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[1.5, 1.55, 64]} />
-            <meshBasicMaterial color="#f97316" transparent opacity={0.5} side={THREE.DoubleSide} />
+            <meshBasicMaterial color="#0a84ff" transparent opacity={0.5} side={THREE.DoubleSide} />
           </mesh>
           {/* Inner glowing ring */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
@@ -152,12 +152,12 @@ export function BodyHologram({ activeSystem, stressLevel, heartRate, hrv, showPe
           {/* Dashed ring */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
             <ringGeometry args={[1.0, 1.05, 32, 1, 0, Math.PI * 2]} />
-            <meshBasicMaterial color="#fb923c" transparent opacity={0.4} side={THREE.DoubleSide} wireframe />
+            <meshBasicMaterial color="#80c0ff" transparent opacity={0.4} side={THREE.DoubleSide} wireframe />
           </mesh>
           {/* Ground glow */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
             <circleGeometry args={[1.6, 64]} />
-            <meshBasicMaterial color="#f97316" transparent opacity={0.05} />
+            <meshBasicMaterial color="#0a84ff" transparent opacity={0.05} />
           </mesh>
         </group>
       )}

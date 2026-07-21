@@ -45,6 +45,18 @@ export async function POST(request: NextRequest) {
 
     // If not found, create new user profile with password & extended fields
     if (!user) {
+      if (username) {
+        const existingUserByUsername = await prisma.userPreference.findFirst({
+          where: {
+            category: 'username',
+            value: { equals: username.trim(), mode: 'insensitive' }
+          }
+        });
+        if (existingUserByUsername) {
+          return NextResponse.json({ success: false, error: 'Username is already taken' }, { status: 400 });
+        }
+      }
+
       user = await prisma.userProfile.create({
         data: {
           userId: crypto.randomUUID(),

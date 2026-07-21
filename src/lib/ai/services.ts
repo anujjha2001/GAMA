@@ -46,7 +46,7 @@ export class TrendAnalysisService {
     }
 
     const sumSteps = healthRecords.reduce((sum, r) => sum + r.vitalityScore * 100, 0);
-    const sumSleep = healthRecords.reduce((sum, r) => sum + (r.sleepHours || 7.5), 0);
+    const sumSleep = healthRecords.reduce((sum, r) => sum + ((r as any).sleepHours || 7.5), 0);
     const sumHrv = healthRecords.reduce((sum, r) => sum + (r.hrv || 65), 0);
     const sumRhr = healthRecords.reduce((sum, r) => sum + (r.heartRate || 60), 0);
 
@@ -151,7 +151,7 @@ export class BurnoutEngine {
     if (currentData.hrv < 50) riskPoints += 20;
 
     const score = Math.min(100, riskPoints);
-    let riskLevel = RiskLevel.LOW;
+    let riskLevel: RiskLevel = RiskLevel.LOW;
     if (score > 70) riskLevel = RiskLevel.HIGH;
     else if (score > 35) riskLevel = RiskLevel.MEDIUM;
 

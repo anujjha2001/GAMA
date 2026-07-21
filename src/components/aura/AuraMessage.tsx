@@ -21,14 +21,14 @@ export function AuraMessage({ message }: AuraMessageProps) {
   return (
     <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
-        <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center shrink-0 border border-orange-500/30 overflow-hidden">
+        <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center shrink-0 border border-white/10 overflow-hidden">
           <img src="/logo.jpg" alt="AURA" className="w-full h-full object-cover" />
         </div>
       )}
       
       <div className="flex flex-col gap-2 max-w-[80%]">
         <div className={`rounded-2xl p-4 text-sm leading-relaxed ${isUser
-          ? 'bg-orange-500 text-black font-semibold rounded-tr-sm'
+          ? 'bg-white text-black font-semibold text-black font-semibold rounded-tr-sm'
           : 'bg-white/5 border border-white/5 text-neutral-200 rounded-tl-sm'
         }`}>
           {message.content}
@@ -37,7 +37,7 @@ export function AuraMessage({ message }: AuraMessageProps) {
         {/* Searching for images loading indicator */}
         {!isUser && message.isSearchingImages && (
           <div className="flex items-center gap-2 text-xs text-neutral-400 pl-1 py-1">
-            <div className="w-3.5 h-3.5 border border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-3.5 h-3.5 border border-white/20 border-t-transparent rounded-full animate-spin" />
             <span>Searching visual archives...</span>
           </div>
         )}

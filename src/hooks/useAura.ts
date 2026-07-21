@@ -16,11 +16,12 @@ export function useAura() {
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const handleSubmit = useCallback(async (e?: React.FormEvent<HTMLFormElement> | string) => {
+    if (e && typeof e !== 'string') e.preventDefault();
+    const queryText = typeof e === 'string' ? e.trim() : input.trim();
+    if (!queryText || isLoading) return;
 
-    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input.trim() };
+    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: queryText };
     const newMessages = [...messages, userMessage];
 
     setMessages(newMessages);
@@ -44,6 +45,30 @@ export function useAura() {
       if (!response.ok) {
         const errBody = await response.json().catch(() => ({}));
         throw new Error(errBody.error || `Server error ${response.status}`);
+      }
+
+      const contentType = response.headers.get('Content-Type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await response.json();
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString() + 'a',
+            role: 'assistant',
+            content: data.message || '',
+            images: data.visual?.enabled && data.visual.url ? [{
+              title: data.visual.title || `Visualizing: ${data.visual.query}`,
+              imageUrl: data.visual.url,
+              thumbnailUrl: data.visual.url,
+              sourceUrl: data.visual.url,
+              sourceName: data.visual.source || 'Image Source',
+              license: data.visual.license || 'Free license',
+              altText: data.visual.altText || `Visual representation of ${data.visual.query}`
+            }] : undefined
+          }
+        ]);
+        setIsLoading(false);
+        return;
       }
 
       const reader = response.body?.getReader();
@@ -141,5 +166,5 @@ export function useAura() {
     }
   }, []);
 
-  return { messages, input, setInput, handleSubmit, isLoading, stop };
+  return { messages, setMessages, input, setInput, handleSubmit, isLoading, stop };
 }

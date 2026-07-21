@@ -4,9 +4,10 @@ import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Moon, Heart, Search, Edit2, Plus, Calendar, ChevronRight,
-  Flame, Zap, Award, Mic, MicOff, Camera, RefreshCw, Send, Check, X, ShieldAlert, TrendingUp, Play, ActivitySquare, HeartPulse, Sparkles, BrainCircuit
+  Flame, Zap, Award, Mic, MicOff, Camera, RefreshCw, Send, Check, X, ShieldAlert, TrendingUp, Play, ActivitySquare, HeartPulse, BrainCircuit
 } from 'lucide-react';
 import { AuraChatPanel } from '@/components/aura/AuraChatPanel';
+import { Message, useAura } from '@/hooks/useAura';
 import {
   ResponsiveContainer, AreaChart, Area
 } from 'recharts';
@@ -41,11 +42,9 @@ export function DashboardView() {
   } = useHealthStore();
 
   // AURA Chat & Interface States
-  const [askInput, setAskInput] = React.useState('');
+  const { messages, setMessages: setChatHistory, input, setInput, handleSubmit, isLoading } = useAura();
   const [isChatOpen, setIsChatOpen] = React.useState(false);
   const [isListening, setIsListening] = React.useState(false);
-  const [chatHistory, setChatHistory] = React.useState<Array<{ role: 'user' | 'assistant', content: string, gridPayload?: any }>>([]);
-  const [isAuraTyping, setIsAuraTyping] = React.useState(false);
 
   // Vision & Camera Upload States
   const [isScanning, setIsScanning] = React.useState(false);
@@ -73,13 +72,11 @@ export function DashboardView() {
       const savedSleep = localStorage.getItem('gama_sleepHours');
       const savedHrv = localStorage.getItem('gama_hrv');
       const savedStress = localStorage.getItem('gama_stressLevel');
-      const savedHistory = localStorage.getItem('gama_chatHistory');
 
       if (savedSteps) setSteps(parseInt(savedSteps));
       if (savedSleep) setSleepHours(parseFloat(savedSleep));
       if (savedHrv) setHrv(parseInt(savedHrv));
       if (savedStress) setStressLevel(parseFloat(savedStress));
-      if (savedHistory) setChatHistory(JSON.parse(savedHistory));
     } catch (e) {
       console.warn("Could not load from localStorage:", e);
     }
@@ -93,11 +90,10 @@ export function DashboardView() {
       localStorage.setItem('gama_sleepHours', sleepHours.toString());
       localStorage.setItem('gama_hrv', hrv.toString());
       localStorage.setItem('gama_stressLevel', stressLevel.toString());
-      localStorage.setItem('gama_chatHistory', JSON.stringify(chatHistory));
     } catch (e) {
       console.warn("Could not save to localStorage:", e);
     }
-  }, [steps, sleepHours, hrv, stressLevel, chatHistory, mounted]);
+  }, [steps, sleepHours, hrv, stressLevel, mounted]);
 
   // --- Health Intelligence Engine Run ---
   const getRawData = () => {
@@ -131,10 +127,9 @@ export function DashboardView() {
     if (!mounted) return;
     if (wellnessScore < 70 && !hasTriggeredRecoveryWarning) {
       setHasTriggeredRecoveryWarning(true);
-      // Subtle proactive warning slide-in
       toast.custom((t) => (
-        <div className="aura-overlay backdrop-blur-2xl border border-orange-500/30 p-5 rounded-3xl shadow-[0_8px_32px_rgba(249,115,22,0.15)] flex flex-col gap-3 text-white max-w-sm">
-          <div className="flex items-center gap-2 text-orange-400">
+        <div className="aura-overlay backdrop-blur-2xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgba(10, 132, 255,0.15)] flex flex-col gap-3 text-white max-w-sm">
+          <div className="flex items-center gap-2 text-neutral-300">
             <ShieldAlert className="w-5 h-5" />
             <span className="text-xs font-bold uppercase tracking-widest">AURA Proactive Alert</span>
           </div>
@@ -152,9 +147,9 @@ export function DashboardView() {
               onClick={() => {
                 toast.dismiss(t);
                 setIsChatOpen(true);
-                handleAuraQuery("Show me the adjusted light stretch workout plan");
+                handleSubmit("Show me the adjusted light stretch workout plan");
               }}
-              className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-400 text-black font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-bold rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
             >
               See Plan
             </button>
@@ -168,12 +163,10 @@ export function DashboardView() {
         </div>
       ), { duration: 10000 });
     } else if (wellnessScore >= 70 && hasTriggeredRecoveryWarning) {
-      // Reset if recovery recovers
       setHasTriggeredRecoveryWarning(false);
     }
   }, [wellnessScore, hasTriggeredRecoveryWarning, mounted]);
 
-  // --- Dynamic Sleep Chart Data generation ---
   const sleepData = [
     { name: 'Deep', val: parseFloat((sleepHours * 0.25).toFixed(2)) },
     { name: 'Core', val: parseFloat((sleepHours * 0.50).toFixed(2)) },
@@ -181,26 +174,6 @@ export function DashboardView() {
     { name: 'Awake', val: parseFloat((sleepHours * 0.10).toFixed(2)) }
   ];
 
-  // --- Calming Speech Synthesis ---
-  const speakText = (text: string) => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      // Strip markdown symbols before speaking
-      const cleanText = text.replace(/\*\*|•/g, '').substring(0, 200);
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.pitch = 1.05;
-      utterance.rate = 0.95;
-
-      const voices = window.speechSynthesis.getVoices();
-      const calmingVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Zira')));
-      if (calmingVoice) {
-        utterance.voice = calmingVoice;
-      }
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  // --- Speech to Text Recognition ---
   const startSpeechRecognition = () => {
     if (typeof window !== 'undefined') {
       const SpeechGen = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -222,8 +195,9 @@ export function DashboardView() {
 
       rec.onresult = (e: any) => {
         const text = e.results[0][0].transcript;
-        setAskInput(text);
-        handleAuraQuery(text);
+        setInput(text);
+        setIsChatOpen(true);
+        handleSubmit(text);
       };
 
       rec.onerror = () => {
@@ -250,55 +224,6 @@ export function DashboardView() {
     }
   };
 
-  // --- Send Query to AURA Route ---
-  const handleAuraQuery = async (queryText: string) => {
-    if (!queryText.trim()) return;
-
-    // Add user message
-    const updatedHistory = [...chatHistory, { role: 'user' as const, content: queryText }];
-    setChatHistory(updatedHistory);
-    setAskInput('');
-    setIsAuraTyping(true);
-
-    try {
-      const response = await fetch('/api/aura', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: queryText,
-          history: updatedHistory,
-          memoryTags,
-          dashboardState: {
-            steps,
-            sleepHours,
-            hrv,
-            stressLevel,
-            wellnessScore,
-            heartRate
-          }
-        })
-      });
-
-      const data = await response.json();
-      setIsAuraTyping(false);
-
-      if (data.success) {
-        setChatHistory(prev => [...prev, {
-          role: 'assistant',
-          content: data.text,
-          gridPayload: data.gridPayload
-        }]);
-        speakText(data.text);
-      } else {
-        toast.error("AURA experienced a brain loop. Please try again.");
-      }
-    } catch (err) {
-      setIsAuraTyping(false);
-      toast.error("Failed to connect to AURA.");
-    }
-  };
-
-  // --- Meal Photo Scanner Upload Handler ---
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -337,29 +262,15 @@ export function DashboardView() {
     reader.readAsDataURL(file);
   };
 
-  // --- Confirm Logged Meal macros ---
   const confirmLogMeal = () => {
     if (!detectedMeal) return;
 
-    // Add macros to activity & steps (simulate workout offset or add calories)
-    setSteps(prev => prev + 1500); // Trigger physical log
-    setHeartRate(prev => Math.min(85, prev + 2)); // Dynamic HR change
-
-    // Add to history
-    setChatHistory(prev => [...prev, {
-      role: 'assistant',
-      content: `Successfully logged **${detectedMeal.mealName}** (${detectedMeal.calories} kcal, ${detectedMeal.protein}g Protein, ${detectedMeal.carbs}g Carbs, ${detectedMeal.fat}g Fat) to your dashboard. Steps & heart metrics synced.`,
-    }]);
+    setSteps(prev => prev + 1500);
+    setHeartRate(prev => Math.min(85, prev + 2));
 
     toast.success(`Logged ${detectedMeal.mealName}! Metrics refreshed.`);
     setShowConfirmModal(false);
     setDetectedMeal(null);
-  };
-
-  // --- Rich Grid Item Addition ---
-  const handleAddToPlan = (item: any) => {
-    setSteps(prev => prev + 200); // Small increment
-    toast.success(`Added ${item.name} to today's metabolic meal plan!`);
   };
 
   if (!mounted) return null;
@@ -367,31 +278,39 @@ export function DashboardView() {
   return (
     <div className="w-full min-h-screen text-white font-sans pb-12 select-none relative">
 
+      {/* Immersive layered background effects inspired by Dribbble Reference */}
+      <div className="absolute inset-0 bg-[#070709] z-0 overflow-hidden pointer-events-none">
+        {/* Soft ambient lighting */}
+        <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-white/5 blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-violet-600/10 blur-[100px]" />
+        {/* Subtle vignette layer */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0)_0%,rgba(7,7,9,0.85)_100%)]" />
+      </div>
+
       {/* --- VISION SCANNING OVERLAY --- */}
       {isScanning && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-2xl z-50 flex flex-col items-center justify-center">
-          <div className="relative w-72 h-72 border border-orange-500/30 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(249,115,22,0.2)] bg-neutral-900/60 flex items-center justify-center">
-            {/* Pulsing Hologram/Scan lines */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-500/20 to-transparent w-full h-[30%] animate-[bounce_2s_infinite]" />
-            <RefreshCw className="w-16 h-16 text-orange-500 animate-spin" />
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-3xl z-50 flex flex-col items-center justify-center">
+          <div className="relative w-80 h-80 border border-white/10 rounded-3xl overflow-hidden shadow-[0_0_80px_var(--brand-glow)] bg-neutral-950/80 flex items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand/15 to-transparent w-full h-[30%] animate-[bounce_2s_infinite]" />
+            <RefreshCw className="w-16 h-16 text-white animate-spin" />
           </div>
-          <h3 className="mt-8 text-xl font-light tracking-widest uppercase text-neutral-300">AURA Multimodal Scanner Active</h3>
-          <p className="mt-2 text-xs text-orange-400 uppercase tracking-wider animate-pulse">Deconstructive Meal Recognition in progress...</p>
+          <h3 className="mt-8 text-lg font-bold tracking-widest uppercase text-white">AURA Scanner Active</h3>
+          <p className="mt-2 text-xs text-neutral-300 uppercase tracking-wider animate-pulse">Deconstructive Meal Recognition in progress...</p>
         </div>
       )}
 
       {/* --- MULTIMODAL CONFIRMATION MODAL --- */}
       <AnimatePresence>
         {showConfirmModal && detectedMeal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-2xl z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md aura-overlay backdrop-blur-3xl rounded-[32px] p-6 border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.8)]"
+              className="w-full max-w-md bg-[#0f0f13]/90 border border-white/10 rounded-[32px] p-6 shadow-2xl backdrop-blur-2xl"
             >
               <div className="flex justify-between items-center pb-4 border-b border-white/5">
-                <h4 className="font-extrabold text-white text-base tracking-wider uppercase">Vision Verification</h4>
+                <h4 className="font-extrabold text-white text-sm tracking-wider uppercase">Verify Meal Scan</h4>
                 <button
                   onClick={() => {
                     setShowConfirmModal(false);
@@ -399,7 +318,7 @@ export function DashboardView() {
                   }}
                   className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
                 >
-                  <X className="w-4.5 h-4.5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
@@ -417,7 +336,7 @@ export function DashboardView() {
                 <div className="grid grid-cols-4 gap-2 text-center">
                   <div className="bg-white/5 border border-white/5 p-2.5 rounded-xl">
                     <span className="text-[8px] text-neutral-400 block uppercase font-bold">Calories</span>
-                    <span className="text-sm font-extrabold text-orange-400">{detectedMeal.calories}</span>
+                    <span className="text-sm font-extrabold text-neutral-300">{detectedMeal.calories}</span>
                   </div>
                   <div className="bg-white/5 border border-white/5 p-2.5 rounded-xl">
                     <span className="text-[8px] text-neutral-400 block uppercase font-bold">Protein</span>
@@ -437,7 +356,7 @@ export function DashboardView() {
               <div className="flex gap-3">
                 <button
                   onClick={confirmLogMeal}
-                  className="flex-1 py-3 bg-orange-500 hover:bg-orange-400 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Check className="w-4 h-4" /> Yes, Log Meal
                 </button>
@@ -457,49 +376,54 @@ export function DashboardView() {
       </AnimatePresence>
 
       {/* Main Glassmorphic Panel Wrapper */}
-      <div className="relative w-full rounded-[40px] border border-white/10 overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.9)] z-10 bg-[#0e0e11]/85 backdrop-blur-md">
+      <div className="relative w-full rounded-[40px] border border-white/5 overflow-hidden z-10 bg-[#09090b]/80 backdrop-blur-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
 
-        {/* Banner Portrait Background image covering the upper portion of the dashboard */}
+        {/* Subtle Background Image (Clean without text) */}
         <div
-          className="absolute top-0 left-0 right-0 h-[680px] bg-cover bg-center pointer-events-none z-0 brightness-[0.35] contrast-[1.1]"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1600')`
-          }}
+          className="absolute inset-0 bg-cover bg-center opacity-22 pointer-events-none z-0"
+          style={{ backgroundImage: "url('/dashboard-bg-clean.png')" }}
         />
-        {/* Soft fading gradient to dark color at the bottom */}
-        <div className="absolute top-0 left-0 right-0 h-[680px] bg-gradient-to-b from-black/10 via-[#0e0e11]/60 to-[#0e0e11] z-0" />
+
+        {/* Ambient Gradient Highlights */}
+        <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-0" />
 
         {/* Content Container */}
-        <div className="relative z-10 p-6 md:p-8 flex flex-col gap-6">
+        <div className="relative z-10 p-6 md:p-10 flex flex-col gap-8">
 
           {/* Header Row */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mt-2">
+          <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-6 relative z-10">
+            {/* AURA Interactive Input Bar */}
+            <div className="flex-1 flex flex-col items-start max-w-2xl text-left">
+              <span className="text-[10px] font-black tracking-widest uppercase text-white mb-1">Health Operating System</span>
+              <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                AURA
 
-            {/* Greeting and Assistant search in the middle */}
-            <div className="flex flex-col items-center mx-auto text-center relative z-25 w-full max-w-xl">
-              <h2 className="text-lg md:text-xl font-light text-neutral-300 tracking-wide flex items-center gap-2">
-                Hey, Ask <span className="text-orange-500 font-semibold tracking-wider">AURA</span> <span></span>
               </h2>
 
-              <div className="mt-2 w-full flex items-center justify-center relative bg-black/40 border border-white/10 rounded-full px-5 py-2 hover:border-white/20 transition-all duration-300">
+              <div className="mt-3 w-full flex items-center justify-between bg-black/40 border border-white/5 hover:border-white/10 focus-within:border-white/20/40 rounded-2xl px-5 py-3 transition-all duration-300 shadow-inner">
                 <input
                   type="text"
-                  placeholder="Just ask me anything"
-                  value={askInput}
+                  id="aura-dashboard-ask-input"
+                  name="aura-dashboard-ask-input"
+                  placeholder="Ask me to analyze stress, workouts, or recovery..."
+                  value={input}
                   onFocus={() => setIsChatOpen(true)}
-                  onChange={(e) => setAskInput(e.target.value)}
+                  onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAuraQuery(askInput);
+                    if (e.key === 'Enter') {
+                      setIsChatOpen(true);
+                      handleSubmit();
+                    }
                   }}
-                  className="w-full bg-transparent py-2.5 text-center text-xl md:text-2xl font-light tracking-tight text-white placeholder-neutral-400 focus:outline-none"
+                  className="w-full bg-transparent text-white placeholder-neutral-500 text-sm focus:outline-none"
                 />
 
-                {/* Multimodal Actions */}
-                <div className="absolute right-4 flex items-center gap-3">
-                  {/* Camera Upload Button */}
-                  <label className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full cursor-pointer transition-colors flex items-center justify-center text-neutral-300 hover:text-orange-500">
+                <div className="flex items-center gap-2.5 shrink-0 ml-3">
+                  <label className="p-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl cursor-pointer transition-all flex items-center justify-center text-neutral-300 hover:text-white shadow">
                     <input
                       type="file"
+                      id="aura-dashboard-camera-input"
+                      name="aura-dashboard-camera-input"
                       accept="image/*"
                       capture="environment"
                       onChange={handleImageUpload}
@@ -508,68 +432,52 @@ export function DashboardView() {
                     <Camera className="w-4 h-4" />
                   </label>
 
-                  {/* Voice waveform Activation */}
                   <button
                     onClick={handleVoiceToggle}
-                    className={`p-2 border rounded-full transition-colors flex items-center justify-center cursor-pointer ${isListening
-                      ? 'bg-orange-500/20 border-orange-500 text-orange-500'
-                      : 'bg-white/5 border-white/10 text-neutral-300 hover:text-orange-500 hover:border-orange-500/50'
+                    className={`p-2 border rounded-xl transition-all flex items-center justify-center cursor-pointer shadow ${isListening
+                      ? 'bg-white/10 border-white/20 text-white'
+                      : 'bg-white/5 border-white/5 text-neutral-300 hover:text-white hover:border-white/10'
                       }`}
                   >
                     {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                   </button>
 
-                  {/* GAMA Logo Send Button */}
                   <button
-                    onClick={() => handleAuraQuery(askInput)}
-                    className="p-1 bg-orange-500 hover:bg-orange-400 text-black rounded-full cursor-pointer transition-all w-10 h-10 flex items-center justify-center overflow-hidden border border-orange-400/20 hover:scale-105"
+                    onClick={() => {
+                      setIsChatOpen(true);
+                      handleSubmit();
+                    }}
+                    className="p-1 bg-white text-black font-semibold hover:bg-neutral-200 rounded-xl cursor-pointer transition-all w-8 h-8 flex items-center justify-center overflow-hidden border border-white/10 hover:scale-105"
                   >
-                    <img src="/logo.jpg" alt="AURA Send" className="w-full h-full object-cover rounded-full" />
+                    <img src="/logo.jpg" alt="Send" className="w-full h-full object-cover rounded-xl" />
                   </button>
-
-                  {/* Animated Waveform Bars */}
-                  {isListening && (
-                    <div className="flex gap-[2px] items-center h-4 px-1">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div
-                          key={i}
-                          className="w-[2px] bg-orange-500 rounded-full animate-soundwave"
-                          style={{
-                            height: '100%',
-                            animationDelay: `${i * 0.15}s`
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
 
             {/* Top Right User Profile controls */}
-            <div className="flex items-center gap-3 shrink-0 self-end md:self-center bg-black/30 backdrop-blur-xl px-4 py-2 rounded-full border border-white/10">
+            <div className="flex items-center gap-4 self-end lg:self-center bg-black/40 backdrop-blur-xl px-5 py-3 rounded-2xl border border-white/5 shadow-lg">
               <button
                 onClick={() => {
                   setSteps(19840);
                   setSleepHours(7.75);
                   setHrv(80);
                   setStressLevel(2.7);
-                  setChatHistory([]);
                   toast.success("Metrics reset to baseline values.");
                 }}
                 title="Reset Metrics to Default"
-                className="w-8 h-8 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-white cursor-pointer"
+                className="w-9 h-9 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/10 transition-all flex items-center justify-center text-neutral-400 hover:text-white cursor-pointer shadow"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-4.5 h-4.5" />
               </button>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 <img
                   src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=120&auto=format&fit=crop"
                   alt="User Avatar"
-                  className="w-8 h-8 rounded-full object-cover border border-white/20"
+                  className="w-10 h-10 rounded-xl object-cover border border-white/10 shadow"
                 />
                 <div className="text-left">
-                  <h4 className="text-xs font-semibold text-white leading-tight">
+                  <h4 className="text-sm font-extrabold text-white leading-tight">
                     {(() => {
                       if (typeof window !== 'undefined') {
                         const storedName = localStorage.getItem('gama_user_name');
@@ -578,24 +486,32 @@ export function DashboardView() {
                       return 'Alvie Wahed';
                     })()}
                   </h4>
-                  <span className="text-[9px] text-neutral-400 leading-none"></span>
+                  <span className="text-[10px] text-neutral-400 block tracking-wider uppercase font-bold">User Profile</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* --- AURA GLASSMORPHIC CHAT OVERLAY --- */}
-          <AuraChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+          {/* --- AURA GLASSMORPHIC CHAT PANEL --- */}
+          <AuraChatPanel
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            messages={messages}
+            input={input}
+            setInput={setInput}
+            handleSubmit={handleSubmit}
+            isLoading={isLoading}
+          />
 
-          {/* Health Alerts Warning Banner if rules find anomalies */}
+          {/* Health Alerts Warning Banner */}
           {pipelineState.alerts.length > 0 && (
-            <div className="flex flex-col gap-3 p-4 bg-red-950/45 border border-red-500/20 rounded-3xl relative z-30">
+            <div className="flex flex-col gap-3.5 p-5 bg-red-950/30 border border-red-500/20 rounded-3xl relative z-30 shadow-2xl backdrop-blur-xl">
               {pipelineState.alerts.map((alert) => (
                 <div key={alert.id} className="flex items-start gap-3">
-                  <ShieldAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                  <ShieldAlert className="w-5.5 h-5.5 text-red-500 shrink-0 mt-0.5" />
                   <div>
-                    <h5 className="font-extrabold text-xs text-red-400 uppercase tracking-wider">{alert.title}</h5>
-                    <p className="text-[11px] text-neutral-300 leading-relaxed mt-0.5">{alert.message}</p>
+                    <h5 className="font-extrabold text-xs text-red-400 uppercase tracking-widest">{alert.title}</h5>
+                    <p className="text-xs text-neutral-300 leading-relaxed mt-0.5">{alert.message}</p>
                   </div>
                 </div>
               ))}
@@ -603,87 +519,97 @@ export function DashboardView() {
           )}
 
           {/* Controls / Filter Bar */}
-          <div className="flex flex-wrap justify-end items-center gap-3 mt-4 relative z-30">
-            {/* Sync quality badge */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{pipelineState.provider} sync: {pipelineState.quality}</span>
+          <div className="flex flex-wrap items-center justify-between gap-4 mt-2 relative z-30 border-b border-white/5 pb-4">
+
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-black tracking-widest text-neutral-400 uppercase">
+                {pipelineState.provider} Sync: {pipelineState.quality}
+              </span>
             </div>
 
-            {/* Provider Adapter Selector */}
-            <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-3 py-1 text-xs font-semibold text-neutral-200">
-              <span className="text-[10px] text-neutral-400 uppercase tracking-widest mr-1">Source:</span>
-              <select
-                value={provider}
-                onChange={(e: any) => setProvider(e.target.value)}
-                className="bg-transparent border-0 text-white focus:outline-none cursor-pointer pr-4"
-              >
-                <option value="mock" className="bg-neutral-900 text-white">Mock Simulator</option>
-                <option value="apple" className="bg-neutral-900 text-white">Apple HealthKit</option>
-                <option value="garmin" className="bg-neutral-900 text-white">Garmin Connect</option>
-                <option value="fitbit" className="bg-neutral-900 text-white">Fitbit Premium</option>
-                <option value="oura" className="bg-neutral-900 text-white">Oura Ring</option>
-                <option value="manual" className="bg-neutral-900 text-white">Manual Input Mode</option>
-              </select>
-            </div>
-
-            {/* Simulated circadian hour slider if mock is selected */}
-            {provider === 'mock' && (
-              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs font-semibold text-neutral-200">
-                <span className="text-[10px] text-neutral-400 uppercase tracking-widest">Time: {simulatedHour}:00</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="23"
-                  value={simulatedHour}
-                  onChange={(e) => setSimulatedHour(parseInt(e.target.value))}
-                  className="w-20 accent-orange-500 h-1 bg-white/10 rounded-lg cursor-pointer"
-                />
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Provider Adapter Selector */}
+              <div className="flex items-center gap-1.5 bg-black/40 border border-white/5 rounded-full px-4 py-1.5 text-xs font-semibold text-neutral-200">
+                <span className="text-[9px] text-neutral-500 uppercase tracking-widest">Source:</span>
+                <select
+                  id="aura-dashboard-source-select"
+                  name="aura-dashboard-source-select"
+                  value={provider}
+                  onChange={(e: any) => setProvider(e.target.value)}
+                  className="bg-transparent border-0 text-white focus:outline-none cursor-pointer pr-4 font-bold text-xs"
+                >
+                  <option value="mock" className="bg-neutral-900 text-white">Mock Simulator</option>
+                  <option value="apple" className="bg-neutral-900 text-white">Apple HealthKit</option>
+                  <option value="garmin" className="bg-neutral-900 text-white">Garmin Connect</option>
+                  <option value="fitbit" className="bg-neutral-900 text-white">Fitbit Premium</option>
+                  <option value="oura" className="bg-neutral-900 text-white">Oura Ring</option>
+                  <option value="manual" className="bg-neutral-900 text-white">Manual Input Mode</option>
+                </select>
               </div>
-            )}
 
-            {/* Manual Override inputs button */}
-            {provider === 'manual' && (
-              <button
-                onClick={() => setIsManualInputOpen(!isManualInputOpen)}
-                className="px-4 py-1.5 bg-orange-500 hover:bg-orange-400 text-black font-extrabold rounded-full text-xs uppercase tracking-wider transition-colors cursor-pointer"
-              >
-                Log Biometrics
+              {/* Simulated circadian hour slider if mock is selected */}
+              {provider === 'mock' && (
+                <div className="flex items-center gap-3 bg-black/40 border border-white/5 rounded-full px-4 py-1.5 text-xs font-semibold text-neutral-200">
+                  <span className="text-[9px] text-neutral-500 uppercase tracking-widest">Hour: {simulatedHour}:00</span>
+                  <input
+                    type="range"
+                    id="aura-dashboard-simulated-hour"
+                    name="aura-dashboard-simulated-hour"
+                    min="0"
+                    max="23"
+                    value={simulatedHour}
+                    onChange={(e) => setSimulatedHour(parseInt(e.target.value))}
+                    className="w-20 accent-white h-1 bg-white/10 rounded-lg cursor-pointer"
+                  />
+                </div>
+              )}
+
+              {/* Manual Override inputs button */}
+              {provider === 'manual' && (
+                <button
+                  onClick={() => setIsManualInputOpen(!isManualInputOpen)}
+                  className="px-4 py-1.5 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-black rounded-full text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Log Biometrics
+                </button>
+              )}
+
+              {/* Date Range Selector */}
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-black/40 border border-white/5 rounded-full text-xs font-medium text-neutral-300">
+                <Calendar className="w-3.5 h-3.5 text-neutral-500" />
+                <span className="text-[10px] font-bold tracking-wide">15 - 20 July, 2026</span>
+              </div>
+
+              {/* Create Report Button */}
+              <button className="px-5 py-1.5 bg-white text-black hover:bg-neutral-100 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer shadow">
+                Report
               </button>
-            )}
-
-            {/* Date Range Selector */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-neutral-200">
-              <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-              <span>15 - 20 July, 2026</span>
             </div>
-
-            {/* Create Report Button */}
-            <button className="px-5 py-2 bg-white text-black hover:bg-neutral-100 rounded-full text-xs font-bold tracking-wide transition-colors cursor-pointer shadow-lg">
-              Create a Report
-            </button>
           </div>
 
           {/* --- PHASE 2 INTELLIGENCE HEADER WIDGETS --- */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             {/* 1. AI Morning Brief Widget Banner */}
-            <div className="md:col-span-2 relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-white/10 hover:border-orange-500/30 transition-all duration-300 w-full group">
-              <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-orange-500/10 via-transparent to-transparent pointer-events-none group-hover:from-orange-500/20 transition-all" />
-              <div className="space-y-2.5 text-left max-w-2xl relative z-10">
-                <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1.5">
-                  <Flame className="w-3.5 h-3.5 animate-pulse" /> AURA Morning Briefing
+            <div className="md:col-span-2 relative rounded-[32px] overflow-hidden bg-black/45 backdrop-blur-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-white/5 hover:border-white/10 transition-all duration-500 w-full group shadow-2xl">
+              <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-white/5 via-transparent to-transparent pointer-events-none group-hover:from-brand/15 transition-all duration-500" />
+              <div className="space-y-3 text-left max-w-xl relative z-10">
+                <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1.5">
+                  <Flame className="w-4.5 h-4.5 animate-pulse text-blue-400" /> AURA Morning Briefing
                 </span>
-                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white">"You slept 1.5 hours less than your weekly average."</h2>
+                <h2 className="text-lg md:text-xl font-bold tracking-tight text-white leading-normal">
+                  "You slept 1.5 hours less than your weekly average."
+                </h2>
                 <p className="text-xs text-neutral-400 leading-relaxed">
-                  This may reduce recovery today. HRV index is suppressed at {hrv}ms. Consider avoiding intense aerobic training and target Zone 2 movement intervals. Prioritize 500ml mineralized water before 2:00 PM.
+                  HRV index is suppressed at {hrv}ms. Consider avoiding intense aerobic training and target Zone 2 movement intervals. Prioritize 500ml mineralized water before 2:00 PM.
                 </p>
               </div>
               <button
                 onClick={() => {
                   setIsChatOpen(true);
-                  handleAuraQuery("Analyze my recovery deficit options");
+                  handleSubmit("Analyze my recovery deficit options");
                 }}
-                className="px-5 py-3 bg-white hover:bg-neutral-100 text-black font-extrabold rounded-2xl text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-lg shrink-0 relative z-10"
+                className="px-5 py-3 bg-white hover:bg-neutral-100 text-black font-black rounded-2xl text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow shrink-0 relative z-10"
               >
                 Interactive Audit
               </button>
@@ -692,18 +618,18 @@ export function DashboardView() {
             {/* 2. Burnout Risk & Medical Summary Column */}
             <div className="flex flex-col gap-4">
               {/* Burnout Risk Dial */}
-              <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[24px] p-4 flex items-center gap-4 hover:border-orange-500/20 transition-all cursor-pointer">
+              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-center gap-4 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg">
                 <div className="relative w-12 h-12 shrink-0">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                     <path
-                      className="text-white/10"
+                      className="text-white/5"
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="3"
                     />
                     <path
-                      className="text-orange-500"
+                      className="text-white"
                       strokeDasharray="45, 100"
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       fill="none"
@@ -713,96 +639,89 @@ export function DashboardView() {
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">45</div>
                 </div>
-                <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Burnout Risk</h4>
+                <div className="text-left">
+                  <h4 className="text-[9px] font-black uppercase tracking-wider text-neutral-400">Burnout Risk</h4>
                   <p className="text-sm font-extrabold text-white">Medium</p>
-                  <span className="text-[9px] text-orange-400">Sleep debt detected</span>
+                  <span className="text-[9px] text-neutral-300 font-medium">Sleep debt detected</span>
                 </div>
               </div>
 
               {/* Recent Medical Report */}
-              <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[24px] p-4 flex items-start gap-3 hover:border-white/20 transition-all cursor-pointer">
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-start gap-3 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg">
+                <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                   <Activity className="w-4 h-4 text-white" />
                 </div>
-                <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Lipid Panel</h4>
-                  <p className="text-xs font-semibold text-white leading-tight mt-0.5">LDL slightly high (140 mg/dL)</p>
+                <div className="text-left">
+                  <h4 className="text-[9px] font-black uppercase tracking-wider text-neutral-400">Lipid Panel</h4>
+                  <p className="text-xs font-bold text-white leading-tight mt-0.5">LDL slightly high (140 mg/dL)</p>
                   <span className="text-[9px] text-neutral-500 block mt-1">Analyzed yesterday • 96% Conf</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
             {/* LEFT CONTAINER (8 Cols) */}
-            <div className="lg:col-span-8 flex flex-col gap-6 justify-between">
+            <div className="lg:col-span-8 flex flex-col gap-6">
 
               {/* Row 1: Activity, Sleep, Heart */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* 1. Activity Card */}
                 <div
                   onClick={() => setExplainMetric("stress")}
-                  className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 group cursor-pointer"
+                  className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-5 flex flex-col justify-between h-[255px] hover:border-white/20/25 hover:-translate-y-[2px] transition-all duration-500 group cursor-pointer shadow-2xl"
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                        <Activity className="w-4.5 h-4.5 text-white" />
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-neutral-300">
+                        <Activity className="w-4.5 h-4.5" />
                       </div>
-                      <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">Activity</span>
+                      <span className="text-[10px] font-black text-neutral-200 uppercase tracking-widest">Activity</span>
                     </div>
-                    {/* Add adjusters */}
                     <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => setSteps(prev => Math.max(0, prev - 1000))} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">-</button>
-                      <button onClick={() => setSteps(prev => prev + 1000)} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">+</button>
+                      <button onClick={() => setSteps(prev => Math.max(0, prev - 1000))} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer text-white">-</button>
+                      <button onClick={() => setSteps(prev => prev + 1000)} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer text-white">+</button>
                     </div>
                   </div>
 
-                  {/* Horizontal categorization rows + vertical bars inside a custom container */}
-                  <div className="flex flex-col gap-2 mt-3">
-                    {/* Browsing */}
+                  <div className="flex flex-col gap-2 mt-3 text-left">
                     <div className="flex items-center justify-between text-[9px] text-neutral-400">
                       <span className="w-16 font-semibold uppercase tracking-wider">Browsing</span>
                       <div className="flex gap-1 flex-1 px-4">
-                        <div className="w-2.5 h-1.5 bg-orange-500 rounded-sm" />
-                        <div className="w-1.5 h-1.5 bg-orange-500/20 rounded-sm" />
-                        <div className="w-4 h-1.5 bg-orange-500 rounded-sm" />
+                        <div className="w-2.5 h-1.5 bg-white text-black font-semibold rounded-sm" />
+                        <div className="w-1.5 h-1.5 bg-white/10 rounded-sm" />
+                        <div className="w-4 h-1.5 bg-white text-black font-semibold rounded-sm" />
                       </div>
                     </div>
-                    {/* Conversation */}
                     <div className="flex items-center justify-between text-[9px] text-neutral-400">
                       <span className="w-16 font-semibold uppercase tracking-wider">Conversation</span>
                       <div className="flex gap-1 flex-1 px-4">
-                        <div className="w-1.5 h-1.5 bg-orange-500/20 rounded-sm" />
-                        <div className="w-3 h-1.5 bg-orange-500 rounded-sm" />
-                        <div className="w-2 h-1.5 bg-orange-500 rounded-sm" />
+                        <div className="w-1.5 h-1.5 bg-white/10 rounded-sm" />
+                        <div className="w-3 h-1.5 bg-white text-black font-semibold rounded-sm" />
+                        <div className="w-2 h-1.5 bg-white text-black font-semibold rounded-sm" />
                       </div>
                     </div>
-                    {/* Phone */}
                     <div className="flex items-center justify-between text-[9px] text-neutral-400">
                       <span className="w-16 font-semibold uppercase tracking-wider">Phone</span>
                       <div className="flex gap-1 flex-1 px-4">
-                        <div className="w-4 h-1.5 bg-orange-500 rounded-sm" />
-                        <div className="w-1.5 h-1.5 bg-orange-500/20 rounded-sm" />
-                        <div className="w-1.5 h-1.5 bg-orange-500/20 rounded-sm" />
+                        <div className="w-4 h-1.5 bg-white text-black font-semibold rounded-sm" />
+                        <div className="w-1.5 h-1.5 bg-white/10 rounded-sm" />
+                        <div className="w-1.5 h-1.5 bg-white/10 rounded-sm" />
                       </div>
                     </div>
                   </div>
 
-                  {/* Steps footer */}
-                  <div className="flex justify-between items-end border-t border-white/5 pt-3">
+                  <div className="flex justify-between items-end border-t border-white/5 pt-3 text-left">
                     <div>
-                      <h3 className="text-xl font-bold tracking-tight">{rawData.steps.toLocaleString()}</h3>
-                      <span className="text-[9px] text-neutral-400 uppercase font-semibold">Steps ({pipelineState.metrics.stress.confidence}% conf)</span>
+                      <h3 className="text-2xl font-black tracking-tight">{rawData.steps.toLocaleString()}</h3>
+                      <span className="text-[8px] text-neutral-400 uppercase font-semibold">Steps ({pipelineState.metrics.stress.confidence}% conf)</span>
                     </div>
-                    {/* Small vertical bar indicators */}
                     <div className="flex gap-1 items-end h-7">
-                      <div className="w-1 h-3 bg-orange-500/30 rounded-full" />
-                      <div className="w-1 h-5 bg-orange-500 rounded-full" />
-                      <div className="w-1 h-4 bg-orange-500/60 rounded-full" />
-                      <div className="w-1 h-6 bg-orange-500 rounded-full" />
+                      <div className="w-1 h-3 bg-white text-black font-semibold/30 rounded-full" />
+                      <div className="w-1 h-5 bg-white text-black font-semibold rounded-full" />
+                      <div className="w-1 h-4 bg-white text-black font-semibold/60 rounded-full" />
+                      <div className="w-1 h-6 bg-white text-black font-semibold rounded-full" />
                     </div>
                   </div>
                 </div>
@@ -810,23 +729,21 @@ export function DashboardView() {
                 {/* 2. Sleep Card */}
                 <div
                   onClick={() => setExplainMetric("sleep")}
-                  className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 group cursor-pointer"
+                  className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-5 flex flex-col justify-between h-[255px] hover:border-white/20/25 hover:-translate-y-[2px] transition-all duration-500 group cursor-pointer shadow-2xl"
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                        <Moon className="w-4.5 h-4.5 text-white" />
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-cyan-400">
+                        <Moon className="w-4.5 h-4.5" />
                       </div>
-                      <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">Sleep</span>
+                      <span className="text-[10px] font-black text-neutral-200 uppercase tracking-widest">Sleep</span>
                     </div>
-                    {/* Sleep adjusters */}
                     <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => setSleepHours(prev => Math.max(0, prev - 0.25))} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">-</button>
-                      <button onClick={() => setSleepHours(prev => prev + 0.25)} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">+</button>
+                      <button onClick={() => setSleepHours(prev => Math.max(0, prev - 0.25))} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer text-white">-</button>
+                      <button onClick={() => setSleepHours(prev => prev + 0.25)} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer text-white">+</button>
                     </div>
                   </div>
 
-                  {/* Sleep Recharts area chart */}
                   <div className="h-16 w-full mt-2">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={sleepData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
@@ -841,10 +758,10 @@ export function DashboardView() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="flex justify-between items-end border-t border-white/5 pt-3">
+                  <div className="flex justify-between items-end border-t border-white/5 pt-3 text-left">
                     <div>
-                      <h3 className="text-xl font-bold tracking-tight">{pipelineState.metrics.sleep.displayValue}</h3>
-                      <span className="text-[9px] text-neutral-400 uppercase font-semibold">Sleep Score: {pipelineState.metrics.sleep.rawScore} ({pipelineState.metrics.sleep.confidence}% conf)</span>
+                      <h3 className="text-2xl font-black tracking-tight">{pipelineState.metrics.sleep.displayValue}</h3>
+                      <span className="text-[8px] text-neutral-400 uppercase font-semibold">Sleep Score: {pipelineState.metrics.sleep.rawScore} ({pipelineState.metrics.sleep.confidence}% conf)</span>
                     </div>
                   </div>
                 </div>
@@ -852,23 +769,21 @@ export function DashboardView() {
                 {/* 3. Heart Card */}
                 <div
                   onClick={() => setExplainMetric("heart")}
-                  className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-5 flex flex-col justify-between h-[255px] hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 group cursor-pointer"
+                  className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-5 flex flex-col justify-between h-[255px] hover:border-white/20/25 hover:-translate-y-[2px] transition-all duration-500 group cursor-pointer shadow-2xl"
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                        <Heart className="w-4.5 h-4.5 text-white animate-pulse" />
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-red-400">
+                        <Heart className="w-4.5 h-4.5 animate-pulse" />
                       </div>
-                      <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">Heart (HRV)</span>
+                      <span className="text-[10px] font-black text-neutral-200 uppercase tracking-widest">Heart (HRV)</span>
                     </div>
-                    {/* HRV adjusters */}
                     <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => setHrv(prev => Math.max(10, prev - 5))} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">-</button>
-                      <button onClick={() => setHrv(prev => prev + 5)} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">+</button>
+                      <button onClick={() => setHrv(prev => Math.max(10, prev - 5))} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer text-white">-</button>
+                      <button onClick={() => setHrv(prev => prev + 5)} className="w-5 h-5 bg-white/5 border border-white/10 rounded text-[9px] flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer text-white">+</button>
                     </div>
                   </div>
 
-                  {/* Heart rate visual bars representation - segmented blocks */}
                   <div className="h-14 flex items-end justify-center gap-1.5 mt-2">
                     {[
                       { day: 'M', active: false, h: 5 },
@@ -901,10 +816,10 @@ export function DashboardView() {
                     ))}
                   </div>
 
-                  <div className="flex justify-between items-end border-t border-white/5 pt-3">
+                  <div className="flex justify-between items-end border-t border-white/5 pt-3 text-left">
                     <div>
-                      <h3 className="text-xl font-bold tracking-tight">{pipelineState.metrics.heart.displayValue}</h3>
-                      <span className="text-[9px] text-neutral-400 uppercase font-semibold">{pipelineState.metrics.hrv.displayValue} HRV ({pipelineState.metrics.heart.confidence}% conf)</span>
+                      <h3 className="text-2xl font-black tracking-tight">{pipelineState.metrics.heart.displayValue}</h3>
+                      <span className="text-[8px] text-neutral-400 uppercase font-semibold">{pipelineState.metrics.hrv.displayValue} HRV ({pipelineState.metrics.heart.confidence}% conf)</span>
                     </div>
                   </div>
                 </div>
@@ -917,19 +832,18 @@ export function DashboardView() {
                 {/* 4. Wellness Score Card */}
                 <div
                   onClick={() => setExplainMetric("wellness")}
-                  className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 h-[260px] flex flex-col justify-between relative overflow-hidden group hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
+                  className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-6 h-[260px] flex flex-col justify-between relative overflow-hidden group hover:border-white/20/25 hover:-translate-y-[2px] transition-all duration-500 cursor-pointer shadow-2xl"
                 >
-                  {/* Elegant layered sine wave graphic representing frequency */}
-                  <div className="absolute inset-x-0 bottom-14 h-24 pointer-events-none z-0 opacity-40">
+                  <div className="absolute inset-x-0 bottom-14 h-24 pointer-events-none z-0 opacity-20">
                     <svg className="w-full h-full" viewBox="0 0 400 100" fill="none">
-                      <path d="M0,50 C100,10 150,90 250,30 C320,0 360,70 400,40" stroke="#f97316" strokeWidth="2" strokeLinecap="round" />
+                      <path d="M0,50 C100,10 150,90 250,30 C320,0 360,70 400,40" stroke="#0a84ff" strokeWidth="2" strokeLinecap="round" />
                       <path d="M0,60 C80,30 180,80 280,40 C340,15 370,60 400,50" stroke="#eab308" strokeWidth="1.5" strokeLinecap="round" />
                       <path d="M0,40 C120,70 200,20 300,60 C350,80 380,30 400,45" stroke="#ffffff" strokeWidth="1" strokeLinecap="round" />
                     </svg>
                   </div>
 
                   <div className="flex justify-between items-center relative z-10">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-300">Wellness Score</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-300">Wellness Score</span>
                     <button className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-semibold uppercase tracking-wider" onClick={(e) => e.stopPropagation()}>
                       <span>Live</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -937,31 +851,31 @@ export function DashboardView() {
                   </div>
 
                   <div className="flex flex-col items-center justify-center my-auto relative z-10 text-center">
-                    <h2 className="text-5xl font-black text-white tracking-tight leading-none text-glow">{wellnessScore}</h2>
-                    <span className="text-xs font-bold text-orange-400 mt-1.5 uppercase tracking-wide">
+                    <h2 className="text-whitexl font-black text-white tracking-tight leading-none text-glow">{wellnessScore}</h2>
+                    <span className="text-[10px] font-black text-neutral-300 mt-2 uppercase tracking-widest">
                       {pipelineState.metrics.wellness.status === "Excellent" ? "Optimal Performance" : pipelineState.metrics.wellness.status === "Good" ? "Stable Condition" : "Requires Rest"}
                     </span>
-                    <span className="text-[10px] text-neutral-400 mt-0.5">Responsive Bio-Logic Engine</span>
+                    <span className="text-[9px] text-neutral-400 mt-0.5 uppercase tracking-wide">Bio-Logic Engine v1</span>
                   </div>
 
-                  <div className="flex justify-between items-center border-t border-white/5 pt-4 text-xs relative z-10" onClick={(e) => e.stopPropagation()}>
-                    <div className="text-left">
-                      <span className="text-[8px] text-neutral-500 block uppercase tracking-wider font-bold">Sleep quality</span>
-                      <span className="font-semibold text-neutral-200">{sleepHours}h</span>
+                  <div className="flex justify-between items-center border-t border-white/5 pt-4 text-xs relative z-10 text-left" onClick={(e) => e.stopPropagation()}>
+                    <div>
+                      <span className="text-[8px] text-neutral-500 block uppercase tracking-wider font-bold">Sleep</span>
+                      <span className="font-bold text-neutral-200">{sleepHours}h</span>
                     </div>
                     <button
                       onClick={() => {
                         setIsChatOpen(true);
-                        handleAuraQuery("Analyze my Wellness Score");
+                        handleSubmit("Analyze my Wellness Score");
                       }}
-                      className="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 text-[9px] font-bold text-neutral-200 transition-colors flex items-center gap-1 cursor-pointer uppercase tracking-wider"
+                      className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-[9px] font-black text-neutral-200 transition-colors flex items-center gap-1 cursor-pointer uppercase tracking-widest"
                     >
                       <Activity className="w-3.5 h-3.5 text-neutral-400" />
-                      <span>Request Audit</span>
+                      <span>Audit</span>
                     </button>
                     <div className="text-right">
-                      <span className="text-[8px] text-neutral-500 block uppercase tracking-wider font-bold">HRV Index</span>
-                      <span className="font-semibold text-neutral-200">{hrv} ms</span>
+                      <span className="text-[8px] text-neutral-500 block uppercase tracking-wider font-bold">HRV</span>
+                      <span className="font-bold text-neutral-200">{hrv} ms</span>
                     </div>
                   </div>
                 </div>
@@ -969,11 +883,9 @@ export function DashboardView() {
                 {/* 5. Focus Activity Card */}
                 <div
                   onClick={() => setExplainMetric("focus")}
-                  className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 h-[260px] flex flex-col justify-between relative overflow-hidden group hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
+                  className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-6 h-[260px] flex flex-col justify-between relative overflow-hidden group hover:border-white/20/25 hover:-translate-y-[2px] transition-all duration-500 cursor-pointer shadow-2xl"
                 >
-
-                  {/* High density vertical signal strength graph representing focus flow */}
-                  <div className="absolute inset-x-6 bottom-16 h-14 flex items-end justify-center gap-[3px] opacity-15 pointer-events-none">
+                  <div className="absolute inset-x-6 bottom-16 h-14 flex items-end justify-center gap-[3px] opacity-10 pointer-events-none">
                     {Array.from({ length: 48 }).map((_, i) => {
                       const h = Math.abs(Math.sin(i * 0.15)) * 36 + 6;
                       return <div key={i} className="w-[2px] bg-white rounded-full" style={{ height: `${h}px` }} />;
@@ -981,7 +893,7 @@ export function DashboardView() {
                   </div>
 
                   <div className="flex justify-between items-center relative z-10">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-300">Focus Activity</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-300">Focus Activity</span>
                     <button className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-semibold uppercase tracking-wider" onClick={(e) => e.stopPropagation()}>
                       <span>Daily</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -989,23 +901,23 @@ export function DashboardView() {
                   </div>
 
                   <div className="flex flex-col items-center justify-center my-auto relative z-10 text-center">
-                    <h2 className="text-5xl font-black text-white tracking-tight leading-none">{pipelineState.metrics.focus.rawScore}</h2>
-                    <span className="text-xs font-bold text-orange-400 mt-1.5 uppercase tracking-wide">Focus Score</span>
-                    <span className="text-[10px] text-neutral-400 mt-0.5">Deep Work {(rawData.deepWorkMin ?? 240) / 60}h</span>
+                    <h2 className="text-whitexl font-black text-white tracking-tight leading-none">{pipelineState.metrics.focus.rawScore}</h2>
+                    <span className="text-[10px] font-black text-neutral-300 mt-2 uppercase tracking-widest">Focus Score</span>
+                    <span className="text-[9px] text-neutral-400 mt-0.5 uppercase tracking-wide">Deep Work {(rawData.deepWorkMin ?? 240) / 60}h</span>
                   </div>
 
-                  <div className="flex justify-between items-center border-t border-white/5 pt-4 text-xs relative z-10" onClick={(e) => e.stopPropagation()}>
-                    <div className="text-left">
-                      <span className="text-[8px] text-neutral-500 block uppercase tracking-wider font-bold">Avg Session</span>
-                      <span className="font-semibold text-neutral-200">42 min</span>
+                  <div className="flex justify-between items-center border-t border-white/5 pt-4 text-xs relative z-10 text-left" onClick={(e) => e.stopPropagation()}>
+                    <div>
+                      <span className="text-[8px] text-neutral-500 block uppercase tracking-wider font-bold">Session</span>
+                      <span className="font-bold text-neutral-200">42 min</span>
                     </div>
-                    <button className="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 text-[9px] font-bold text-neutral-200 transition-colors flex items-center gap-1 cursor-pointer uppercase tracking-wider">
+                    <button className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-[9px] font-black text-neutral-200 transition-colors flex items-center gap-1 cursor-pointer uppercase tracking-widest">
                       <Activity className="w-3.5 h-3.5 text-neutral-400" />
                       <span>Insights</span>
                     </button>
                     <div className="text-right">
                       <span className="text-[8px] text-neutral-500 block uppercase tracking-wider font-bold">Deep Work</span>
-                      <span className="font-semibold text-neutral-200">{(rawData.deepWorkMin ?? 240) / 60}h</span>
+                      <span className="font-bold text-neutral-200">{(rawData.deepWorkMin ?? 240) / 60}h</span>
                     </div>
                   </div>
                 </div>
@@ -1020,21 +932,19 @@ export function DashboardView() {
               {/* 6. Balanced Energy & Recovery State tall card */}
               <div
                 onClick={() => setExplainMetric("stress")}
-                className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[36px] overflow-hidden flex flex-col justify-between h-full min-h-[540px] relative group hover:border-orange-500/20 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
+                className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[32px] overflow-hidden flex flex-col justify-between h-full min-h-[540px] relative group hover:border-white/20/25 hover:-translate-y-[2px] transition-all duration-500 cursor-pointer shadow-2xl"
               >
-                {/* Forest background at the bottom matching mockup */}
                 <div
-                  className="absolute inset-0 bg-cover bg-bottom opacity-25 mix-blend-luminosity pointer-events-none z-0"
+                  className="absolute inset-0 bg-cover bg-bottom opacity-10 mix-blend-luminosity pointer-events-none z-0"
                   style={{
                     backgroundImage: `url('https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=600')`
                   }}
                 />
 
-                {/* Top header row inside card: Pill buttons */}
                 <div className="p-5 relative z-10" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-between items-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-full p-1.5 max-w-[285px] mx-auto shadow-inner">
+                  <div className="flex justify-between items-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-full p-1.5 max-w-[280px] mx-auto shadow-lg">
                     {[
-                      { icon: Flame, color: 'text-orange-500' },
+                      { icon: Flame, color: 'text-white' },
                       { icon: Zap, color: 'text-yellow-400' },
                       { icon: Activity, color: 'text-white' },
                       { icon: Award, color: 'text-white' },
@@ -1050,22 +960,17 @@ export function DashboardView() {
                   </div>
                 </div>
 
-                {/* Dial Gauge Indicator */}
                 <div className="flex flex-col items-center justify-center p-6 relative z-10 my-auto">
-
-                  {/* Gauge Arc SVG */}
                   <div className="relative w-60 h-44 flex items-center justify-center">
                     <svg className="w-full h-full" viewBox="0 0 200 130">
-                      {/* Dotted background path */}
                       <path
                         d="M30 110 A 70 70 0 0 1 170 110"
                         fill="none"
-                        stroke="#262626"
+                        stroke="#1a1a24"
                         strokeWidth="8"
                         strokeLinecap="round"
                         strokeDasharray="4 4"
                       />
-                      {/* Active white dotted path based on stress level (1 to 5) */}
                       <path
                         d="M30 110 A 70 70 0 0 1 100 40"
                         fill="none"
@@ -1074,8 +979,6 @@ export function DashboardView() {
                         strokeLinecap="round"
                         strokeDasharray="4 4"
                       />
-
-                      {/* Needle pointing to stress index */}
                       <line
                         x1="100"
                         y1="110"
@@ -1088,61 +991,56 @@ export function DashboardView() {
                       <circle cx="100" cy="110" r="5" fill="#ffffff" />
                     </svg>
 
-                    {/* Speedometer center text labels */}
                     <div className="absolute bottom-4 flex flex-col items-center">
-                      <span className="text-[9px] text-neutral-400 uppercase tracking-widest font-semibold">Stress Index</span>
-                      <h2 className="text-3xl font-extrabold text-white tracking-tight">{pipelineState.metrics.stress.displayValue}</h2>
+                      <span className="text-[8px] text-neutral-500 uppercase tracking-widest font-black">Stress Index</span>
+                      <h2 className="text-whitexl font-black text-white tracking-tight">{pipelineState.metrics.stress.displayValue}</h2>
                     </div>
                   </div>
 
-                  {/* Stress Level adjusters */}
                   <div className="flex justify-center gap-3 mt-2 relative z-20" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setStressLevel(prev => Math.max(1.0, parseFloat((prev - 0.2).toFixed(1))))}
-                      className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[9px] transition-colors cursor-pointer uppercase font-bold text-neutral-300"
+                      className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[9px] font-black tracking-widest uppercase transition-all cursor-pointer text-white"
                     >
-                      - Less Stress
+                      - Low
                     </button>
                     <button
                       onClick={() => setStressLevel(prev => Math.min(5.0, parseFloat((prev + 0.2).toFixed(1))))}
-                      className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[9px] transition-colors cursor-pointer uppercase font-bold text-neutral-300"
+                      className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[9px] font-black tracking-widest uppercase transition-all cursor-pointer text-white"
                     >
-                      + More Stress
+                      + High
                     </button>
                   </div>
 
-                  {/* Overlapping wavy lines underneath dial */}
-                  <div className="w-full h-10 relative flex items-center justify-center overflow-hidden mt-2">
-                    <svg className="w-48 h-full opacity-65" viewBox="0 0 200 40">
-                      <path d="M0 20 C30 10, 50 30, 80 20 C110 10, 130 30, 160 20 C180 15, 190 25, 200 20" stroke="#f97316" strokeWidth="2" fill="none" />
+                  <div className="w-full h-10 relative flex items-center justify-center overflow-hidden mt-4">
+                    <svg className="w-48 h-full opacity-30" viewBox="0 0 200 40">
+                      <path d="M0 20 C30 10, 50 30, 80 20 C110 10, 130 30, 160 20 C180 15, 190 25, 200 20" stroke="#0a84ff" strokeWidth="2" fill="none" />
                       <path d="M0 25 C20 15, 60 35, 100 25 C140 15, 170 35, 200 25" stroke="#eab308" strokeWidth="1.5" fill="none" />
                       <path d="M0 15 C40 30, 80 10, 120 20 C160 30, 180 10, 200 15" stroke="#ffffff" strokeWidth="1" fill="none" />
                     </svg>
                   </div>
                 </div>
 
-                {/* Bottom title labels */}
-                <div className="p-6 text-center relative z-10 border-t border-white/5 bg-black/40 backdrop-blur-md">
-                  <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wide">Stress & Adaptive Energy Dial</h3>
-                  <span className="text-[10px] text-neutral-400 mt-1 block">Dynamic Biometric Stability Index</span>
+                <div className="p-5 text-center relative z-10 border-t border-white/5 bg-black/50">
+                  <h3 className="text-[10px] font-black text-neutral-100 uppercase tracking-widest">Adaptive Energy Dial</h3>
+                  <span className="text-[9px] text-neutral-400 mt-1 block uppercase font-bold tracking-wider">Dynamic Biometric Stability</span>
                 </div>
-
               </div>
 
               {/* 7. Burnout risk indicator widget */}
-              <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[36px] overflow-hidden p-6 mt-6 space-y-4 hover:border-orange-500/20 transition-all duration-300">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-neutral-300">Burnout Prediction</span>
-                  <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-orange-500/10 text-orange-500 border border-orange-500/20">Risk: MEDIUM</span>
+              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[32px] p-6 mt-6 space-y-4 hover:border-white/20/25 transition-all duration-500 shadow-2xl">
+                <div className="flex justify-between items-center text-left">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-neutral-300">Burnout Prediction</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-white/5 text-neutral-300 border border-white/10">Risk: MEDIUM</span>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-full border-2 border-orange-500/30 border-t-orange-500 flex items-center justify-center relative shrink-0">
-                    <span className="text-[10px] font-extrabold text-white">42%</span>
+                <div className="flex items-center gap-4 text-left">
+                  <div className="w-14 h-14 rounded-full border-2 border-white/20/35 border-t-brand flex items-center justify-center relative shrink-0">
+                    <span className="text-xs font-black text-white">42%</span>
                   </div>
                   <div className="space-y-1">
                     <h4 className="text-xs font-bold text-white">Mild Sleep Debt Accumulated</h4>
-                    <p className="text-[10px] text-neutral-400 leading-normal">
+                    <p className="text-[10px] text-neutral-400 leading-relaxed">
                       HRV patterns display normal vagal base tone but sleep levels dropped by 18%. Target a 30m wind-down schedule tonight to avoid exhaustion triggers.
                     </p>
                   </div>
@@ -1160,52 +1058,52 @@ export function DashboardView() {
       {/* --- EXPLAINABILITY DETAIL DIALOG --- */}
       <AnimatePresence>
         {explainMetric && pipelineState.metrics[explainMetric] && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg aura-overlay backdrop-blur-3xl rounded-[32px] p-6 border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.8)] text-white"
+              className="w-full max-w-lg bg-[#0f0f13]/95 border border-white/10 rounded-[32px] p-6 shadow-2xl backdrop-blur-2xl text-white"
             >
-              <div className="flex justify-between items-center pb-4 border-b border-white/5">
+              <div className="flex justify-between items-center pb-4 border-b border-white/5 text-left">
                 <div>
-                  <h4 className="font-extrabold text-base tracking-wider uppercase">{pipelineState.metrics[explainMetric].title} Intelligence</h4>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-widest">Algorithm Engine Version: 1.0.0</span>
+                  <h4 className="font-extrabold text-sm tracking-wider uppercase text-white">{pipelineState.metrics[explainMetric].title} Analysis</h4>
+                  <span className="text-[8px] text-neutral-500 uppercase tracking-widest block font-bold">Engine version: 1.0.0</span>
                 </div>
                 <button
                   onClick={() => setExplainMetric(null)}
                   className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
                 >
-                  <X className="w-4.5 h-4.5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="my-6 space-y-5">
+              <div className="my-6 space-y-5 text-left">
                 <div className="flex justify-between items-end bg-white/5 p-4 rounded-2xl border border-white/5">
                   <div>
-                    <span className="text-[10px] text-neutral-400 block uppercase font-bold">Today's score</span>
-                    <span className="text-3xl font-black text-white">{pipelineState.metrics[explainMetric].displayValue}</span>
+                    <span className="text-[8px] text-neutral-400 block uppercase font-bold">Value</span>
+                    <span className="text-2xl font-black text-white">{pipelineState.metrics[explainMetric].displayValue}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] text-neutral-400 block uppercase font-bold">Calculation Confidence</span>
-                    <span className="text-sm font-extrabold text-orange-400">{pipelineState.metrics[explainMetric].confidence}%</span>
+                    <span className="text-[8px] text-neutral-400 block uppercase font-bold">Confidence</span>
+                    <span className="text-sm font-extrabold text-neutral-300">{pipelineState.metrics[explainMetric].confidence}%</span>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <h5 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">How was this calculated?</h5>
-                  <p className="text-xs text-neutral-300 leading-relaxed bg-black/25 p-3.5 rounded-xl border border-white/5">
+                <div className="space-y-1.5">
+                  <h5 className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">How was this calculated?</h5>
+                  <p className="text-xs text-neutral-300 leading-relaxed bg-black/30 p-4 rounded-xl border border-white/5">
                     {pipelineState.metrics[explainMetric].explanation}
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  <h5 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">Contributing Factors</h5>
+                <div className="space-y-2">
+                  <h5 className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Contributing Factors</h5>
                   <div className="space-y-2">
                     {pipelineState.metrics[explainMetric].factors.map((factor, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-xs bg-white/5 px-3.5 py-2.5 rounded-xl">
-                        <span className="text-neutral-300">{factor.metric}</span>
-                        <span className={`font-bold ${factor.contribution >= 0 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                      <div key={idx} className="flex justify-between items-center text-xs bg-white/5 px-4 py-3 rounded-xl border border-white/5">
+                        <span className="text-neutral-300 font-medium">{factor.metric}</span>
+                        <span className={`font-bold ${factor.contribution >= 0 ? 'text-emerald-400' : 'text-neutral-300'}`}>
                           {factor.contribution >= 0 ? `+${factor.contribution}` : factor.contribution}%
                         </span>
                       </div>
@@ -1218,7 +1116,7 @@ export function DashboardView() {
                 onClick={() => setExplainMetric(null)}
                 className="w-full py-3 bg-white hover:bg-neutral-100 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
               >
-                Close Explanation
+                Close Analysis
               </button>
             </motion.div>
           </div>
@@ -1228,127 +1126,127 @@ export function DashboardView() {
       {/* --- MANUAL BIOMETRICS INPUT OVERLAY --- */}
       <AnimatePresence>
         {isManualInputOpen && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-xl aura-overlay backdrop-blur-3xl rounded-[32px] p-6 border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.8)] text-white"
+              className="w-full max-w-xl bg-[#0f0f13]/95 border border-white/10 rounded-[32px] p-6 shadow-2xl backdrop-blur-2xl text-white"
             >
-              <div className="flex justify-between items-center pb-4 border-b border-white/5">
+              <div className="flex justify-between items-center pb-4 border-b border-white/5 text-left">
                 <div>
-                  <h4 className="font-extrabold text-base tracking-wider uppercase">Log Daily Biometrics</h4>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-widest">Manual entry will recalculate all GAMA scores</span>
+                  <h4 className="font-extrabold text-sm tracking-wider uppercase">Log Daily Biometrics</h4>
+                  <span className="text-[8px] text-neutral-500 uppercase tracking-widest font-bold">Manual override will recalculate GAMA health engine metrics</span>
                 </div>
                 <button
                   onClick={() => setIsManualInputOpen(false)}
                   className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
                 >
-                  <X className="w-4.5 h-4.5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 my-6 max-h-[380px] overflow-y-auto pr-2 scrollbar-thin">
+              <div className="grid grid-cols-2 gap-4 my-6 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin text-left">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Steps Counter</label>
+                  <label className="text-[8px] text-neutral-400 uppercase tracking-widest font-black">Steps Counter</label>
                   <input
                     type="number"
                     value={manualInputs.steps ?? 10000}
                     onChange={(e) => setManualInputs({ steps: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white/20"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Sleep Duration (hrs)</label>
+                  <label className="text-[8px] text-neutral-400 uppercase tracking-widest font-black">Sleep Duration (hrs)</label>
                   <input
                     type="number"
                     step="0.1"
                     value={manualInputs.sleepHours ?? 7.0}
                     onChange={(e) => setManualInputs({ sleepHours: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white/20"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Heart Rate Variability (ms)</label>
+                  <label className="text-[8px] text-neutral-400 uppercase tracking-widest font-black">HRV (ms)</label>
                   <input
                     type="number"
                     value={manualInputs.hrv ?? 60}
                     onChange={(e) => setManualInputs({ hrv: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white/20"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Resting Heart Rate (bpm)</label>
+                  <label className="text-[8px] text-neutral-400 uppercase tracking-widest font-black">Resting HR (bpm)</label>
                   <input
                     type="number"
                     value={manualInputs.restingHeartRate ?? 65}
                     onChange={(e) => setManualInputs({ restingHeartRate: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white/20"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Current Heart Rate (bpm)</label>
+                  <label className="text-[8px] text-neutral-400 uppercase tracking-widest font-black">Current HR (bpm)</label>
                   <input
                     type="number"
                     value={manualInputs.currentHeartRate ?? 70}
                     onChange={(e) => setManualInputs({ currentHeartRate: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white/20"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Blood Oxygen Saturation (%)</label>
+                  <label className="text-[8px] text-neutral-400 uppercase tracking-widest font-black">Blood Oxygen (%)</label>
                   <input
                     type="number"
                     value={manualInputs.bloodOxygen ?? 98}
                     onChange={(e) => setManualInputs({ bloodOxygen: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white/20"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Blood Pressure (Systolic)</label>
+                  <label className="text-[8px] text-neutral-400 uppercase tracking-widest font-black">Systolic BP</label>
                   <input
                     type="number"
                     value={manualInputs.systolic ?? 120}
                     onChange={(e) => setManualInputs({ systolic: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white/20"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Blood Pressure (Diastolic)</label>
+                  <label className="text-[8px] text-neutral-400 uppercase tracking-widest font-black">Diastolic BP</label>
                   <input
                     type="number"
                     value={manualInputs.diastolic ?? 80}
                     onChange={(e) => setManualInputs({ diastolic: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white/20"
                   />
                 </div>
 
-                <div className="space-y-1.5 text-left">
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Water Intake (ml)</label>
+                <div className="space-y-1.5">
+                  <label className="text-[8px] text-neutral-400 uppercase tracking-widest font-black">Water Intake (ml)</label>
                   <input
                     type="number"
                     value={manualInputs.waterIntakeMl ?? 1500}
                     onChange={(e) => setManualInputs({ waterIntakeMl: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white/20"
                   />
                 </div>
 
-                <div className="space-y-1.5 text-left">
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold font-sans">Mood Rating (1 to 5)</label>
+                <div className="space-y-1.5">
+                  <label className="text-[8px] text-neutral-400 uppercase tracking-widest font-black">Mood (1 to 5)</label>
                   <input
                     type="number"
                     min="1"
                     max="5"
                     value={manualInputs.mood ?? 3}
                     onChange={(e) => setManualInputs({ mood: parseInt(e.target.value) || 3 })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white/20"
                   />
                 </div>
               </div>
@@ -1359,7 +1257,7 @@ export function DashboardView() {
                     toast.success("Manual biometrics successfully saved!");
                     setIsManualInputOpen(false);
                   }}
-                  className="flex-1 py-3 bg-orange-500 hover:bg-orange-400 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                  className="flex-1 py-3 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   Save Log
                 </button>

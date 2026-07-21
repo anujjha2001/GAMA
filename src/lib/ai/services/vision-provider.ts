@@ -1,6 +1,5 @@
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { google } from "@ai-sdk/google";
 
 export type VisionProviderType = "openai" | "google";
 
@@ -14,14 +13,14 @@ export class VisionProvider {
   static async analyzeImage(
     imageUrl: string,
     prompt: string,
-    provider: VisionProviderType = "google",
-    modelName: string = "gemini-2.5-flash"
+    provider: VisionProviderType = "openai",
+    modelName: string = "gpt-4o"
   ): Promise<VisionResponse> {
     const startTime = Date.now();
     
     let model;
     if (provider === "google") {
-      model = google(modelName);
+      throw new Error("Google AI Provider is not configured or installed. Please use OpenAI.");
     } else {
       model = openai(modelName);
     }
@@ -44,7 +43,7 @@ export class VisionProvider {
     return {
       content: result.text,
       latencyMs,
-      tokensUsed: result.usage.totalTokens,
+      tokensUsed: result.usage?.totalTokens || 0,
     };
   }
 }

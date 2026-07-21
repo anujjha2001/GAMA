@@ -49,6 +49,11 @@ export function AuraImageCard({ images }: AuraImageCardProps) {
             alt={currentImage.altText || currentImage.title}
             className={`w-full h-full object-cover transition-all duration-500 ${isLoaded ? 'scale-100 blur-0' : 'scale-105 blur-md'}`}
             onLoad={() => setIsLoaded(true)}
+            onError={(e) => {
+              console.warn('AuraImageCard image load failed. Using placeholder.');
+              setIsLoaded(true);
+              e.currentTarget.src = `https://loremflickr.com/800/600/health,wellness?sig=${activeIndex}`;
+            }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -58,7 +63,7 @@ export function AuraImageCard({ images }: AuraImageCardProps) {
         {/* Loading Indicator */}
         {!isLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-            <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-white/20 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
@@ -82,7 +87,7 @@ export function AuraImageCard({ images }: AuraImageCardProps) {
 
         {/* Source Badge */}
         <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-black/60 backdrop-blur-md text-[10px] text-neutral-300 font-medium tracking-wide flex items-center gap-1 border border-white/5">
-          <ImageIcon className="w-3 h-3 text-orange-400" />
+          <ImageIcon className="w-3 h-3 text-neutral-300" />
           <span>{currentImage.sourceName}</span>
         </div>
       </div>
@@ -97,7 +102,7 @@ export function AuraImageCard({ images }: AuraImageCardProps) {
             href={currentImage.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] text-orange-400 hover:text-orange-300 flex items-center gap-1 shrink-0 font-semibold tracking-wider uppercase transition-colors"
+            className="text-[10px] text-neutral-300 hover:text-white flex items-center gap-1 shrink-0 font-semibold tracking-wider uppercase transition-colors"
           >
             <span>View Source</span>
             <ExternalLink className="w-2.5 h-2.5" />
@@ -119,7 +124,7 @@ export function AuraImageCard({ images }: AuraImageCardProps) {
                   setActiveIndex(idx);
                 }}
                 className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${
-                  activeIndex === idx ? 'border-orange-500 scale-95' : 'border-white/5 hover:border-white/20'
+                  activeIndex === idx ? 'border-white/20 scale-95' : 'border-white/5 hover:border-white/20'
                 }`}
               >
                 <img src={img.thumbnailUrl} alt={img.title} className="w-full h-full object-cover" />

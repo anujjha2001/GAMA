@@ -1,16 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { useTheme } from 'next-themes';
 import { useHealthStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sun, Moon, Shield, RefreshCw, Trash2, Plus, Check, Save, HardDrive, BellRing, Heart, Radio
+  Moon, Shield, RefreshCw, Trash2, Plus, Check, Save, HardDrive, BellRing, Heart, Radio
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
   const {
     memoryTags, addMemoryTag, removeMemoryTag,
@@ -40,10 +38,10 @@ export default function SettingsPage() {
       <div className="relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col justify-between min-h-[160px] border border-white/10 hover:border-white/20 transition-all duration-300">
         <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-black-500/10 via-transparent to-transparent pointer-events-none" />
         <div className="space-y-2">
-          <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-1.5">
             <Radio className="w-3.5 h-3.5 animate-pulse" /> Core Preferences & Sync
           </span>
-          <h1 className="text-3xl font-bold tracking-tight">Settings Portal</h1>
+          <h1 className="text-whitexl font-bold tracking-tight">Settings Portal</h1>
           <p className="text-xs text-muted-foreground max-w-xl">
             Configure AURA's neural pathways, synchronize biometric wearables, and review long-term health memories stored locally.
           </p>
@@ -56,33 +54,14 @@ export default function SettingsPage() {
           <div className="rounded-[32px] bg-black/35 backdrop-blur-xl p-6 border border-white/10 space-y-6 hover:border-white/20 transition-all duration-300">
             <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-400">Theme Mode</h3>
 
-            <div className="grid grid-cols-2 gap-3 p-1 bg-white/5 border border-white/5 rounded-2xl">
-              <button
-                onClick={() => {
-                  setTheme('light');
-                  toast.success('Pure Zen light theme activated');
-                }}
-                className={`py-3 rounded-xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${theme === 'light'
-                  ? 'bg-white/10 text-white shadow-md font-semibold'
-                  : 'text-neutral-400 hover:text-white'
-                  }`}
-              >
-                <Sun className="w-5 h-5" />
-                <span className="text-[10px] uppercase tracking-wider">Pure Zen</span>
-              </button>
-              <button
-                onClick={() => {
-                  setTheme('dark');
-                  toast.success('Deep Space Premium dark theme activated');
-                }}
-                className={`py-3 rounded-xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${theme === 'dark'
-                  ? 'bg-white/10 text-white shadow-md font-semibold'
-                  : 'text-neutral-400 hover:text-white'
-                  }`}
-              >
+            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
+              <div className="p-2.5 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
                 <Moon className="w-5 h-5" />
-                <span className="text-[10px] uppercase tracking-wider">Deep Space</span>
-              </button>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white">Deep Space Dark Mode</p>
+                <p className="text-[10px] text-neutral-400 mt-0.5">Exclusive, optimized ambient interface theme.</p>
+              </div>
             </div>
 
             <div className="border-t border-white/5 pt-6 space-y-4">
@@ -104,7 +83,7 @@ export default function SettingsPage() {
                     step="500"
                     value={steps}
                     onChange={(e) => setSteps(parseInt(e.target.value))}
-                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
                   />
                 </div>
 
@@ -120,7 +99,7 @@ export default function SettingsPage() {
                     step="0.25"
                     value={sleepHours}
                     onChange={(e) => setSleepHours(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
                   />
                 </div>
 
@@ -136,7 +115,7 @@ export default function SettingsPage() {
                     step="2"
                     value={hrv}
                     onChange={(e) => setHrv(parseInt(e.target.value))}
-                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
                   />
                 </div>
 
@@ -152,7 +131,7 @@ export default function SettingsPage() {
                     step="0.1"
                     value={stressLevel}
                     onChange={(e) => setStressLevel(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
                   />
                 </div>
               </div>
@@ -170,7 +149,7 @@ export default function SettingsPage() {
                   Persistent facts, Every meal choices, preferences, and conditions AURA cross-references during conversations.
                 </p>
               </div>
-              <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500">
+              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white">
                 <HardDrive className="w-4 h-4" />
               </div>
             </div>
@@ -181,7 +160,7 @@ export default function SettingsPage() {
                 <select
                   value={newTagCat}
                   onChange={(e: any) => setNewTagCat(e.target.value)}
-                  className="w-full bg-grey/5 border border-grey/5 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  className="w-full bg-grey/5 border border-grey/5 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-white"
                 >
                   <option value="preference">Preference</option>
                   <option value="medical">Medical Condition</option>
@@ -195,14 +174,14 @@ export default function SettingsPage() {
                   placeholder="e.g. Loves mungfali, gluten intolerant..."
                   value={newTagVal}
                   onChange={(e) => setNewTagVal(e.target.value)}
-                  className="flex-1 bg-white/5 border border-white/5 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500 placeholder-neutral-500"
+                  className="flex-1 bg-white/5 border border-white/5 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-white placeholder-neutral-500"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleAddTag();
                   }}
                 />
                 <button
                   onClick={handleAddTag}
-                  className="px-3 bg-orange-500 hover:bg-orange-400 text-white rounded-xl flex items-center justify-center cursor-pointer transition-colors"
+                  className="px-3 bg-white text-black font-semibold hover:bg-neutral-200 text-white rounded-xl flex items-center justify-center cursor-pointer transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
