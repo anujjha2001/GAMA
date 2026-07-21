@@ -258,6 +258,14 @@ model Food {
   iron      Float?
   vitaminC  Float?
   vitaminD  Float?
+  magnesium    Float?
+  vitaminA     Float?
+  vitaminB12   Float?
+  glycemicIndex Float?
+  glycemicLoad  Float?
+  apiSource    String?
+  confidence   Float?
+  cachedAt     DateTime?
 
   isVegetarian Boolean @default(false)
   isVegan      Boolean @default(false)

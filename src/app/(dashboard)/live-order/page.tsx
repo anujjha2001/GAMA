@@ -15,6 +15,8 @@ import { FoodProviderManager, Restaurant, Meal, GroceryItem } from '@/lib/ai/mar
 import { MockProvider } from '@/lib/ai/marketplace/mock-provider';
 import RestaurantOverlay from '@/components/live-order/RestaurantOverlay';
 import PreOrderChecklist from '@/components/live-order/PreOrderChecklist';
+import NearbyRestaurantsPanel from '@/components/live-order/NearbyRestaurantsPanel';
+import EdamamNutritionPanel from '@/components/live-order/EdamamNutritionPanel';
 
 // Initialize Pluggable Mock Provider
 if (typeof window !== 'undefined') {
@@ -27,7 +29,7 @@ export default function LiveOrderPage() {
   const provider = React.useMemo(() => FoodProviderManager.getProvider(), []);
 
   // UI Modes & States
-  const [activeTab, setActiveTab] = React.useState<'restaurant' | 'grocery' | 'planner' | 'insights'>('restaurant');
+  const [activeTab, setActiveTab] = React.useState<'restaurant' | 'grocery' | 'planner' | 'insights' | 'nearby'>('restaurant');
   const [selectedRestaurant, setSelectedRestaurant] = React.useState<Restaurant | null>(null);
   const [checkoutMeal, setCheckoutMeal] = React.useState<Meal | null>(null);
 
@@ -60,7 +62,7 @@ export default function LiveOrderPage() {
 
   // Mood & Weather Intelligence States
   const [currentWeather, setCurrentWeather] = React.useState<'Hot & Humid' | 'Monsoon Rain' | 'Cool Winter'>('Hot & Humid');
-  const [currentMood, setCurrentMood] = React.useState<'Stressed' | 'Low Energy' | 'High Recovery'>('');
+  const [currentMood, setCurrentMood] = React.useState<'Stressed' | 'Low Energy' | 'High Recovery' | ''>('');
 
   // Budget Engine States
   const [monthlyLimit, setMonthlyLimit] = React.useState(15000);
@@ -216,7 +218,11 @@ export default function LiveOrderPage() {
     generateWeeklyPlan();
   }, [plannerGoal]);
 
-  if (!mounted) return null;
+  if (!mounted) return (
+    <div className="min-h-screen bg-[#070709] flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-white/10 border-t-orange-500 rounded-full animate-spin" />
+    </div>
+  );
 
   // Smart Geolocation triggers
   const requestGPSLocation = () => {
@@ -292,7 +298,26 @@ export default function LiveOrderPage() {
   };
 
   const triggerOrderRedirection = (meal: Meal) => {
-    toast.success(`Opening Swiggy/Zomato deep-link to ${meal.restaurantName}...`);
+    toast.success(`Opening ${meal.platform || 'Swiggy/Zomato'} deep-link to ${meal.restaurantName}...`);
+
+    // Deep Link Redirection with Fallback
+    const platform = (meal.platform || 'Swiggy') as 'Swiggy' | 'Zomato';
+    const encodedName = encodeURIComponent(meal.restaurantName);
+    const appUri = platform === 'Swiggy'
+      ? `swiggy://restaurant?name=${encodedName}`
+      : `zomato://restaurant?name=${encodedName}`;
+    const webUri = platform === 'Swiggy'
+      ? `https://www.swiggy.com/search?query=${encodedName}`
+      : `https://www.zomato.com/search?q=${encodedName}`;
+
+    const start = Date.now();
+    window.location.href = appUri;
+    setTimeout(() => {
+      if (Date.now() - start < 2000) {
+        window.open(webUri, '_blank');
+      }
+    }, 1500);
+
     // Start GAMA Active post-meal timeline
     setActiveOrderTimeline('Preparing');
     setTimeout(() => setActiveOrderTimeline('Cooking'), 4000);
@@ -356,11 +381,11 @@ export default function LiveOrderPage() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 z-10">
         <div>
           <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-white text-black font-semibold animate-pulse" /> GAMA Live Food Intelligence
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 text-black font-semibold animate-pulse" /> GAMA Live Food Intelligence — Real Data
           </span>
-          <h1 className="text-whitexl font-black text-white tracking-tight mt-1">AURA LIVE Order v3.0</h1>
+          <h1 className="text-whitexl font-black text-white tracking-tight mt-1">AURA LIVE Order v3.0 — Google Places + Edamam</h1>
           <p className="text-xs text-neutral-400 mt-1 max-w-xl">
-            Pluggable Provider Architecture integrated with Swiggy & Zomato deep-linking. Optimized in real-time by AURA.
+            Real-time nearby restaurants via GPS + Google Places AI. Nutrition analysis by Edamam. Deep-linked to Swiggy & Zomato.
           </p>
         </div>
 
@@ -516,6 +541,12 @@ export default function LiveOrderPage() {
                   {tab}
                 </button>
               ))}
+              <button
+                onClick={() => setActiveTab('nearby' as any)}
+                className={`px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${'nearby' === (activeTab as any) ? 'bg-emerald-500 text-white shadow-md' : 'text-emerald-400 hover:text-white border border-emerald-500/30'}`}
+              >
+                📍 Nearby
+              </button>
             </div>
 
             {/* Global Search Input */}
@@ -784,6 +815,26 @@ export default function LiveOrderPage() {
             </div>
           )}
 
+          {/* ── NEARBY TAB — Full GPS-powered content ── */}
+          {(activeTab as any) === 'nearby' && (
+            <div className="space-y-6">
+              <div className="p-5 rounded-[32px] bg-[#14100e]/95 border border-emerald-500/15 shadow-lg">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-black text-white uppercase tracking-widest">Real-Time Location Intelligence</span>
+                </div>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">
+                  Enable GPS to discover verified healthy restaurants, cafes, and salad bars near your exact location.
+                  Results are powered by Google Places AI and displayed with real ratings, health scores, and direct ordering links.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <NearbyRestaurantsPanel />
+                <EdamamNutritionPanel />
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* RIGHT RAILS - TIMING, RESTAURANTS, TIMELINE */}
@@ -869,6 +920,12 @@ export default function LiveOrderPage() {
               ))}
             </div>
           </div>
+
+          {/* ── GOOGLE PLACES — LIVE NEARBY RESTAURANTS ── */}
+          <NearbyRestaurantsPanel />
+
+          {/* ── EDAMAM — NUTRITION + RECIPES INTELLIGENCE ── */}
+          <EdamamNutritionPanel />
 
         </div>
 
@@ -1084,7 +1141,7 @@ export default function LiveOrderPage() {
                     triggerOrderRedirection(selectedOptimizerMeal);
                     setSelectedOptimizerMeal(null);
                   }}
-                  className="w-full py-3.5 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_4px_15px_rgba(249,115,22,0.35)]"
+                  className="w-full py-3.5 bg-white text-black font-semi-bold hover:bg-neutral-200 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_4px_15px_rgba(249,115,22,0.35)]"
                 >
                   Order on {selectedOptimizerMeal.platform} →
                 </button>
@@ -1368,9 +1425,25 @@ export default function LiveOrderPage() {
             meal={checkoutMeal}
             onClose={() => setCheckoutMeal(null)}
             onConfirmRedirect={() => {
-              toast.success(`Redirecting to ${checkoutMeal.platform} deep-link for checkout...`);
+              const platform = (checkoutMeal.platform || 'Swiggy') as 'Swiggy' | 'Zomato';
+              const encodedName = encodeURIComponent(checkoutMeal.restaurantName);
+              const appUri = platform === 'Swiggy'
+                ? `swiggy://restaurant?name=${encodedName}`
+                : `zomato://restaurant?name=${encodedName}`;
+              const webUri = platform === 'Swiggy'
+                ? `https://www.swiggy.com/search?query=${encodedName}`
+                : `https://www.zomato.com/search?q=${encodedName}`;
+
+              toast.success(`Redirecting to ${platform} deep-link for checkout...`);
               setCheckoutMeal(null);
-              window.open(checkoutMeal.platform === 'Swiggy' ? 'https://www.swiggy.com' : 'https://www.zomato.com', '_blank');
+
+              const start = Date.now();
+              window.location.href = appUri;
+              setTimeout(() => {
+                if (Date.now() - start < 2000) {
+                  window.open(webUri, '_blank');
+                }
+              }, 1500);
             }}
           />
         )}

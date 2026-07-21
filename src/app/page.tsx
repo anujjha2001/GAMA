@@ -8,7 +8,8 @@ import {
   Heart, Shield, Calendar, Users, ChevronRight,
   ArrowRight, Globe, Check, Activity, Zap,
   Moon, Flame, Brain, BookOpen, Compass, Upload,
-  Plus, CircleDot, Database, FileText, Smartphone, AlertCircle, Sliders
+  Plus, CircleDot, Database, FileText, Smartphone, AlertCircle, Sliders,
+  Apple, Utensils, Droplets
 } from 'lucide-react';
 import { toast } from 'sonner';
 import HealthOrb3D from '@/components/shared/health-orb-3d';
@@ -201,122 +202,257 @@ export default function HomePage() {
         </div>
 
         {/* Hero Content Container with Opposite Parallax */}
-        <div className="max-w-4xl mx-auto px-6 w-full text-center relative z-20 mt-16 flex flex-col items-center">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: {
-                opacity: 1,
-                transition: {
-                  staggerChildren: 0.2,
-                  delayChildren: 0.3
+        <div className="max-w-7xl mx-auto px-6 w-full relative z-20 mt-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            {/* Left Column: Headline and Actions */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.15,
+                    delayChildren: 0.2
+                  }
                 }
-              }
-            }}
-            style={{
-              x: mousePos.x * -0.2,
-              y: mousePos.y * -0.2
-            }}
-            className="flex flex-col items-center space-y-10"
-          >
-            {/* Ambient Label Badge */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 15 },
-                visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
               }}
-              className="inline-flex items-center gap-2 px-5 py-2 bg-white/5 border border-white/10 rounded-full backdrop-blur-md shadow-2xl shadow-black/40"
+              style={{
+                x: mousePos.x * -0.2,
+                y: mousePos.y * -0.2
+              }}
+              className="lg:col-span-7 flex flex-col items-start space-y-6 text-left"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-white text-black font-semibold animate-ping" />
-              <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">GAMA HEALTH</span>
-            </motion.div>
-
-            {/* Apple-Level Headline */}
-            <h1 className="text-5xl md:text-8xl tracking-tight leading-[1.08] drop-shadow-2xl flex flex-col items-center">
-              <motion.span
+              {/* Ambient Label Badge */}
+              <motion.div
                 variants={{
-                  hidden: { opacity: 0, y: 35 },
-                  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 80, damping: 18 } }
+                  hidden: { opacity: 0, y: 15 },
+                  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
                 }}
-                className="font-light text-white font-sans"
+                className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-full backdrop-blur-md shadow-lg"
               >
-                Your Autonomous
-              </motion.span>
-              <motion.span
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f97316] text-black font-semibold animate-pulse" />
+                <span className="text-[9px] font-black text-[#f97316] uppercase tracking-[0.2em]">AURA HEALTH OS v6.0</span>
+              </motion.div>
+
+              {/* Apple-Level Headline */}
+              <h1 className="text-4xl md:text-7xl font-black tracking-tight leading-[1.1] text-white flex flex-col">
+                <motion.span
+                  variants={{
+                    hidden: { opacity: 0, y: 35 },
+                    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 80, damping: 18 } }
+                  }}
+                  className="font-light text-white font-sans"
+                >
+                  Your Autonomous
+                </motion.span>
+                <motion.span
+                  variants={{
+                    hidden: { opacity: 0, y: 35 },
+                    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 80, damping: 18 } }
+                  }}
+                  className="font-black bg-gradient-to-r from-[#f97316] to-[#ea580c] bg-clip-text text-transparent mt-1 block"
+                >
+                  Bio-Intelligence
+                </motion.span>
+              </h1>
+
+              {/* Subtext Description */}
+              <motion.p
                 variants={{
-                  hidden: { opacity: 0, y: 35 },
-                  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 80, damping: 18 } }
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
                 }}
-                className="font-serif italic font-normal bg-gradient-to-r from-white via-neutral-200 to-neutral-500 bg-clip-text text-transparent mt-2 block"
+                className="text-neutral-400 max-w-[540px] text-sm md:text-base font-medium leading-[1.6]"
               >
-                Bio-Intelligence
-              </motion.span>
-            </h1>
+                Connect your wearables, analyze biometrics in real-time, and let AURA optimize your health, schedule, nutrition, and recovery — automatically.
+              </motion.p>
 
-            {/* Subtext Description (Max width 620px, line height 1.6) */}
-            <motion.p
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
-              }}
-              className="text-neutral-400 max-w-[620px] text-sm md:text-base font-medium leading-[1.6] text-center"
-            >
-              GAMA is an AI-native Health Operating System that continuously understands your body, predicts your needs, and optimizes your nutrition, recovery, schedule, sleep, workouts, and overall performance in real time.
-            </motion.p>
-
-            {/* Premium CTA Buttons with Spacing around 24px */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
-              }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4"
-            >
-              <Link
-                href="/login"
-                className="px-8 py-3.5 bg-white hover:bg-neutral-100 text-black font-semibold rounded-full text-xs shadow-[0_8px_30px_rgb(255,255,255,0.15)] hover:shadow-[0_8px_30px_rgb(255,255,255,0.3)] hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 cursor-pointer"
+              {/* Premium CTA Buttons */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+                }}
+                className="flex flex-row items-center gap-4 pt-2"
               >
-                <span>Initialize GAMA</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+                <Link
+                  href="/login"
+                  className="px-6 py-3 bg-white hover:bg-neutral-100 text-black font-semibold rounded-full text-xs shadow-[0_8px_30px_rgb(255,255,255,0.15)] hover:shadow-[0_8px_30px_rgb(255,255,255,0.3)] hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 cursor-pointer"
+                >
+                  <span>Initialize GAMA</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
 
-              <a
-                href="#why-gama"
-                className="px-8 py-3.5 bg-black/45 hover:bg-black/60 border border-white/10 text-neutral-300 hover:text-white font-semibold rounded-full text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer backdrop-blur-md hover:border-white/20/60"
+                <a
+                  href="#why-gama"
+                  className="px-6 py-3 bg-transparent hover:bg-white/5 border border-[#f97316] text-white hover:text-white font-semibold rounded-full text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer backdrop-blur-md"
+                >
+                  <span>Explore Ecosystem</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </a>
+              </motion.div>
+
+              {/* Feature Row with Icons */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+                }}
+                className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-6 border-t border-white/5 w-full max-w-xl text-[10px] text-neutral-400 font-bold uppercase tracking-wider"
               >
-                <span>Explore Ecosystem</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </a>
+                <div className="flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-[#f97316]" />
+                  <span>AI Health Coach</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-[#f97316]" />
+                  <span>Digital Twin</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-[#f97316]" />
+                  <span>Predictive Insights</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-[#f97316]" />
+                  <span>Real-time Optimization</span>
+                </div>
+              </motion.div>
+
+              {/* Muted Brand Logos - Bottom Left */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 0.4, transition: { delay: 0.8 } }
+                }}
+                className="pt-10 flex flex-col gap-2"
+              >
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-neutral-500">TRUSTED BY THOUSANDS</span>
+                <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs font-black text-white/60 tracking-wider">
+                  <span>FORBES</span>
+                  <span>TECHCRUNCH</span>
+                  <span>THE VERGE</span>
+                  <span>WIRED</span>
+                  <span>BUSINESS INSIDER</span>
+                </div>
+              </motion.div>
             </motion.div>
 
-            {/* Feature Row with Icons */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
-              }}
-              className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-8 border-t border-white/5 w-full max-w-2xl text-xs text-neutral-400 font-medium"
-            >
-              <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-white" />
-                <span>AI Health Coach</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-white" />
-                <span>Digital Twin</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-white" />
-                <span>Predictive Insights</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-white" />
-                <span>Real-time Optimization</span>
-              </div>
-            </motion.div>
-          </motion.div>
+            {/* Right Column: Floating AURA Live Card */}
+            <div className="lg:col-span-5 flex justify-center lg:justify-end">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, x: 20 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                transition={{ type: 'spring', stiffness: 70, damping: 15, delay: 0.4 }}
+                className="w-full max-w-[380px] bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[32px] p-6 shadow-2xl relative overflow-hidden group hover:border-[#f97316]/30 transition-all duration-500"
+              >
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[#f97316]/5 blur-2xl rounded-full pointer-events-none" />
+                
+                {/* Header with Blinking Green Light */}
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#f97316]" />
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider">AURA Live</h3>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-500/10 border border-green-500/20 rounded-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 text-black font-semibold animate-ping" />
+                    <span className="text-[9px] font-black text-green-400 uppercase tracking-wide">Monitoring</span>
+                  </div>
+                </div>
+
+                {/* Grid Rows for Biometrics */}
+                <div className="space-y-4">
+                  {/* Sleep Score */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-bold text-neutral-400">
+                      <span className="flex items-center gap-1.5"><Moon className="w-3.5 h-3.5 text-neutral-400" /> Sleep Score</span>
+                      <span className="text-white">86%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#f97316] rounded-full" style={{ width: '86%' }} />
+                    </div>
+                  </div>
+
+                  {/* Stress Index */}
+                  <div className="flex justify-between items-center py-1 border-b border-white/5">
+                    <span className="text-xs font-bold text-neutral-400 flex items-center gap-1.5"><Zap className="w-3.5 h-3.5 text-neutral-400" /> Stress Index</span>
+                    <span className="text-[10px] font-black uppercase text-green-400 px-2 py-0.5 bg-green-400/10 rounded-md">Low</span>
+                  </div>
+
+                  {/* Recovery */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-bold text-neutral-400">
+                      <span className="flex items-center gap-1.5"><Heart className="w-3.5 h-3.5 text-neutral-400" /> Recovery</span>
+                      <span className="text-white">93%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#f97316] rounded-full" style={{ width: '93%' }} />
+                    </div>
+                  </div>
+
+                  {/* Nutrition */}
+                  <div className="flex justify-between items-center py-1 border-b border-white/5">
+                    <span className="text-xs font-bold text-neutral-400 flex items-center gap-1.5"><Apple className="w-3.5 h-3.5 text-neutral-400" /> Nutrition</span>
+                    <span className="text-[10px] font-black uppercase text-green-400 px-2 py-0.5 bg-green-400/10 rounded-md">Excellent</span>
+                  </div>
+
+                  {/* Steps */}
+                  <div className="flex justify-between items-center py-1 border-b border-white/5">
+                    <span className="text-xs font-bold text-neutral-400 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-neutral-400" /> Steps</span>
+                    <span className="text-xs font-black text-[#f97316]">8,432</span>
+                  </div>
+
+                  {/* Hydration */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-bold text-neutral-400">
+                      <span className="flex items-center gap-1.5"><Droplets className="w-3.5 h-3.5 text-neutral-400" /> Hydration</span>
+                      <span className="text-white">2.4L / 3.0L</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#38bdf8] rounded-full" style={{ width: '80%' }} />
+                    </div>
+                  </div>
+
+                  {/* Next Meal */}
+                  <div className="flex justify-between items-center py-1 border-b border-white/5">
+                    <span className="text-xs font-bold text-neutral-400 flex items-center gap-1.5"><Utensils className="w-3.5 h-3.5 text-neutral-400" /> Next Meal</span>
+                    <span className="text-xs font-black text-[#f97316]">42 min</span>
+                  </div>
+                </div>
+
+                {/* Circular progress at the bottom */}
+                <div className="mt-6 pt-5 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Today's Goal Progress</span>
+                  
+                  <div className="relative w-12 h-12 flex items-center justify-center">
+                    {/* SVG circular progress */}
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.05)" strokeWidth="3" fill="transparent" />
+                      <circle cx="24" cy="24" r="20" stroke="#f97316" strokeWidth="3" fill="transparent"
+                        strokeDasharray={2 * Math.PI * 20}
+                        strokeDashoffset={2 * Math.PI * 20 * (1 - 0.82)}
+                        strokeLinecap="round"
+                        className="transition-all duration-1000"
+                      />
+                    </svg>
+                    <span className="absolute text-[10px] font-black text-white">82%</span>
+                  </div>
+                </div>
+
+              </motion.div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Scroll to explore bottom indicator */}
+        <div className="absolute bottom-6 right-6 z-20 flex flex-col items-center gap-1.5">
+          <span className="text-[8px] font-black uppercase tracking-[0.25em] text-neutral-500">Scroll to explore</span>
+          <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 animate-bounce">
+            <ArrowRight className="w-3.5 h-3.5 transform rotate-90" />
+          </div>
         </div>
       </section>
 

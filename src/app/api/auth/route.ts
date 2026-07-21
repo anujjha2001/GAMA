@@ -6,20 +6,18 @@ import { signToken, verifyToken } from '@/lib/jwt';
 export async function GET(request: NextRequest) {
   try {
     let decoded = await verifyToken(request);
-    
+
     if (!decoded) {
       // Auto-authenticate in development to prevent 401 warnings
       const defaultUser = await prisma.userProfile.findFirst() || await prisma.userProfile.create({
         data: {
- dashboard-recovery
           userId: crypto.randomUUID(),
-          develop
           email: 'user@gama.fit',
           fullName: 'AURA Health Explorer',
           role: 'USER',
         }
       });
-      
+
       const token = signToken({
         id: defaultUser.id,
         email: defaultUser.email,
@@ -38,24 +36,24 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await prisma.userProfile.findUnique({
-      where: { id: decoded.id },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        avatarUrl: true,
-        role: true,
-      }
-    });
-
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'User profile not found' }, { status: 404 });
+    where: { id: decoded.id },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      avatarUrl: true,
+      role: true,
     }
+  });
 
-    return NextResponse.json({ success: true, user });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
+  if (!user) {
+    return NextResponse.json({ success: false, error: 'User profile not found' }, { status: 404 });
   }
+
+  return NextResponse.json({ success: true, user });
+} catch (error: any) {
+  return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
+}
 }
 
 export async function POST(request: NextRequest) {
@@ -80,9 +78,9 @@ export async function POST(request: NextRequest) {
 
       if (!user) {
         console.warn(`[AUTH API] Login 401: user profile not found for ${emailNormalized}`);
-        return NextResponse.json({ 
-          success: false, 
-          error: 'No profile found for this email. Please register first.' 
+        return NextResponse.json({
+          success: false,
+          error: 'No profile found for this email. Please register first.'
         }, { status: 401 });
       }
 
@@ -124,9 +122,9 @@ export async function POST(request: NextRequest) {
 
       if (existingUserByEmail) {
         console.warn(`[AUTH API] Register 400: email ${emailNormalized} is already registered`);
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Email is already registered. Please login.' 
+        return NextResponse.json({
+          success: false,
+          error: 'Email is already registered. Please login.'
         }, { status: 400 });
       }
 

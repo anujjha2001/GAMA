@@ -79,7 +79,7 @@ export default function MealGuidePage() {
       setIsScanningMeal(true);
 
       try {
-        const res = await fetch('/api/aura', {
+        const res = await fetch('/api/food-scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image: base64String })
@@ -641,6 +641,24 @@ export default function MealGuidePage() {
                           </div>
                         )}
                       </div>
+
+                      {isScanningMeal && (
+                        <div className="bg-[#14100e] border border-[#2c1e15]/30 rounded-[32px] p-6 space-y-6 animate-pulse">
+                          <div className="flex justify-between items-center">
+                            <div className="space-y-2">
+                              <div className="h-4 w-32 bg-white/10 rounded-lg" />
+                              <div className="h-3 w-48 bg-white/5 rounded-lg" />
+                            </div>
+                          </div>
+                          <div className="h-12 bg-white/5 rounded-2xl" />
+                          <div className="grid grid-cols-5 gap-2">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <div key={n} className="h-12 bg-white/5 rounded-xl" />
+                            ))}
+                          </div>
+                          <div className="h-20 bg-white/5 rounded-2xl" />
+                        </div>
+                      )}
 
                       {/* Scan results */}
                       {mealScanResult && (
