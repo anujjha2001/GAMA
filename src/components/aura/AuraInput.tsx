@@ -12,13 +12,15 @@ interface AuraInputProps {
 
 export function AuraInput({ input, setInput, handleSubmit, isLoading }: AuraInputProps) {
   return (
-    <form onSubmit={handleSubmit} className="relative flex items-center bg-black/50 border border-white/10 rounded-2xl overflow-hidden shadow-inner focus-within:border-orange-500/50 transition-colors">
+    <form onSubmit={handleSubmit} className="relative flex items-center bg-black/50 border border-white/10 rounded-2xl overflow-hidden shadow-inner focus-within:border-white/20/50 transition-colors">
       <button type="button" className="p-3 text-neutral-400 hover:text-white transition-colors">
         <Paperclip className="w-5 h-5" />
       </button>
       
       <input
         type="text"
+        id="aura-chat-input"
+        name="aura-chat-input"
         value={input || ''}
         onChange={(e) => setInput(e.target.value)}
         disabled={isLoading}
@@ -33,7 +35,7 @@ export function AuraInput({ input, setInput, handleSubmit, isLoading }: AuraInpu
         <button 
           type="submit" 
           disabled={!input?.trim() || isLoading}
-          className="p-1 bg-orange-500 hover:bg-orange-400 text-black rounded-xl hover:bg-orange-600 disabled:opacity-50 transition-colors w-10 h-10 flex items-center justify-center overflow-hidden border border-orange-400/20 relative group"
+          className="p-1 bg-white text-black font-semibold hover:bg-neutral-200 rounded-xl disabled:opacity-50 transition-colors w-10 h-10 flex items-center justify-center overflow-hidden border border-white/10 relative group"
         >
           {isLoading ? (
             <Loader2 className="w-5 h-5 animate-spin" />

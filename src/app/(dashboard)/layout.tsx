@@ -3,10 +3,11 @@
 import * as React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, Sparkles, LogOut
+import {
+  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, LogOut, ChefHat, ShoppingBag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import AuraVoiceAssistant from '@/components/aura/AuraVoiceAssistant';
 
 export default function DashboardLayout({
   children,
@@ -33,10 +34,10 @@ export default function DashboardLayout({
   const handleLogout = async () => {
     try {
       await fetch('/api/auth', { method: 'DELETE' });
-    } catch (e) {}
+    } catch (e) { }
     try {
       localStorage.removeItem('gama_session');
-    } catch (e) {}
+    } catch (e) { }
     window.location.href = '/login';
   };
 
@@ -47,28 +48,29 @@ export default function DashboardLayout({
     { href: '/twin', icon: User, label: 'Digital Twin' },
     { href: '/insights', icon: BarChart2, label: 'Insights' },
     { href: '/schedule', icon: Calendar, label: 'Schedule' },
+    { href: '/live-order', icon: ShoppingBag, label: 'LIVE Order' },
     { href: '/vault', icon: Inbox, label: 'Vault' },
+    { href: '/meals', icon: ChefHat, label: 'Meal Guide' },
     { href: '/settings', icon: Sliders, label: 'Settings' }
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans flex flex-col items-center justify-between p-4 md:p-6 overflow-x-hidden selection:bg-orange-500/30 selection:text-foreground relative w-full transition-colors duration-300">
-      
+    <div className="min-h-screen bg-background text-foreground font-sans flex flex-col items-center justify-between p-4 md:p-6 overflow-x-hidden selection:bg-brand/25 selection:text-foreground relative w-full transition-colors duration-300">
+
       {/* Outer Dashboard Window container */}
       <div className="w-full max-w-[1440px] flex flex-col gap-6 relative z-10 items-stretch">
-        
         <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-stretch w-full">
           {/* LEFT VERTICAL DOCK SIDEBAR */}
-          <motion.aside 
+          <motion.aside
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-            className="w-full md:w-20 bg-card/60 backdrop-blur-2xl border border-border rounded-[32px] p-4 flex flex-row md:flex-col justify-between items-center py-4 md:py-8 shadow-2xl relative z-20 shrink-0 gap-4"
+            className="w-full md:w-20 bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[32px] p-4 flex flex-row md:flex-col justify-between items-center py-4 md:py-8 shadow-[0_20px_80px_rgba(0,0,0,0.35)] relative z-20 shrink-0 gap-4"
           >
             {/* Logo at the top */}
             <div className="flex items-center gap-1.5 md:flex-col shrink-0">
               <Link href="/" className="flex items-center gap-2 md:flex-col md:gap-1.5 group">
-                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden border border-border shadow-lg bg-black flex items-center justify-center cursor-pointer transition-transform group-hover:scale-105 duration-300">
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer transition-transform group-hover:scale-105 duration-300">
                   <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-sm md:text-[11px] uppercase tracking-widest text-foreground">GAMA</span>
@@ -76,7 +78,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Navigation group */}
-            <div className="flex flex-row md:flex-col gap-3 md:gap-6 flex-1 justify-center items-center">
+            <div className="flex flex-row md:flex-col gap-3 md:gap-6 flex-1 justify-center md:justify-start md:mt-10 items-center">
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
@@ -85,17 +87,16 @@ export default function DashboardLayout({
                     key={item.href}
                     href={item.href}
                     title={item.label}
-                    className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl md:rounded-full flex items-center justify-center transition-all duration-300 relative cursor-pointer hover:scale-105 ${
-                      isActive 
-                        ? 'bg-foreground text-background shadow-xl scale-105' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent hover:border-border'
-                    }`}
+                    className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl md:rounded-full flex items-center justify-center transition-all duration-350 relative cursor-pointer hover:scale-105 active:scale-95 ${isActive
+                      ? 'bg-white/10 text-white border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.15)] scale-105'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/5 border border-transparent'
+                      }`}
                   >
                     <Icon className="w-5 h-5" />
                     {isActive && (
-                      <motion.span 
+                      <motion.span
                         layoutId="activeIndicator"
-                        className="absolute hidden md:block -right-1 w-1.5 h-6 rounded-l-full bg-foreground" 
+                        className="absolute hidden md:block -right-1 w-1.5 h-6 rounded-l-full bg-white"
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                       />
                     )}
@@ -136,7 +137,7 @@ export default function DashboardLayout({
                 <span className="font-extrabold text-2xl tracking-wider text-foreground">GAMA</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-sm">
-                Sovereign biological diagnostic dashboard and epigenetic modeling coordinate framework.
+                AI-native personal health intelligence, continuously learning, predicting, and optimizing every day.
               </p>
             </div>
 
@@ -191,6 +192,10 @@ export default function DashboardLayout({
         </footer>
 
       </div>
+
+      {/* Persistent global voice assistant orb */}
+      <AuraVoiceAssistant />
+
     </div>
   );
 }

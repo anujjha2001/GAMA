@@ -17,11 +17,6 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
   const router = useRouter();
   const [authMode, setAuthMode] = React.useState<AuthMode>(initialMode);
 
-  React.useEffect(() => {
-    setAuthMode(initialMode);
-    setShowOtpScreen(false);
-  }, [initialMode]);
-
   // Form states
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -41,17 +36,70 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
   const [rememberMe, setRememberMe] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(false);
 
+  // Real-time OTP countdown states (5 minutes = 300 seconds)
+  const [otpTimer, setOtpTimer] = React.useState(300);
+  const [canResendOtp, setCanResendOtp] = React.useState(false);
+
   React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      let hasLocalStorage = false;
-      try {
-        hasLocalStorage = localStorage.getItem('gama_session') !== null;
-      } catch (e) {}
-      if (hasLocalStorage) {
-        window.location.href = '/dashboard';
-      }
+    setAuthMode(initialMode);
+    setShowOtpScreen(false);
+    setOtpTimer(300);
+    setCanResendOtp(false);
+  }, [initialMode]);
+
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (showOtpScreen && otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setCanResendOtp(true);
+            return 0;
+          }
+          // Enable resend after 30 seconds
+          if (prev === 270) {
+            setCanResendOtp(true);
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
-  }, []);
+    return () => clearInterval(interval);
+  }, [showOtpScreen, otpTimer]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      setIsLoading(true);
+      const endpoint = authMode === 'forgot' ? '/api/auth' : '/api/send-otp';
+      const body = authMode === 'forgot' ? { action: 'forgot', email } : { email };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to send verification code');
+      }
+      toast.success('A new verification code has been sent!');
+      setOtpTimer(300);
+      setCanResendOtp(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to resend code');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,6 +215,63 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
       return;
     }
 
+    if (authMode === 'forgot') {
+      if (!showOtpScreen) {
+        if (!email) {
+          toast.error('Email is required');
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'forgot', email }),
+          });
+          const data = await res.json();
+          if (!data.success) {
+            throw new Error(data.error || 'Failed to send recovery code');
+          }
+
+          toast.success('Password reset code sent to your email!');
+          setShowOtpScreen(true);
+        } catch (err: any) {
+          toast.error(err.message || 'Failed to initiate recovery');
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // Verify OTP for password recovery
+        try {
+          const res = await fetch('/api/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code: otpCode }),
+          });
+          const data = await res.json();
+          if (!data.success) {
+            throw new Error(data.error || 'Verification failed');
+          }
+
+          try {
+            if (data.user && data.user.fullName) {
+              localStorage.setItem('gama_user_name', data.user.fullName);
+            }
+            localStorage.setItem('gama_session', 'true');
+          } catch (e) {}
+
+          toast.success('Access recovered successfully!');
+          window.location.href = '/dashboard';
+        } catch (err: any) {
+          toast.error(err.message || 'Verification failed');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+      return;
+    }
+
     // Default Login flow
     try {
       const res = await fetch('/api/auth', {
@@ -200,9 +305,9 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
   return (
     <div className="min-h-screen w-full bg-black flex items-center justify-center p-0 md:p-6 overflow-hidden select-none font-sans text-white relative">
       {/* Dynamic background atmospheric warm/cool glows matching GAMA vibe */}
-      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-orange-500/10 rounded-full blur-[150px] pointer-events-none z-0" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-orange-500/10 rounded-full blur-[150px] pointer-events-none z-0" />
-      <div className="absolute top-[30%] left-[40%] w-[40%] h-[40%] bg-orange-500/5 rounded-full blur-[150px] pointer-events-none z-0" />
+      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-white/5 rounded-full blur-[150px] pointer-events-none z-0" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-white/5 rounded-full blur-[150px] pointer-events-none z-0" />
+      <div className="absolute top-[30%] left-[40%] w-[40%] h-[40%] bg-white/5 rounded-full blur-[150px] pointer-events-none z-0" />
 
       {/* 3D background effects and panels here */}
       <div className="w-full max-w-[960px] h-full md:h-[680px] flex rounded-none md:rounded-3xl border-0 md:border border-white/5 shadow-[0_24px_80px_rgba(0,0,0,0.85)] bg-black/90 backdrop-blur-3xl overflow-hidden relative z-10">
@@ -213,9 +318,9 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
           {/* Mock Window Controls (Mac Style) & Back to Home */}
           <div className="flex items-center justify-between mb-8 md:mb-0">
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[orange]" />
-              <span className="w-3 h-3 rounded-full bg-[orange]" />
-              <span className="w-3 h-3 rounded-full bg-[orange]" />
+              <span className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+              <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+              <span className="w-3 h-3 rounded-full bg-[#27c93f]" />
             </div>
             <Link
               href="/"
@@ -234,7 +339,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
             </div>
 
             <div className="text-center">
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
+              <h1 className="text-2xl md:text-whitexl font-semibold tracking-tight text-white">
                 {showOtpScreen ? 'Security Verification' : (
                   <>
                     {authMode === 'login' && 'Welcome back'}
@@ -265,16 +370,37 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                       required
-                      className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-sm focus:border-orange-500 focus:outline-none transition-all placeholder-white/50 text-white tracking-[0.15em] text-center font-mono"
+                      className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-sm focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white tracking-[0.15em] text-center font-mono"
                     />
                   </div>
+                  
+                  <div className="text-center text-xs text-white/60">
+                    {otpTimer > 0 ? (
+                      <p>Code expires in: <span className="text-white font-semibold">{formatTime(otpTimer)}</span></p>
+                    ) : (
+                      <p className="text-red-500 font-semibold">Verification code has expired</p>
+                    )}
+                  </div>
+
                   <button
                     type="submit"
-                    disabled={isLoading}
-                    className="w-full py-3 mt-4 bg-gradient-to-r from-orange-500 to-orange-500 hover:from-orange-500 hover:to-orange-500 text-white font-semibold rounded-xl text-sm shadow-[0_4px_20px_rgba(249,115,22,0.3)] transition-all cursor-pointer flex justify-center items-center"
+                    disabled={isLoading || otpTimer === 0}
+                    className="w-full py-3 mt-2 bg-white text-black font-semibold hover:bg-neutral-100 rounded-xl text-sm shadow-[0_4px_20px_rgba(255,255,255,0.1)] transition-all cursor-pointer flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? 'Verifying...' : 'Verify & Enter'}
                   </button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      disabled={!canResendOtp || isLoading}
+                      onClick={handleResendOtp}
+                      className="text-xs text-white hover:underline transition-colors disabled:text-white/30 disabled:no-underline cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      Resend Code {!canResendOtp && `(${formatTime(otpTimer)})`}
+                    </button>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -298,7 +424,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                             value={firstName}
                             onChange={(e) => setFirstName(e.target.value)}
                             required
-                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-orange-500 focus:outline-none transition-all placeholder-white/50 text-white"
+                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white"
                           />
                         </div>
                         <div>
@@ -308,7 +434,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                             value={lastName}
                             onChange={(e) => setLastName(e.target.value)}
                             required
-                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-orange-500 focus:outline-none transition-all placeholder-white/50 text-white"
+                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white"
                           />
                         </div>
                       </div>
@@ -320,7 +446,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                           value={username}
                           onChange={(e) => setUsername(e.target.value)}
                           required
-                          className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-orange-500 focus:outline-none transition-all placeholder-white/50 text-white"
+                          className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white"
                         />
                       </div>
 
@@ -332,7 +458,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                             value={dob}
                             onChange={(e) => setDob(e.target.value)}
                             required
-                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-orange-500 focus:outline-none transition-all placeholder-white/50 text-white"
+                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white"
                           />
                         </div>
                         <div>
@@ -340,7 +466,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                             value={gender}
                             onChange={(e) => setGender(e.target.value)}
                             required
-                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-orange-500 focus:outline-none transition-all text-white/70"
+                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-white/20 focus:outline-none transition-all text-white/70"
                           >
                             <option value="male">Male</option>
                             <option value="female">Female</option>
@@ -357,7 +483,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                             value={height}
                             onChange={(e) => setHeight(e.target.value)}
                             required
-                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-orange-500 focus:outline-none transition-all placeholder-white/50 text-white"
+                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white"
                           />
                         </div>
                         <div>
@@ -367,7 +493,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                             value={weight}
                             onChange={(e) => setWeight(e.target.value)}
                             required
-                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-orange-500 focus:outline-none transition-all placeholder-white/50 text-white"
+                            className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white"
                           />
                         </div>
                       </div>
@@ -377,7 +503,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                           value={primaryGoal}
                           onChange={(e) => setPrimaryGoal(e.target.value)}
                           required
-                          className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-orange-500 focus:outline-none transition-all text-white/70"
+                          className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-xs focus:border-white/20 focus:outline-none transition-all text-white/70"
                         >
                           <option value="fitness">Weight Loss & Fitness</option>
                           <option value="muscle">Muscle Gain</option>
@@ -395,7 +521,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-sm focus:border-orange-500 focus:outline-none transition-all placeholder-white/50 text-white"
+                      className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-sm focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white"
                     />
                   </div>
 
@@ -407,7 +533,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-sm focus:border-orange-500 focus:outline-none transition-all placeholder-white/50 text-white"
+                        className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-sm focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white"
                       />
                     </div>
                   )}
@@ -420,7 +546,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
-                        className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-sm focus:border-orange-500 focus:outline-none transition-all placeholder-white/50 text-white"
+                        className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-sm focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white"
                       />
                     </div>
                   )}
@@ -432,13 +558,13 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                           type="checkbox"
                           checked={rememberMe}
                           onChange={(e) => setRememberMe(e.target.checked)}
-                          className="rounded bg-[black] border-white/10 text-orange-500 focus:ring-0 focus:ring-offset-0 h-4 w-4"
+                          className="rounded bg-[black] border-white/10 text-white focus:ring-0 focus:ring-offset-0 h-4 w-4"
                         />
                         Remember me
                       </label>
                       <Link
                         href="/forgot-password"
-                        className="text-orange-500 hover:text-orange-500 font-medium transition-colors cursor-pointer"
+                        className="text-white hover:text-white font-medium transition-colors cursor-pointer"
                       >
                         Forgot password?
                       </Link>
@@ -451,7 +577,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                         id="terms"
                         checked={acceptTerms}
                         onChange={(e) => setAcceptTerms(e.target.checked)}
-                        className="rounded bg-[black] border-white/10 text-orange-500 focus:ring-0 focus:ring-offset-0 h-4 w-4 mt-0.5 cursor-pointer"
+                        className="rounded bg-[black] border-white/10 text-white focus:ring-0 focus:ring-offset-0 h-4 w-4 mt-0.5 cursor-pointer"
                       />
                       <label htmlFor="terms" className="cursor-pointer select-none">
                         I accept the <span className="text-[#f97316] hover:underline">Terms of Service</span> and <span className="text-[#f97316] hover:underline">Privacy Policy</span>.
@@ -464,7 +590,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                     whileTap={{ scale: 0.98 }}
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3 mt-4 bg-gradient-to-r from-orange-500 to-orange-500 hover:from-orange-500 hover:to-orange-500 text-white font-semibold rounded-xl text-sm shadow-[0_4px_20px_rgba(249,115,22,0.3)] transition-all cursor-pointer flex justify-center items-center"
+                    className="w-full py-3 mt-4 bg-white text-black font-semibold rounded-xl text-sm shadow-[0_4px_20px_rgba(255,255,255,0.1)] transition-all cursor-pointer flex justify-center items-center"
                   >
                     {isLoading ? (
                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -488,7 +614,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                   className="w-12 h-11 bg-[black] hover:bg-[#111] border border-white/5 rounded-xl flex items-center justify-center transition-colors cursor-pointer"
                 >
                   {/* Google SVG */}
-                  <svg className="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.324 0-6.027-2.703-6.027-6.028s2.703-6.028 6.027-6.028c1.512 0 2.89.56 3.96 1.48l3.1-3.1C18.913 2.827 15.827 1.5 12.24 1.5c-5.79 0-10.5 4.71-10.5 10.5s4.71 10.5 10.5 10.5c5.36 0 9.8-3.84 9.8-10.5 0-.64-.08-1.24-.2-1.715H12.24z" />
                   </svg>
                 </button>
@@ -497,7 +623,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                   className="w-12 h-11 bg-[black] hover:bg-[#111] border border-white/5 rounded-xl flex items-center justify-center transition-colors cursor-pointer"
                 >
                   {/* Facebook SVG */}
-                  <svg className="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z" />
                   </svg>
                 </button>
@@ -530,22 +656,33 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                 Don't have account?{' '}
                 <Link
                   href="/register"
-                  className="text-orange-500 hover:underline font-semibold cursor-pointer"
+                  className="text-white hover:underline font-semibold cursor-pointer"
                 >
                   Sign up
                 </Link>
                 {' '}or{' '}
                 <button
                   onClick={async () => {
-                    await fetch('/api/auth', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ action: 'bypass' }),
-                    });
                     try {
-                      localStorage.setItem('gama_session', 'true');
-                    } catch (e) {}
-                    window.location.href = '/dashboard';
+                      const response = await fetch('/api/auth', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'bypass' }),
+                      });
+                      const data = await response.json();
+                      if (data.success) {
+                        localStorage.setItem('gama_session', 'true');
+                        if (data.user && data.user.fullName) {
+                          localStorage.setItem('gama_user_name', data.user.fullName);
+                        }
+                        toast.success('Logged in as Guest!');
+                        window.location.href = '/dashboard';
+                      } else {
+                        toast.error(data.error || 'Failed to bypass login');
+                      }
+                    } catch (e) {
+                      toast.error('Could not connect to authentication service');
+                    }
                   }}
                   className="text-white/70 hover:text-white hover:underline cursor-pointer"
                 >
@@ -558,7 +695,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                 Already have an account?{' '}
                 <Link
                   href="/login"
-                  className="text-orange-500 hover:underline font-semibold cursor-pointer"
+                  className="text-white hover:underline font-semibold cursor-pointer"
                 >
                   Sign in
                 </Link>
@@ -569,7 +706,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                 Back to{' '}
                 <Link
                   href="/login"
-                  className="text-orange-500 hover:underline font-semibold cursor-pointer"
+                  className="text-white hover:underline font-semibold cursor-pointer"
                 >
                   Sign in
                 </Link>

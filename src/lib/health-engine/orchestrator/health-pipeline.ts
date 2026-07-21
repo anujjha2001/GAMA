@@ -53,11 +53,11 @@ export class HealthPipeline {
       }
 
       // Map status colors
-      let color = "text-orange-500";
+      let color = "text-white";
       if (engineResult.status === "Excellent") color = "text-emerald-400";
       else if (engineResult.status === "Good") color = "text-green-400";
       else if (engineResult.status === "Average") color = "text-amber-400";
-      else if (engineResult.status === "Poor") color = "text-orange-400";
+      else if (engineResult.status === "Poor") color = "text-amber-500";
       else if (engineResult.status === "Critical") color = "text-red-500";
 
       metrics[engine.id] = {

@@ -4,7 +4,7 @@ import * as React from 'react';
 import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Inter, JetBrains_Mono } from 'next/font/google';
-import { Activity, Thermometer, Wind, CheckCircle2, AlertTriangle, Cpu, Droplets, Zap, Sparkles } from 'lucide-react';
+import { Activity, Thermometer, Wind, CheckCircle2, AlertTriangle, Cpu, Droplets, Zap } from 'lucide-react';
 import { simulateAnomaly, resolveAnomaly } from './actions';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -83,7 +83,7 @@ export default function InsightsHUD() {
         <div className="lg:col-span-9 flex flex-col gap-6">
           <motion.div
             animate={{
-              borderColor: isAlertActive ? 'rgba(244,63,94,0.3)' : 'rgba(255,255,255,0.1)',
+              borderColor: isAlertActive ? 'rgba(244, 63, 94, 0.3)' : 'rgba(0, 0, 0, 0.1)',
               boxShadow: isAlertActive ? 'inset 0 0 60px rgba(244,63,94,0.05)' : 'inset 0 0 20px rgba(255,255,255,0.02)'
             }}
             className="flex-1 bg-black/40 backdrop-blur-[12px] border rounded-3xl p-8 relative overflow-hidden flex flex-col transition-colors duration-1000"
@@ -109,7 +109,7 @@ export default function InsightsHUD() {
                         <AlertTriangle className="w-5 h-5" />
                         <span className="text-xs font-bold tracking-widest uppercase">Critical Anomaly Detected</span>
                       </div>
-                      <h1 className="text-3xl font-bold text-white">{activeAnomaly.title}</h1>
+                      <h1 className="text-whitexl font-bold text-white">{activeAnomaly.title}</h1>
                     </div>
                     <div className={`px-4 py-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-500 flex flex-col items-end ${jbMono.className}`}>
                       <span className="text-[10px] uppercase opacity-70">Impact Severity</span>
@@ -184,76 +184,75 @@ export default function InsightsHUD() {
             </AnimatePresence>
           </motion.div>
 
-        {/* 4. Archive Log & Explainability */}
-        <div className="lg:col-span-9 flex flex-col lg:flex-row gap-6">
-          <div className="flex-1 bg-black/40 backdrop-blur-[12px] border border-white/10 rounded-3xl p-6 h-64 flex flex-col">
-            <h3 className="text-[10px] uppercase font-bold tracking-widest text-neutral-500 mb-4">Diagnostic Archive Log</h3>
-            <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-              {history.map((event: any) => (
-                <div key={event.id} className="flex items-center justify-between py-2 border-b border-white/5 group hover:bg-white/5 rounded-lg px-3 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <span className={`text-[10px] text-neutral-500 ${jbMono.className}`}>
-                      {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                    </span>
-                    <span className="text-xs font-semibold text-neutral-300 group-hover:text-white transition-colors">{event.title}</span>
+          {/* 4. Archive Log & Explainability */}
+          <div className="lg:col-span-9 flex flex-col lg:flex-row gap-6">
+            <div className="flex-1 bg-black/40 backdrop-blur-[12px] border border-white/10 rounded-3xl p-6 h-64 flex flex-col">
+              <h3 className="text-[10px] uppercase font-bold tracking-widest text-neutral-500 mb-4">Diagnostic Archive Log</h3>
+              <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                {history.map((event: any) => (
+                  <div key={event.id} className="flex items-center justify-between py-2 border-b border-white/5 group hover:bg-white/5 rounded-lg px-3 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <span className={`text-[10px] text-neutral-500 ${jbMono.className}`}>
+                        {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </span>
+                      <span className="text-xs font-semibold text-neutral-300 group-hover:text-white transition-colors">{event.title}</span>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <span className={`text-[10px] ${jbMono.className} ${event.metadata?.impactType === 'positive' ? 'text-emerald-500' : 'text-neutral-500'}`}>
+                        {event.metadata?.impactValue || 'Logged'}
+                      </span>
+                      <span className={`text-[8px] uppercase font-bold px-2 py-0.5 rounded border ${event.type === 'anomaly' ? 'border-rose-500/30 text-rose-500 bg-rose-500/10' :
+                        event.type === 'resolution' ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/10' :
+                          'border-white/10 text-neutral-400 bg-white/5'
+                        }`}>
+                        {event.type}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <span className={`text-[10px] ${jbMono.className} ${event.metadata?.impactType === 'positive' ? 'text-emerald-500' : 'text-neutral-500'}`}>
-                      {event.metadata?.impactValue || 'Logged'}
-                    </span>
-                    <span className={`text-[8px] uppercase font-bold px-2 py-0.5 rounded border ${event.type === 'anomaly' ? 'border-rose-500/30 text-rose-500 bg-rose-500/10' :
-                      event.type === 'resolution' ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/10' :
-                        'border-white/10 text-neutral-400 bg-white/5'
-                      }`}>
-                      {event.type}
-                    </span>
+                ))}
+                {history.length === 0 && <div className="text-xs text-neutral-500 text-center mt-6">No historical data available.</div>}
+              </div>
+            </div>
+
+            {/* Phase 2 Explainability Card */}
+            <div className="flex-1 bg-black/40 backdrop-blur-[12px] border border-white/10 rounded-3xl p-6 h-64 flex flex-col relative overflow-hidden group hover:border-white/10 transition-all">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+              </div>
+              <h3 className="text-[10px] uppercase font-bold tracking-widest text-neutral-500 mb-4 flex items-center gap-2 relative z-10">
+                <Activity className="w-3.5 h-3.5 text-white" /> AI Explainability Matrix
+              </h3>
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar relative z-10">
+                {(data?.insights || []).length > 0 ? (
+                  data.insights.slice(0, 2).map((insight: any, i: number) => (
+                    <div key={i} className="p-3 bg-white/5 border border-white/5 rounded-xl space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-xs font-bold text-white">{insight.summary?.headline || 'Insight'}</span>
+                        <span className={`text-[9px] font-bold ${jbMono.className} text-neutral-300`}>{(insight.confidence * 100).toFixed(0)}% Conf</span>
+                      </div>
+                      <p className="text-[10px] text-neutral-400 leading-relaxed">{insight.summary?.explanation}</p>
+                      <div className="pt-2 border-t border-white/5">
+                        <span className="text-[9px] uppercase font-bold text-white block mb-1">Suggested Action</span>
+                        <span className="text-[10px] text-neutral-300">{insight.summary?.recommendations?.[0] || 'No action required.'}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 bg-white/5 border border-white/5 rounded-xl space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-xs font-bold text-white">Protein Intake Trend</span>
+                      <span className={`text-[9px] font-bold ${jbMono.className} text-neutral-300`}>91% Conf</span>
+                    </div>
+                    <p className="text-[10px] text-neutral-400 leading-relaxed">Protein intake averaged 42 g/day over the past week, below your goal of 90 g/day.</p>
+                    <div className="pt-2 border-t border-white/5">
+                      <span className="text-[9px] uppercase font-bold text-white block mb-1">Suggested Action</span>
+                      <span className="text-[10px] text-neutral-300">Include one protein-rich meal before 2 PM.</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {history.length === 0 && <div className="text-xs text-neutral-500 text-center mt-6">No historical data available.</div>}
+                )}
+              </div>
             </div>
           </div>
-          
-          {/* Phase 2 Explainability Card */}
-          <div className="flex-1 bg-black/40 backdrop-blur-[12px] border border-white/10 rounded-3xl p-6 h-64 flex flex-col relative overflow-hidden group hover:border-orange-500/20 transition-all">
-             <div className="absolute top-0 right-0 p-4 opacity-10">
-               <Sparkles className="w-24 h-24 text-orange-500" />
-             </div>
-             <h3 className="text-[10px] uppercase font-bold tracking-widest text-neutral-500 mb-4 flex items-center gap-2 relative z-10">
-               <Activity className="w-3.5 h-3.5 text-orange-500" /> AI Explainability Matrix
-             </h3>
-             <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar relative z-10">
-               {(data?.insights || []).length > 0 ? (
-                 data.insights.slice(0, 2).map((insight: any, i: number) => (
-                   <div key={i} className="p-3 bg-white/5 border border-white/5 rounded-xl space-y-2">
-                     <div className="flex justify-between">
-                       <span className="text-xs font-bold text-white">{insight.summary?.headline || 'Insight'}</span>
-                       <span className={`text-[9px] font-bold ${jbMono.className} text-orange-400`}>{(insight.confidence * 100).toFixed(0)}% Conf</span>
-                     </div>
-                     <p className="text-[10px] text-neutral-400 leading-relaxed">{insight.summary?.explanation}</p>
-                     <div className="pt-2 border-t border-white/5">
-                        <span className="text-[9px] uppercase font-bold text-orange-500 block mb-1">Suggested Action</span>
-                        <span className="text-[10px] text-neutral-300">{insight.summary?.recommendations?.[0] || 'No action required.'}</span>
-                     </div>
-                   </div>
-                 ))
-               ) : (
-                 <div className="p-4 bg-white/5 border border-white/5 rounded-xl space-y-2">
-                   <div className="flex justify-between">
-                     <span className="text-xs font-bold text-white">Protein Intake Trend</span>
-                     <span className={`text-[9px] font-bold ${jbMono.className} text-orange-400`}>91% Conf</span>
-                   </div>
-                   <p className="text-[10px] text-neutral-400 leading-relaxed">Protein intake averaged 42 g/day over the past week, below your goal of 90 g/day.</p>
-                   <div className="pt-2 border-t border-white/5">
-                      <span className="text-[9px] uppercase font-bold text-orange-500 block mb-1">Suggested Action</span>
-                      <span className="text-[10px] text-neutral-300">Include one protein-rich meal before 2 PM.</span>
-                   </div>
-                 </div>
-               )}
-             </div>
-          </div>
         </div>
-      </div>
 
         {/* 3. Biometric Telemetry Rail (Right Side) */}
         <div className="lg:col-span-3 bg-black/40 backdrop-blur-[12px] border border-white/10 rounded-3xl p-6 flex flex-col gap-6">

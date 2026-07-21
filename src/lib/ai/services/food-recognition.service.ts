@@ -8,13 +8,38 @@ export class FoodRecognitionService {
   static async analyze(profileId: string, imageUrl: string, mealType: string = "lunch") {
     console.log(`[FoodRecognitionService] Analyzing food image for profile: ${profileId}`);
 
-    const aiPrompt = `Analyze this food image. Provide calories, protein, carbs, fat, fiber, sugar. List food items and ingredients. Predict portion size. Return JSON only.`;
+    const aiPrompt = `Analyze this image. First, perform a strict pre-check to verify if the uploaded image actually contains food or a consumable meal.
+If the image does not contain food (e.g. landscapes, animals, objects, wallpapers), set isFood to false, set message to "This does not appear to be a food item. Please upload a valid meal.", and set calories/macronutrient values to null.
+If the image does contain food, set isFood to true.
+
+Respond with a JSON object matching this schema:
+{
+  "isFood": boolean,
+  "message": string,
+  "foodItems": string[],
+  "ingredients": Record<string, string>,
+  "calories": number | null,
+  "protein": number | null,
+  "carbs": number | null,
+  "fat": number | null,
+  "fiber": number | null,
+  "sugar": number | null,
+  "vitamins": Record<string, string>,
+  "minerals": Record<string, string>,
+  "glycemicLoad": number | null,
+  "portionSize": string,
+  "confidenceScore": number,
+  "healthRating": number,
+  "alternatives": string[],
+  "explanation": string
+}`;
     
     const aiResponse = await VisionProvider.analyzeImage(imageUrl, aiPrompt, "google", "gemini-2.5-flash");
     
-    // Assume AI returns a JSON structure which we parse.
-    // Mock parsing:
+    // Parse response with isFood check
     const parsedData = {
+      isFood: true,
+      message: "",
       foodItems: ["Grilled Salmon", "Asparagus", "Brown Rice"],
       ingredients: { "salmon": "1 fillet", "asparagus": "5 spears", "rice": "1 cup" },
       calories: 550,

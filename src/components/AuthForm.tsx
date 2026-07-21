@@ -114,7 +114,7 @@ export default function AuthForm() {
                   if (errorMsg) setErrorMsg('');
                 }}
                 disabled={isLoading}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500/50 transition-colors disabled:opacity-50"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-brand/60 transition-colors disabled:opacity-50"
               />
             </div>
             {errorMsg && (
@@ -125,7 +125,7 @@ export default function AuthForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold rounded-2xl text-sm shadow-[0_4px_20px_rgba(245,158,11,0.2)] transition-all cursor-pointer flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+            className="w-full py-3.5 bg-white text-black font-semibold rounded-2xl text-sm shadow-[0_4px_20px_rgba(255,255,255,0.1)] hover:bg-neutral-100 transition-all cursor-pointer flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
           >
             {isLoading ? (
               <>
@@ -161,7 +161,7 @@ export default function AuthForm() {
                   if (errorMsg) setErrorMsg('');
                 }}
                 disabled={isLoading}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-neutral-500 tracking-[0.2em] font-mono text-center focus:outline-none focus:border-amber-500/50 transition-colors disabled:opacity-50"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-neutral-500 tracking-[0.2em] font-mono text-center focus:outline-none focus:border-brand/60 transition-colors disabled:opacity-50"
               />
             </div>
             {errorMsg && (
@@ -185,7 +185,7 @@ export default function AuthForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-[2] py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold rounded-2xl text-xs shadow-[0_4px_20px_rgba(245,158,11,0.2)] transition-all cursor-pointer flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+              className="flex-[2] py-3.5 bg-white text-black font-semibold rounded-2xl text-xs shadow-[0_4px_20px_rgba(255,255,255,0.1)] hover:bg-neutral-100 transition-all cursor-pointer flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
             >
               {isLoading ? (
                 <>

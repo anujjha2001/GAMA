@@ -41,7 +41,7 @@ export async function proxy(request: NextRequest) {
   // Get session state instantly using the local cookie (0ms latency, no blocking network requests)
   const hasSession = request.cookies.has('gama_session');
 
-  const isDashboardRoute = ['/dashboard', '/twin', '/insights', '/schedule', '/vault', '/settings'].some(
+  const isDashboardRoute = ['/dashboard', '/twin', '/insights', '/schedule', '/vault', '/meals', '/settings'].some(
     (path) => pathname === path || pathname.startsWith(path + '/')
   );
 

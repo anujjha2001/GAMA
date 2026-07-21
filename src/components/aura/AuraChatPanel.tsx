@@ -5,15 +5,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AuraModelSelector } from './AuraModelSelector';
 import { AuraMessage } from './AuraMessage';
 import { AuraInput } from './AuraInput';
-import { useAura } from '@/hooks/useAura';
+import { type Message } from '@/hooks/useAura';
 
 interface AuraChatPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  messages: Message[];
+  input: string;
+  setInput: (value: string) => void;
+  handleSubmit: (e?: React.FormEvent<HTMLFormElement> | string) => Promise<void>;
+  isLoading: boolean;
 }
 
-export function AuraChatPanel({ isOpen, onClose }: AuraChatPanelProps) {
-  const { messages, input, setInput, handleSubmit, isLoading } = useAura();
+export function AuraChatPanel({ 
+  isOpen, 
+  onClose,
+  messages,
+  input,
+  setInput,
+  handleSubmit,
+  isLoading
+}: AuraChatPanelProps) {
   const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
 
   return (
@@ -65,8 +77,8 @@ export function AuraChatPanel({ isOpen, onClose }: AuraChatPanelProps) {
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-400 hover:text-white"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                   </button>
-                  <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                  <span className="text-[15px] font-extrabold text-orange-500 uppercase tracking-widest">AURA</span>
+                  <span className="h-2 w-2 rounded-full bg-white text-black font-semibold animate-pulse" />
+                  <span className="text-[15px] font-extrabold text-white uppercase tracking-widest">AURA</span>
                 </div>
                 
                 <AuraModelSelector />

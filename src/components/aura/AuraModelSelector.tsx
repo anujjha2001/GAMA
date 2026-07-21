@@ -36,7 +36,7 @@ export function AuraModelSelector() {
               <button
                 key={model.id}
                 onClick={() => { setSelectedModel(model); setIsOpen(false); }}
-                className={`w-full text-left px-3 py-2 rounded-xl text-xs flex flex-col gap-0.5 transition-colors ${selectedModel.id === model.id ? 'bg-orange-500/10 text-orange-500' : 'hover:bg-white/5 text-neutral-300'
+                className={`w-full text-left px-3 py-2 rounded-xl text-xs flex flex-col gap-0.5 transition-colors ${selectedModel.id === model.id ? 'bg-white/5 text-white' : 'hover:bg-white/5 text-neutral-300'
                   }`}
               >
                 <span className="font-bold">{model.name}</span>
