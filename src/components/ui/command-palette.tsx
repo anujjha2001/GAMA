@@ -25,7 +25,7 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
   }, [isOpen, onClose]);
 
   const commands = [
-    { id: 'go-nexus', label: 'Go to Nexus Dashboard', category: 'Navigation', icon: HeartPulse, action: () => onNavigate('dashboard') },
+    { id: 'go-dashboard', label: 'Go to Dashboard', category: 'Navigation', icon: HeartPulse, action: () => onNavigate('dashboard') },
     { id: 'go-aura', label: 'Ask Aura AI Coach', category: 'Navigation', icon: Sparkles, action: () => onNavigate('aura') },
     { id: 'go-twin', label: 'View Digital Twin', category: 'Navigation', icon: Workflow, action: () => onNavigate('twin') },
     { id: 'go-insights', label: 'View Deep Insights', category: 'Navigation', icon: BarChart3, action: () => onNavigate('insights') },
