@@ -12,9 +12,9 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: '/dashboard',
-        destination: '/nexus',
-        permanent: true,
+        source: '/nexus',
+        destination: '/dashboard',
+        permanent: false,
       },
     ];
   },

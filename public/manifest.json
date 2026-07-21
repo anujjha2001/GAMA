@@ -2,7 +2,7 @@
   "name": "GAMA Health Intelligence",
   "short_name": "GAMA",
   "description": "Proactive AI Longevity and Health Tracker",
-  "start_url": "/nexus",
+  "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#08080a",
   "theme_color": "#f97316",
