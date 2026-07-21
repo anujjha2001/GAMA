@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
       // Auto-authenticate in development to prevent 401 warnings
       const defaultUser = await prisma.userProfile.findFirst() || await prisma.userProfile.create({
         data: {
+          userId: crypto.randomUUID(),
           email: 'user@gama.fit',
           fullName: 'AURA Health Explorer',
           role: 'USER',
