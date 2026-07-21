@@ -1,349 +1,552 @@
 'use client';
 
 import * as React from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Points, PointMaterial, Sparkles } from '@react-three/drei';
-import * as THREE from 'three';
-import { useHealthStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Activity, Heart, Brain, Wind, Droplets, ShieldAlert, Sparkles as SparkleIcon, Sliders, Info, Zap
+import {
+  Heart, Brain, Wind, Droplets, Activity, Calendar, Moon, Watch, Bell, Zap,
+  Sun, ShieldAlert, Sliders, Eye, Undo, Play, ChevronRight, Thermometer, Info, Scale
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Custom 3D Cybernetic Organ Representation using Canvas
-function CyberOrganPoints({ activeOrgan }: { activeOrgan: string }) {
-  const pointsRef = React.useRef<THREE.Points>(null);
+import { useHealthStore } from '@/lib/store';
+import { CentralWorldStore, WorldState } from '@/features/twin/world-state';
+import { WorldEngine } from '@/features/twin/world-engine';
+import { EnvironmentEngine } from '@/features/twin/environment-engine';
+import { OrganHealthEngine, OrganHealthData } from '@/features/twin/organ-health-engine';
+import { SimulationEngine, SimulationMetrics } from '@/features/twin/simulation-engine';
+import dynamic from 'next/dynamic';
 
-  // Generate coordinate clouds mimicking organ nodes
-  const [positions, colorArray] = React.useMemo(() => {
-    const count = 600;
-    const pos = new Float32Array(count * 3);
-    const cols = new Float32Array(count * 3);
-
-    // Primary Colors for different organs
-    const colorsMap: Record<string, THREE.Color> = {
-      brain: new THREE.Color('#a855f7'), // Purple
-      heart: new THREE.Color('#f97316'), // Orange
-      lungs: new THREE.Color('#06b6d4'), // Cyan
-      gut: new THREE.Color('#10b981'), // Green
-      kidneys: new THREE.Color('#eab308'), // Yellow
-    };
-
-    const baseCol = colorsMap[activeOrgan] || new THREE.Color('#3b82f6');
-
-    for (let i = 0; i < count; i++) {
-      let x = 0, y = 0, z = 0;
-
-      if (activeOrgan === 'brain') {
-        // Double hemisphere sphere shape
-        const hemi = Math.random() > 0.5 ? 1 : -1;
-        const u = Math.random();
-        const v = Math.random();
-        const theta = u * 2.0 * Math.PI;
-        const phi = Math.acos(2.0 * v - 1.0);
-        const r = 0.5 + Math.random() * 0.3;
-        x = r * Math.sin(phi) * Math.cos(theta) + (hemi * 0.15);
-        y = r * Math.sin(phi) * Math.sin(theta) * 0.7 + 0.8;
-        z = r * Math.cos(phi) * 0.7;
-      } else if (activeOrgan === 'heart') {
-        // Tapered heart cloud shape
-        const theta = Math.random() * Math.PI * 2;
-        const r = 0.4 + Math.random() * 0.45;
-        x = Math.sin(theta) * r * 1.1;
-        y = (Math.random() - 0.5) * 1.2;
-        z = Math.cos(theta) * r;
-        if (y < 0) {
-          x *= (1 + y * 0.4);
-          z *= (1 + y * 0.4);
-        }
-      } else if (activeOrgan === 'lungs') {
-        // Dual lobe cylinders
-        const side = Math.random() > 0.5 ? 1 : -1;
-        const theta = Math.random() * Math.PI * 2;
-        const r = 0.25 + Math.random() * 0.25;
-        x = Math.cos(theta) * r + (side * 0.45);
-        y = (Math.random() - 0.5) * 1.3 - 0.1;
-        z = Math.sin(theta) * r;
-      } else {
-        // Gut/General: organic spiral cloud
-        const theta = i * 0.15;
-        const r = 0.15 + i * 0.0012;
-        x = Math.cos(theta) * r;
-        y = -0.5 + (i / count) * 0.8;
-        z = Math.sin(theta) * r;
-      }
-
-      pos[i * 3] = x;
-      pos[i * 3 + 1] = y;
-      pos[i * 3 + 2] = z;
-
-      // Color variation
-      const colVar = baseCol.clone().multiplyScalar(0.75 + Math.random() * 0.5);
-      cols[i * 3] = colVar.r;
-      cols[i * 3 + 1] = colVar.g;
-      cols[i * 3 + 2] = colVar.b;
-    }
-
-    return [pos, cols];
-  }, [activeOrgan]);
-
-  useFrame((state) => {
-    if (!pointsRef.current) return;
-    const time = state.clock.getElapsedTime();
-    pointsRef.current.rotation.y = time * 0.25;
-    // Add physiological pulse contraction
-    const pulseFactor = 1.0 + Math.sin(time * 3.5) * 0.025;
-    pointsRef.current.scale.set(pulseFactor, pulseFactor, pulseFactor);
-  });
-
-  return (
-    <Points ref={pointsRef} positions={positions} colors={colorArray} stride={3}>
-      <PointMaterial
-        vertexColors
-        transparent
-        size={0.065}
-        sizeAttenuation={true}
-        depthWrite={false}
-        opacity={0.8}
-        blending={THREE.AdditiveBlending}
-      />
-    </Points>
-  );
-}
-
-interface OrganData {
-  id: string;
-  name: string;
-  score: number;
-  status: 'optimal' | 'moderate' | 'action required';
-  icon: any;
-  insights: string[];
-  recommendation: string;
-}
+const BodyTwinModel = dynamic(() => import('@/components/twin/BodyTwinModel'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full min-h-[350px] flex items-center justify-center bg-black/20 rounded-[40px]">
+      <div className="flex flex-col items-center gap-2">
+        <div className="w-8 h-8 rounded-full border-4 border-white/10 border-t-white animate-spin" />
+        <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Syncing Hologram...</span>
+      </div>
+    </div>
+  )
+});
 
 export default function DigitalTwinPage() {
-  const [mounted, setMounted] = React.useState(false);
-  const [activeOrganId, setActiveOrganId] = React.useState('heart');
   const { steps, sleepHours, hrv, stressLevel, heartRate } = useHealthStore();
+  const [mounted, setMounted] = React.useState(false);
+  const [userName, setUserName] = React.useState('AURA User');
+
+  // Living World State
+  const [worldState, setWorldState] = React.useState<WorldState>(CentralWorldStore.getState());
+  const [activeLayer, setActiveLayer] = React.useState<string>('Recovery Layer');
+  const [selectedOrgan, setSelectedOrgan] = React.useState<string | null>(null);
+  const [activeOrganData, setActiveOrganData] = React.useState<OrganHealthData | null>(null);
+
+  // Future simulation state
+  const [activeSimulation, setActiveSimulation] = React.useState<string | null>(null);
+  const [simulatedMetrics, setSimulatedMetrics] = React.useState<SimulationMetrics | null>(null);
+
+  // Timeline Date scrubbing
+  const [selectedTimelineDate, setSelectedTimelineDate] = React.useState<string>('Today');
 
   React.useEffect(() => {
     setMounted(true);
-  }, []);
+    const storedName = localStorage.getItem('gama_user_name');
+    if (storedName) {
+      setUserName(storedName);
+    }
+
+    // Initial sync
+    WorldEngine.syncWithHealth(85, stressLevel, 78, sleepHours);
+
+    const unsubscribe = CentralWorldStore.subscribe((state) => {
+      setWorldState(state);
+    });
+
+    return () => unsubscribe();
+  }, [stressLevel, sleepHours]);
 
   if (!mounted) return null;
 
-  // Organ datasets computed from wearable states
-  const heartScore = Math.min(100, Math.max(30, Math.round(100 - (stressLevel * 8) - (heartRate - 60))));
-  const brainScore = Math.min(100, Math.max(30, Math.round((sleepHours / 8) * 60 + (80 - stressLevel * 10))));
-  const lungsScore = Math.min(100, Math.max(40, Math.round(hrv * 0.8 + 30)));
-  const gutScore = Math.min(100, Math.max(50, Math.round(steps / 250 + 40)));
+  const handleSelectOrgan = (organ: string) => {
+    setSelectedOrgan(organ);
+    const organInfo = OrganHealthEngine.getOrganHealth(organ, {
+      recoveryScore: simulatedMetrics?.recoveryScore ?? worldState.recoveryScore,
+      stressLevel: simulatedMetrics?.stressLevel ?? worldState.stressLevel,
+      hydrationLevel: simulatedMetrics?.hydrationLevel ?? worldState.hydrationLevel,
+      sleepHours: simulatedMetrics?.sleepHours ?? worldState.sleepHours
+    });
+    setActiveOrganData(organInfo);
+    toast.info(`Zooming focus to the ${organ}. System metrics loaded.`);
+  };
 
-  const organs: OrganData[] = [
-    {
-      id: 'brain',
-      name: 'Nervous & Cognitive System',
-      score: brainScore,
-      status: brainScore > 80 ? 'optimal' : brainScore > 65 ? 'moderate' : 'action required',
-      icon: Brain,
-      insights: [
-        'Deep sleep latency: 18 minutes (optimal)',
-        'Cognitive load peak: 14:00 - 16:30',
-        'REM phase duration: 1.15 hours'
-      ],
-      recommendation: 'Alpha-wave stimulation suggested at 21:30 to counteract elevated stress levels.'
-    },
-    {
-      id: 'heart',
-      name: 'Cardiovascular Network',
-      score: heartScore,
-      status: heartScore > 80 ? 'optimal' : heartScore > 60 ? 'moderate' : 'action required',
-      icon: Heart,
-      insights: [
-        `Resting Heart Rate: ${heartRate} BPM`,
-        `Heart Rate Variability (HRV): ${hrv} ms`,
-        'Endothelial shear stress: low'
-      ],
-      recommendation: 'Targeted Zone 2 aerobic recovery run (30 min) today to optimize blood pressure resonance.'
-    },
-    {
-      id: 'lungs',
-      name: 'Respiratory Exchange',
-      score: lungsScore,
-      status: lungsScore > 80 ? 'optimal' : lungsScore > 60 ? 'moderate' : 'action required',
-      icon: Wind,
-      insights: [
-        'Oxygen saturation (SpO2): 98.4% average',
-        'Respiration rate: 12.8 breaths/min',
-        'Autonomic breathing pattern: balanced'
-      ],
-      recommendation: 'Perform 3 cycles of Box Breathing (4s inhale, 4s hold, 4s exhale, 4s hold) to stabilize parasympathetic drive.'
-    },
-    {
-      id: 'gut',
-      name: 'Metabolic & Digestive Core',
-      score: gutScore,
-      status: gutScore > 80 ? 'optimal' : gutScore > 65 ? 'moderate' : 'action required',
-      icon: Droplets,
-      insights: [
-        'Glycemic variability index: stable',
-        `Physical metabolic offset: +${(steps * 0.045).toFixed(0)} kcal`,
-        'Prebiotic nutrient balance: moderate'
-      ],
-      recommendation: 'Consume prebiotic whole grains at next meal window to feed active gut microbiome strain.'
+  const handleTriggerSimulation = (scenarioId: string) => {
+    if (activeSimulation === scenarioId) {
+      // Clear simulation
+      setActiveSimulation(null);
+      setSimulatedMetrics(null);
+      if (selectedOrgan) {
+        handleSelectOrgan(selectedOrgan); // Refresh data with live values
+      }
+      toast.success('Simulation cleared. Restored live telemetry.');
+      return;
     }
+
+    setActiveSimulation(scenarioId);
+    const simulationResult = SimulationEngine.simulateScenario(scenarioId, {
+      recoveryScore: worldState.recoveryScore,
+      stressLevel: worldState.stressLevel,
+      hydrationLevel: worldState.hydrationLevel,
+      sleepHours: worldState.sleepHours
+    });
+    setSimulatedMetrics(simulationResult);
+
+    // Refresh organ data if open
+    if (selectedOrgan) {
+      const organInfo = OrganHealthEngine.getOrganHealth(selectedOrgan, {
+        recoveryScore: simulationResult.recoveryScore,
+        stressLevel: simulationResult.stressLevel,
+        hydrationLevel: simulationResult.hydrationLevel,
+        sleepHours: simulationResult.sleepHours
+      });
+      setActiveOrganData(organInfo);
+    }
+    toast.success(`Simulation active: ${scenarioId.replace('_', ' ')}`);
+  };
+
+  // Replay timeline
+  const handleTimelineScrub = (dateKey: string) => {
+    setSelectedTimelineDate(dateKey);
+    let mockBiometrics = { recoveryScore: 85, stressLevel: 2, hydrationLevel: 78, sleepHours: 7.5 };
+
+    if (dateKey === 'Yesterday') {
+      mockBiometrics = { recoveryScore: 78, stressLevel: 5, hydrationLevel: 70, sleepHours: 6.2 };
+    } else if (dateKey === 'Last Week') {
+      mockBiometrics = { recoveryScore: 92, stressLevel: 1, hydrationLevel: 85, sleepHours: 8.4 };
+    } else if (dateKey === 'Last Month') {
+      mockBiometrics = { recoveryScore: 65, stressLevel: 7, hydrationLevel: 62, sleepHours: 5.8 };
+    }
+
+    WorldEngine.syncWithHealth(mockBiometrics.recoveryScore, mockBiometrics.stressLevel, mockBiometrics.hydrationLevel, mockBiometrics.sleepHours);
+
+    // Update currently opened organ data
+    if (selectedOrgan) {
+      const organInfo = OrganHealthEngine.getOrganHealth(selectedOrgan, mockBiometrics);
+      setActiveOrganData(organInfo);
+    }
+    toast.info(`Time Machine: Simulating biological state from ${dateKey}.`);
+  };
+
+  const layers = [
+    'Recovery Layer', 'Cardiovascular', 'Nervous System', 'Respiratory',
+    'Muscular', 'Skeletal', 'Digestive', 'Metabolism', 'Energy Flow'
   ];
 
-  const activeOrgan = organs.find(o => o.id === activeOrganId) || organs[0];
+  const simulatedOrLive = (key: keyof SimulationMetrics, liveVal: any) => {
+    if (simulatedMetrics && key in simulatedMetrics) {
+      return simulatedMetrics[key];
+    }
+    return liveVal;
+  };
+
+  // Biometrics derived
+  const displayRecovery = simulatedOrLive('recoveryScore', worldState.recoveryScore) as number;
+  const displayStress = simulatedOrLive('stressLevel', worldState.stressLevel) as number;
+  const displayHydration = simulatedOrLive('hydrationLevel', worldState.hydrationLevel) as number;
+  const displaySleepHours = simulatedOrLive('sleepHours', worldState.sleepHours) as number;
+  const displayHRV = simulatedOrLive('hrv', hrv) as number;
+  const displayHeartRate = simulatedOrLive('heartRate', heartRate) as number;
+  const displayBodyBattery = simulatedOrLive('bodyBattery', Math.max(10, 100 - displayStress * 8)) as number;
+  const displayProductivity = simulatedOrLive('productivity', 85 - displayStress * 4) as number;
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col justify-between min-h-[160px] border border-white/10 hover:border-white/20 transition-all duration-300">
-        <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-cyan-500/10 via-transparent to-transparent pointer-events-none" />
-        <div className="space-y-2">
-          <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5" /> 3D Epigenetic Coordinate Map
+    <div className="min-h-screen bg-[#0a0807] text-[#eae3dc] p-4 md:p-6 relative overflow-hidden flex flex-col font-sans">
+
+      {/* Background cinematic warm glow */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-white/5 blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-amber-600/5 blur-[150px] pointer-events-none" />
+      <div className="absolute top-[30%] left-[25%] w-[40%] h-[40%] rounded-full bg-[#3a2010]/10 blur-[180px] pointer-events-none" />
+
+      {/* Header Portal */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 z-10">
+        <div>
+          <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-white text-black font-semibold animate-pulse" /> Living digital organism
           </span>
-          <h1 className="text-3xl font-bold tracking-tight">Digital Twin Profile</h1>
-          <p className="text-xs text-muted-foreground max-w-xl">
-            Real-time cybernetic rendering of your physiological systems. Select an organ segment to isolate telemetry analysis.
+          <h1 className="text-whitexl font-black text-white tracking-tight mt-1">AURA Biological Twin</h1>
+          <p className="text-xs text-neutral-400 mt-1 max-w-xl">
+            Real-time biometric projection, cellular energy telemetry, and future health simulation.
           </p>
+        </div>
+
+        {/* Timeline Machine Scrub */}
+        <div className="flex items-center bg-[#181311] border border-[#2a201a] rounded-full p-1 self-stretch md:self-auto shadow-inner">
+          {['Today', 'Yesterday', 'Last Week', 'Last Month'].map((dt) => (
+            <button
+              key={dt}
+              onClick={() => handleTimelineScrub(dt)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${selectedTimelineDate === dt
+                  ? 'bg-white text-black font-semibold text-black shadow-[0_0_15px_rgba(249,115,22,0.4)]'
+                  : 'text-neutral-400 hover:text-[#eae3dc]'
+                }`}
+            >
+              {dt}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        
-        {/* Organ Selector Menu */}
-        <div className="lg:col-span-3 space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-2">Biological Systems</h3>
-          <div className="space-y-2">
-            {organs.map((organ) => {
-              const isActive = organ.id === activeOrganId;
-              const Icon = organ.icon;
-              return (
-                <button
-                  key={organ.id}
-                  onClick={() => setActiveOrganId(organ.id)}
-                  className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                    isActive 
-                      ? 'bg-white/10 border-cyan-500/30 shadow-md ring-1 ring-cyan-500/20 text-white' 
-                      : 'bg-black/35 border-white/5 hover:border-white/10 text-neutral-300 hover:text-white'
+      {/* Grid Dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-1 z-10">
+
+        {/* Left Biometrics Rail */}
+        <div className="lg:col-span-3 space-y-4 flex flex-col justify-start">
+
+          {/* Recovery Indicator (Large) */}
+          <motion.div
+            whileHover={{ y: -4 }}
+            className="rounded-[32px] bg-[#14100e]/95 backdrop-blur-xl border border-[#2c1e15] p-6 flex flex-col gap-4 relative overflow-hidden group hover:border-white/10 transition-all duration-300 shadow-xl"
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 blur-xl rounded-full" />
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-bold text-neutral-400 uppercase tracking-wider text-[10px]">Biological Recovery</span>
+              <span className="px-2 py-0.5 bg-white/5 text-neutral-300 rounded-md font-bold text-[10px] tracking-wide">
+                {displayRecovery > 80 ? 'Optimal' : displayRecovery > 50 ? 'Resting' : 'Strained'}
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-whitexl font-black text-white tracking-tighter">{displayRecovery}</span>
+              <span className="text-sm text-neutral-400 font-bold">%</span>
+            </div>
+            <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-brand to-brand-hover h-full rounded-full transition-all duration-500"
+                style={{ width: `${displayRecovery}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-neutral-400 leading-relaxed">
+              HRV variance indicates high parasympathetic readiness. Aerobic performance capacity is high.
+            </p>
+          </motion.div>
+
+          {/* Core Biometrics Grid */}
+          <div className="grid grid-cols-2 gap-4">
+
+            {/* Stress */}
+            <div className="bg-[#14100e]/95 backdrop-blur-xl border border-[#2c1e15] rounded-3xl p-4 flex flex-col justify-between aspect-square relative group hover:border-[#3e2b1f] transition-all shadow-lg">
+              <div className="w-8 h-8 rounded-2xl bg-white/5 flex items-center justify-center text-neutral-300 border border-white/10">
+                <Zap className="w-4 h-4" />
+              </div>
+              <div className="mt-4">
+                <span className="text-whitexl font-black text-white">{displayStress}</span>
+                <span className="text-[10px] text-neutral-400 block mt-0.5 font-bold uppercase tracking-wider">Stress (0-10)</span>
+              </div>
+            </div>
+
+            {/* HRV */}
+            <div className="bg-[#14100e]/95 backdrop-blur-xl border border-[#2c1e15] rounded-3xl p-4 flex flex-col justify-between aspect-square relative group hover:border-[#3e2b1f] transition-all shadow-lg">
+              <div className="w-8 h-8 rounded-2xl bg-white/5 flex items-center justify-center text-neutral-300 border border-white/10">
+                <Heart className="w-4 h-4" />
+              </div>
+              <div className="mt-4">
+                <span className="text-whitexl font-black text-white">{displayHRV}</span>
+                <span className="text-[10px] text-neutral-400 block mt-0.5 font-bold uppercase tracking-wider">HRV (ms)</span>
+              </div>
+            </div>
+
+            {/* Sleep */}
+            <div className="bg-[#14100e]/95 backdrop-blur-xl border border-[#2c1e15] rounded-3xl p-4 flex flex-col justify-between aspect-square relative group hover:border-[#3e2b1f] transition-all shadow-lg">
+              <div className="w-8 h-8 rounded-2xl bg-white/5 flex items-center justify-center text-neutral-300 border border-white/10">
+                <Moon className="w-4 h-4" />
+              </div>
+              <div className="mt-4">
+                <span className="text-whitexl font-black text-white">{displaySleepHours}h</span>
+                <span className="text-[10px] text-neutral-400 block mt-0.5 font-bold uppercase tracking-wider">Sleep</span>
+              </div>
+            </div>
+
+            {/* Hydration */}
+            <div className="bg-[#14100e]/95 backdrop-blur-xl border border-[#2c1e15] rounded-3xl p-4 flex flex-col justify-between aspect-square relative group hover:border-[#3e2b1f] transition-all shadow-lg">
+              <div className="w-8 h-8 rounded-2xl bg-white/5 flex items-center justify-center text-neutral-300 border border-white/10">
+                <Droplets className="w-4 h-4" />
+              </div>
+              <div className="mt-4">
+                <span className="text-whitexl font-black text-white">{displayHydration}%</span>
+                <span className="text-[10px] text-neutral-400 block mt-0.5 font-bold uppercase tracking-wider">Water</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Physical Profile Summary Layout (Matches Age / Height / Weight design of Screen 3) */}
+          <div className="rounded-[32px] bg-[#14100e]/95 backdrop-blur-xl border border-[#2c1e15] p-5 shadow-lg">
+            <div className="grid grid-cols-3 gap-2 text-center relative">
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">Age (yr)</span>
+                <span className="text-2xl font-black text-white mt-1">28</span>
+              </div>
+              <div className="absolute left-[33%] top-2 bottom-2 w-[1px] bg-[#2c1e15]" />
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">Height (cm)</span>
+                <span className="text-2xl font-black text-white mt-1">182</span>
+              </div>
+              <div className="absolute left-[66%] top-2 bottom-2 w-[1px] bg-[#2c1e15]" />
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">Weight (kg)</span>
+                <span className="text-2xl font-black text-white mt-1">76.5</span>
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-[#2c1e15] text-center">
+              <p className="text-[9px] text-neutral-300 font-bold uppercase tracking-wider">
+                ✓ System Ready & Fully Synced
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Center Widescreen 3D Canvas Area */}
+        <div className="lg:col-span-5 bg-black/90 backdrop-blur-xl border border-white/5 rounded-[40px] relative overflow-hidden flex flex-col justify-between shadow-2xl min-h-[600px] hover:border-white/20/10 transition-all duration-300">
+
+          {/* Radial amber backdrop for 3D model */}
+          <div className="absolute top-[20%] left-[10%] right-[10%] bottom-[20%] bg-gradient-radial from-brand/5 via-transparent to-transparent pointer-events-none" />
+
+          {/* Layer switcher tab list */}
+          <div className="p-4 z-20 flex flex-wrap gap-1.5 justify-center bg-black/50 border-b border-white/5">
+            {layers.map((layer) => (
+              <button
+                key={layer}
+                onClick={() => setActiveLayer(layer)}
+                className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer border ${activeLayer === layer
+                    ? 'bg-white text-black font-semibold text-black border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.15)]'
+                    : 'bg-neutral-900/40 text-neutral-400 hover:text-white border-transparent hover:border-white/10'
                   }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 ${
-                      isActive 
-                        ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-500' 
-                        : 'bg-white/5 border-white/5 text-neutral-400'
-                    }`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold">{organ.name.split(' & ')[0]}</h4>
-                      <span className={`text-[8px] font-bold uppercase tracking-wider ${
-                        organ.status === 'optimal' 
-                          ? 'text-emerald-500' 
-                          : organ.status === 'moderate' 
-                          ? 'text-amber-500' 
-                          : 'text-rose-500'
-                      }`}>
-                        {organ.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-xs font-extrabold">{organ.score}</span>
-                    <span className="text-[8px] text-muted-foreground block font-bold uppercase">Score</span>
-                  </div>
-                </button>
-              );
-            })}
+              >
+                {layer}
+              </button>
+            ))}
           </div>
+
+          {/* Living Digital Human R3F Canvas Container */}
+          <div className="flex-1 relative w-full h-full min-h-[350px]">
+            <BodyTwinModel
+              layer={activeLayer}
+              recoveryScore={displayRecovery}
+              stressLevel={displayStress}
+              selectedOrgan={selectedOrgan}
+              onSelectOrgan={handleSelectOrgan}
+              heartRate={displayHeartRate}
+            />
+
+            {/* Floating visual hints on R3F interactive zones */}
+            <div className="absolute bottom-6 right-6 z-20 bg-[#161210]/90 border border-[#2c1e15] px-3.5 py-2 rounded-2xl flex items-center gap-2 pointer-events-none shadow-md">
+              <div className="w-1.5 h-1.5 rounded-full bg-white text-black font-semibold animate-ping" />
+              <span className="text-[9px] text-neutral-300 font-bold uppercase tracking-wider">Tap organ hotspots to diagnostic</span>
+            </div>
+          </div>
+
+          {/* Environmental weather/time status overlay */}
+          <div className="p-4 bg-[#14100e]/50 border-t border-[#2c1e15]/40 z-20 flex items-center justify-between text-[10px] text-neutral-400">
+            <span className="flex items-center gap-1.5">
+              <Sun className="w-3.5 h-3.5 text-neutral-300" /> Noon Ambient Sunlight
+            </span>
+            <span>Reflective Material Shimmer active</span>
+          </div>
+
         </div>
 
-        {/* Interactive 3D Cybernetic Display */}
-        <div className="lg:col-span-5 rounded-[32px] bg-black/35 backdrop-blur-xl border border-white/10 h-[400px] lg:h-auto min-h-[350px] relative overflow-hidden flex items-center justify-center bg-black/10 hover:border-white/20 transition-all duration-300">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] opacity-35" />
-          
-          <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-white/5 backdrop-blur-md rounded-full text-[9px] font-bold text-cyan-500 uppercase tracking-widest">
-            <Zap className="w-3.5 h-3.5 animate-pulse" /> Resonator Active
+        {/* Right Rails & Simulators */}
+        <div className="lg:col-span-4 space-y-6 flex flex-col justify-between">
+
+          {/* Heart Rate / Live Telemetry Card */}
+          <div className="rounded-[32px] bg-[#14100e]/95 backdrop-blur-xl border border-[#2c1e15] p-5 flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/5 border border-white/10 text-neutral-300 rounded-full flex items-center justify-center">
+                <Heart className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">{displayHeartRate} BPM</h3>
+                <p className="text-[10px] text-neutral-400">Live Heart Rate Telemetry</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 bg-white/5 border border-white/20/25 px-2.5 py-0.5 rounded-full text-neutral-300 text-[9px] font-black uppercase tracking-wider">
+              <div className="w-1.5 h-1.5 bg-white text-black font-semibold rounded-full animate-ping" /> Live Sync
+            </div>
           </div>
 
-          <div className="w-full h-full">
-            <Canvas camera={{ position: [0, 0.1, 2.2], fov: 45 }} className="w-full h-full">
-              <ambientLight intensity={1.5} />
-              <pointLight position={[10, 10, 10]} intensity={2.0} color="#06b6d4" />
-              <directionalLight position={[5, 10, 5]} intensity={1.5} />
-              <CyberOrganPoints activeOrgan={activeOrganId} />
-              <Sparkles count={50} scale={2} size={2} speed={0.4} color="#06b6d4" />
-            </Canvas>
+          {/* Future Scenario Simulator Console */}
+          <div className="rounded-[32px] bg-[#14100e]/95 backdrop-blur-xl border border-[#2c1e15] p-6 flex-1 flex flex-col justify-between shadow-lg">
+            <div>
+              <span className="text-[10px] font-black tracking-widest text-white uppercase block">AI Scenario Sandbox</span>
+              <h3 className="text-base font-bold text-white mt-1">Predictive Biometric Simulator</h3>
+              <p className="text-[10px] text-neutral-400 mt-1 leading-relaxed">
+                Trigger mock behaviors below. GAMA will rebuild the digital human state to visualize health forecasts.
+              </p>
+
+              <div className="grid grid-cols-2 gap-2.5 mt-4">
+                {[
+                  { id: 'sleep_deprived', label: '4h Sleep Debt' },
+                  { id: 'run_10k', label: 'Run 10 KM' },
+                  { id: 'skip_workout', label: 'Skip Training' },
+                  { id: 'hydrate_3l', label: 'Drink 3L Water' },
+                  { id: 'junk_food', label: 'High Sugar Meal' },
+                  { id: 'meditate_20', label: 'Meditate 20 Min' }
+                ].map((sc) => (
+                  <button
+                    key={sc.id}
+                    onClick={() => handleTriggerSimulation(sc.id)}
+                    className={`p-2.5 rounded-2xl text-[10px] font-bold tracking-wide transition-all text-left cursor-pointer border ${activeSimulation === sc.id
+                        ? 'bg-white text-black font-semibold text-black border-white/20 font-extrabold shadow-[0_0_12px_rgba(249,115,22,0.3)]'
+                        : 'bg-[#1a1412] text-neutral-300 hover:text-white border-[#2c1e15]/60 hover:border-white/20/25'
+                      }`}
+                  >
+                    {sc.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Simulation Predict Result */}
+            {activeSimulation && simulatedMetrics && (
+              <div className="mt-4 p-4 bg-white/5 border border-white/10 rounded-2xl space-y-2">
+                <span className="text-[9px] font-black text-neutral-300 uppercase tracking-widest block">Simulation Active</span>
+                <p className="text-[10px] text-neutral-200 leading-relaxed">{simulatedMetrics.explanation}</p>
+                <div className="grid grid-cols-2 gap-2 text-[10px] pt-1.5 border-t border-white/20/10">
+                  <div>
+                    <span className="text-neutral-400">Recovery:</span> <span className="font-bold text-white">{simulatedMetrics.recoveryScore}%</span>
+                  </div>
+                  <div>
+                    <span className="text-neutral-400">Stress:</span> <span className="font-bold text-white">{simulatedMetrics.stressLevel}/10</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Quick AI Coaching Note */}
+          <div className="rounded-[32px] bg-[#14100e]/95 backdrop-blur-xl border border-[#2c1e15] p-5 flex items-start gap-3 shadow-lg">
+            <div className="w-8 h-8 rounded-full bg-white/5 text-neutral-300 flex items-center justify-center shrink-0 border border-white/10">
+              <Info className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-white">AURA Dynamic Tip</h4>
+              <p className="text-[10px] text-neutral-400 mt-0.5 leading-relaxed">
+                Your circadian window opens at 9:30 PM. Decrease screen exposure and avoid intense visual stimulation.
+              </p>
+            </div>
+          </div>
+
         </div>
 
-        {/* Detailed Organ Telemetry */}
-        <div className="lg:col-span-4">
-          <AnimatePresence mode="wait">
+      </div>
+
+      {/* AURA Slide-Out Health Drawer */}
+      <AnimatePresence>
+        {selectedOrgan && activeOrganData && (
+          <>
+            {/* Backdrop Blur */}
             <motion.div
-              key={activeOrgan.id}
-              initial={{ opacity: 0, x: 15 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -15 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-[32px] bg-black/35 backdrop-blur-xl p-6 border border-white/10 space-y-6 flex flex-col justify-between h-full hover:border-white/20 transition-all duration-300"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedOrgan(null)}
+              className="fixed inset-0 z-40 bg-black/80 backdrop-blur-xs"
+            />
+
+            {/* Slide-out Drawer */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md z-50 bg-[#0e0b0a] border-l border-[#2c1e15] shadow-2xl p-6 md:p-8 flex flex-col justify-between overflow-y-auto"
             >
-              <div className="space-y-6">
-                <div>
-                  <span className="text-[9px] font-bold text-cyan-500 uppercase tracking-widest">System details</span>
-                  <h2 className="text-lg font-bold mt-0.5">{activeOrgan.name}</h2>
-                </div>
-
-                {/* Score Dial mockup */}
-                <div className="p-4 bg-white/5 border border-white/5 rounded-[24px] flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-semibold text-neutral-400 uppercase">Organ Efficiency</span>
-                    <h3 className="text-2xl font-black text-cyan-500">{activeOrgan.score}%</h3>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-xl text-[9px] font-bold uppercase tracking-wider ${
-                    activeOrgan.status === 'optimal'
-                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                      : activeOrgan.status === 'moderate'
-                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                      : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                  }`}>
-                    {activeOrgan.status}
+              {/* Drawer Header */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] font-black text-white uppercase tracking-widest flex items-center gap-1">
+                    Organ Diagnostic Portal
                   </span>
+                  <button
+                    onClick={() => setSelectedOrgan(null)}
+                    className="p-1.5 hover:bg-[#1a1412] rounded-full text-neutral-400 hover:text-white cursor-pointer transition-colors"
+                  >
+                    ✕
+                  </button>
                 </div>
 
-                {/* Biological Insights list */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
-                    <Info className="w-3.5 h-3.5" /> Biometrics Extracted
-                  </h4>
+                <div className="flex justify-between items-end">
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight text-white">{activeOrganData.name}</h2>
+                    <p className="text-[10px] text-neutral-400 mt-0.5">Status: <span className="text-white font-bold">{activeOrganData.status}</span></p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-4xl font-black text-white">{activeOrganData.score}</span>
+                    <span className="text-[9px] text-neutral-400 block uppercase font-bold tracking-wider mt-0.5">Health Index</span>
+                  </div>
+                </div>
+
+                {/* Diagnostic Details */}
+                <div className="space-y-4 pt-4 border-t border-[#2c1e15]">
+
+                  {/* Explanation */}
+                  <div className="bg-[#181311] rounded-2xl p-4 border border-[#2c1e15]">
+                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-neutral-300" /> AURA Assessment
+                    </h4>
+                    <p className="text-xs text-neutral-300 mt-2 leading-relaxed">{activeOrganData.prediction}</p>
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-[#2c1e15] text-[9px] text-neutral-500 font-bold uppercase">
+                      <span>Prediction Confidence</span>
+                      <span className="text-neutral-300">{activeOrganData.confidenceScore}%</span>
+                    </div>
+                  </div>
+
+                  {/* Recommendations */}
                   <div className="space-y-2">
-                    {activeOrgan.insights.map((insight, idx) => (
-                      <div key={idx} className="text-xs py-2 px-3 bg-white/5 border border-white/5 rounded-xl text-neutral-350">
-                        {insight}
+                    <h4 className="text-xs font-bold text-neutral-300">Recommendations</h4>
+                    {activeOrganData.recommendations.map((rec, i) => (
+                      <div key={i} className="flex items-start gap-2.5 text-xs text-neutral-400 leading-relaxed bg-[#14100e]/50 border border-[#2c1e15]/50 p-3 rounded-xl">
+                        <ChevronRight className="w-4 h-4 text-neutral-300 shrink-0 mt-0.5" />
+                        <span>{rec}</span>
                       </div>
                     ))}
                   </div>
+
+                  {/* Habits & Risks */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <h5 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Supporting Habits</h5>
+                      <ul className="text-[10px] text-neutral-400 list-disc list-inside space-y-1">
+                        {activeOrganData.habits.map((h, i) => <li key={i}>{h}</li>)}
+                      </ul>
+                    </div>
+                    <div className="space-y-1.5">
+                      <h5 className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Potential Risks</h5>
+                      <ul className="text-[10px] text-rose-400/80 list-disc list-inside space-y-1">
+                        {activeOrganData.risks.map((r, i) => <li key={i}>{r}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
-              {/* Recommendation */}
-              <div className="border-t border-white/5 pt-4 mt-6">
-                <span className="text-[9px] font-bold text-violet-500 uppercase tracking-widest flex items-center gap-1">
-                  <SparkleIcon className="w-3 h-3" /> AURA Recommendation
-                </span>
-                <p className="text-[11px] leading-relaxed text-neutral-300 mt-1 bg-violet-500/5 border border-violet-500/10 p-3.5 rounded-[18px]">
-                  {activeOrgan.recommendation}
-                </p>
+              {/* Consultation Prep Notes */}
+              <div className="mt-8 pt-6 border-t border-[#2c1e15] space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold text-neutral-300">Doctor Consultation Prep Notes</h4>
+                  <p className="text-[10px] text-neutral-400 mt-1 leading-relaxed">{activeOrganData.doctorPrepNotes}</p>
+                </div>
+                <button
+                  onClick={() => toast.success('Diagnostic summary package generated and synced to Secure Vault.')}
+                  className="w-full py-3 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_4px_15px_rgba(249,115,22,0.35)]"
+                >
+                  <ShieldAlert className="w-4 h-4" /> Package Summary for Vault
+                </button>
               </div>
+
             </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
+          </>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

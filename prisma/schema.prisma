@@ -6,15 +6,22 @@ datasource db {
   provider = "postgresql"
 }
 
+// Enable pgvector in migrations, but Prisma will manage it as Unsupported if needed
+// Or we just store embeddings as Json or Unsupported("vector(1536)")
+
+// --- CORE USER MODELS ---
+
 model UserProfile {
-  id            String            @id @default(uuid())
-  userId        String            @unique
-  email         String            @unique
-  fullName      String?
-  avatarUrl     String?
-  role          String            @default("user")
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id        String   @id @default(uuid())
+  userId    String   @unique // Maps to Supabase Auth User ID
+  email     String   @unique
+  password  String?
+  fullName  String?
+  avatarUrl String?
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   conversations AIConversation[]
   goals         Goal[]
   healthRecords HealthRecord[]
@@ -22,12 +29,72 @@ model UserProfile {
   reports       MedicalReport[]
   medications   Medication[]
   notifications Notification[]
-  nutrition     Nutrition[]
+  nutritionLogs Nutrition[]
+  meals         Meal[]
   settings      Settings?
   sleepLogs     SleepLog[]
   symptoms      Symptom[]
   achievements  UserAchievement[]
   workouts      Workout[]
+  preferences   UserPreference[]
+  baselines     UserBaseline[]
+  predictions   Prediction[]
+  alerts        Alert[]
+  timeline      TimelineEvent[]
+  userMemory    UserMemory?
+  searchHistory SearchHistory[]
+
+  // Phase 2 Relations
+  insights          HealthInsight[]
+  recoveryLogs      RecoveryScoreLog[]
+  burnoutLogs       BurnoutScoreLog[]
+  foodAnalyses      FoodAnalysis[]
+  medicalResults    MedicalReportResult[]
+  summaries         AIHealthSummary[]
+  predictionsP2     HealthPrediction[]
+  recommendationsP2 AIRecommendation[]
+  memoryNodes       MemoryNode[]
+  
+  // Phase 3 Relations
+  longTermMemories  LongTermMemory[]
+  healthMemories    HealthMemory[]
+  aiAnalytics       AIUsageAnalytics[]
+  medicalDocuments  MedicalDocument[]
+  medicalReportAnalyses MedicalReportAnalysis[]
+  medicalTimelines  MedicalTimeline[]
+
+  // Voice Assistant Relations
+  voiceSessions      VoiceSession[]
+  voiceTranscripts   VoiceTranscript[]
+  voiceAnalytics     VoiceAnalytics[]
+  toolInvocations    ToolInvocation[]
+  aiReasonings       AIReasoning[]
+  conversationSummaries ConversationSummary[]
+  wakeWordEvents     WakeWordEvents[]
+  voiceSettings      VoiceSettings?
+
+  // Schedule & Health OS Relations
+  scheduleEvents     ScheduleEvent[]
+  circadianPreference CircadianPreference?
+  aiSchedulePredictions AISchedulePrediction[]
+  medicationSchedules MedicationSchedule[]
+  medicationLogs     MedicationLog[]
+  goalPlans          GoalPlan[]
+  aiDecisionLogs     AIDecisionLog[]
+  scheduleVersions   ScheduleVersion[]
+  weatherSnapshots   WeatherSnapshot[]
+
+  // LIVE Order Marketplace Relations
+  connectedPlatforms   ConnectedFoodPlatform[]
+  savedRestaurants     SavedRestaurant[]
+  savedMeals           SavedMeal[]
+  mealRecommendations  MealRecommendation[]
+  orderHistories       OrderHistory[]
+  mealPreferences      MealPreference[]
+  allergyProfiles      AllergyProfile[]
+  dietaryRestrictions  DietaryRestriction[]
+  mealFeedbacks        MealFeedback[]
+  mealStreaks          MealStreak[]
 }
 
 model Settings {
@@ -42,18 +109,69 @@ model Settings {
   profile          UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
+model UserPreference {
+  id        String      @id @default(uuid())
+  profileId String
+  category  String
+  value     String
+  notes     String?
+  createdAt DateTime    @default(now())
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+// --- LONG TERM MEMORY ---
+model UserMemory {
+  id                String      @id @default(uuid())
+  profileId         String      @unique
+  dietPreference    String? // e.g. vegan, vegetarian, none
+  allergies         String[] // e.g. peanuts, dairy
+  workoutPreference String? // e.g. morning, evening
+  sleepSchedule     String? // e.g. 10pm-6am
+  favoriteFoods     String[]
+  units             String      @default("metric")
+  fitnessGoals      String[]
+  updatedAt         DateTime    @updatedAt
+  profile           UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model SearchHistory {
+  id        String      @id @default(uuid())
+  profileId String
+  query     String
+  category  String
+  createdAt DateTime    @default(now())
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+// --- HEALTH & FITNESS MODELS ---
+
 model HealthRecord {
   id            String      @id @default(uuid())
   profileId     String
   vitalityScore Int         @default(100)
+  stressLevel   Float?
+  recoveryScore Int?
   heartRate     Int?
+  hrv           Int?
   bloodPressure String?
   weight        Float?
   height        Float?
   bloodSugar    Float?
   oxygenLevel   Float?
+  waterIntakeMl Int         @default(0)
   recordedAt    DateTime    @default(now())
+  provider      String      @default("manual")
   profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model UserBaseline {
+  id           String      @id @default(uuid())
+  profileId    String
+  metricName   String
+  value        Float
+  windowDays   Int         @default(30)
+  calculatedAt DateTime    @default(now())
+  profile      UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Workout {
@@ -67,6 +185,19 @@ model Workout {
   recordedAt     DateTime    @default(now())
   profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
+
+model SleepLog {
+  id            String      @id @default(uuid())
+  profileId     String
+  durationHours Float
+  deepSleepMin  Int
+  remSleepMin   Int
+  qualityScore  Int
+  recordedAt    DateTime    @default(now())
+  profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+// --- NUTRITION & FOOD MODELS ---
 
 model Nutrition {
   id            String      @id @default(uuid())
@@ -82,16 +213,145 @@ model Nutrition {
   profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
-model SleepLog {
-  id            String      @id @default(uuid())
-  profileId     String
-  durationHours Float
-  deepSleepMin  Int
-  remSleepMin   Int
-  qualityScore  Int
-  recordedAt    DateTime    @default(now())
-  profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+model Meal {
+  id           String      @id @default(uuid())
+  profileId    String
+  name         String
+  type         String
+  totalCals    Int
+  totalProtein Float
+  totalCarbs   Float
+  totalFat     Float
+  loggedAt     DateTime    @default(now())
+  profile      UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  items        MealItem[]
 }
+
+model MealItem {
+  id     String @id @default(uuid())
+  mealId String
+  foodId String
+  amount Float
+  unit   String
+  meal   Meal   @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  food   Food   @relation(fields: [foodId], references: [id], onDelete: Restrict)
+}
+
+model Food {
+  id          String   @id @default(uuid())
+  name        String
+  aliases     String[]
+  category    String
+  servingSize Float
+  servingUnit String
+
+  calories Int
+  protein  Float
+  carbs    Float
+  fat      Float
+  fiber    Float
+  sugar    Float
+
+  sodium    Float?
+  potassium Float?
+  calcium   Float?
+  iron      Float?
+  vitaminC  Float?
+  vitaminD  Float?
+
+  isVegetarian Boolean @default(false)
+  isVegan      Boolean @default(false)
+  isGlutenFree Boolean @default(false)
+
+  benefits String[]
+  risks    String[]
+
+  createdAt DateTime   @default(now())
+  mealItems MealItem[]
+}
+
+// --- AI & KNOWLEDGE MODELS ---
+
+model AIConversation {
+  id        String      @id @default(uuid())
+  profileId String
+  agentType String
+  title     String      @default("New Conversation")
+  createdAt DateTime    @default(now())
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  messages  AIMessage[]
+}
+
+model AIMessage {
+  id             String         @id @default(uuid())
+  conversationId String
+  role           String
+  content        String
+  intent         String?
+  contextUsed    Json?
+  toolsUsed      String[]
+  
+  // Vercel AI SDK & Performance Metrics
+  latencyMs        Int?
+  promptTokens     Int?
+  completionTokens Int?
+  cachedTokens     Int?
+  cost             Float?
+  
+  provider       String? // Groq, OpenAI, Google
+  model          String?
+  createdAt      DateTime       @default(now())
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model VectorDocument {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  category  String
+  metadata  Json?
+  embedding Json?
+  createdAt DateTime @default(now())
+}
+
+// --- ENGINE OUTPUTS & INSIGHTS ---
+
+model Prediction {
+  id             String      @id @default(uuid())
+  profileId      String
+  metric         String
+  predictedValue Float
+  confidence     Int
+  timeframeHours Int
+  reasoning      String
+  generatedAt    DateTime    @default(now())
+  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Alert {
+  id           String      @id @default(uuid())
+  profileId    String
+  title        String
+  message      String
+  severity     String
+  metricSource String
+  isRead       Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  profile      UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model TimelineEvent {
+  id          String      @id @default(uuid())
+  profileId   String
+  type        String
+  title       String
+  description String
+  timestamp   DateTime    @default(now())
+  metadata    Json?
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+// --- MEDICAL & TRACKING ---
 
 model Medication {
   id        String      @id @default(uuid())
@@ -125,25 +385,6 @@ model MedicalReport {
   analyzedAt     DateTime?
   createdAt      DateTime    @default(now())
   profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-}
-
-model AIConversation {
-  id        String      @id @default(uuid())
-  profileId String
-  agentType String
-  title     String      @default("New Conversation")
-  createdAt DateTime    @default(now())
-  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  messages  AIMessage[]
-}
-
-model AIMessage {
-  id             String         @id @default(uuid())
-  conversationId String
-  sender         String
-  content        String
-  createdAt      DateTime       @default(now())
-  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }
 
 model Goal {
@@ -191,39 +432,13 @@ model Integration {
   profile      UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model profiles {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String?   @db.Uuid
-  bio        String?
-  occupation String?
-  language   String?
-  theme      String?
-  visibility String?
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model users {
-  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email          String     @unique
-  phone          String?
-  full_name      String?
-  username       String?    @unique
-  avatar_url     String?
-  dob            DateTime?  @db.Date
-  gender         String?
-  height_cm      Decimal?   @db.Decimal
-  weight_kg      Decimal?   @db.Decimal
-  blood_group    String?
-  activity_level String?
-  goal           String?
-  country        String?
-  timezone       String?
-  created_at     DateTime?  @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime?  @default(now()) @db.Timestamptz(6)
-  profiles       profiles[]
+model ProviderSyncLog {
+  id        String   @id @default(uuid())
+  profileId String
+  provider  String
+  status    String
+  error     String?
+  syncedAt  DateTime @default(now())
 }
 
 model Otp {
@@ -231,4 +446,882 @@ model Otp {
   email     String
   code      String
   expiresAt DateTime
+}
+
+// --- PHASE 2 CORE ENUMS ---
+
+enum InsightCategory {
+  HYDRATION
+  NUTRITION
+  SLEEP
+  ACTIVITY
+  RECOVERY
+  MENTAL_HEALTH
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SummaryType {
+  MORNING
+  AFTERNOON
+  EVENING
+  WEEKLY
+  MONTHLY
+}
+
+enum RecommendationSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum PredictionMetric {
+  WEIGHT
+  ENERGY
+  RECOVERY
+  STRESS
+  SLEEP
+  BODY_FAT
+  HYDRATION
+}
+
+// --- PHASE 2 INTELLIGENCE MODULES ---
+
+model HealthInsight {
+  id         String          @id @default(uuid())
+  profileId  String
+  category   InsightCategory
+  summary    Json // { headline, explanation, recommendations: [], confidence }
+  confidence Float
+  detectedAt DateTime        @default(now())
+
+  // Model Metadata
+  modelVersion     String?
+  provider         String?
+  promptVersion    String?
+  processingTimeMs Int?
+  tokensUsed       Int?
+
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([detectedAt])
+  @@index([category])
+}
+
+model RecoveryScoreLog {
+  id        String @id @default(uuid())
+  profileId String
+  score     Int
+
+  // Contribution breakdown
+  sleepContribution     Int
+  nutritionContribution Int
+  stressContribution    Int
+  hydrationContribution Int
+  exerciseContribution  Int
+
+  breakdown       Json // Detailed factor metrics
+  reasons         String[] // List of contributing factors
+  recommendations String[]
+  confidence      Float
+  recordedAt      DateTime @default(now())
+
+  // Model Metadata
+  modelVersion     String?
+  provider         String?
+  promptVersion    String?
+  processingTimeMs Int?
+  tokensUsed       Int?
+
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([recordedAt])
+}
+
+model BurnoutScoreLog {
+  id              String    @id @default(uuid())
+  profileId       String
+  score           Int
+  riskLevel       RiskLevel
+  reasons         String[]
+  recommendations String[]
+  confidence      Float
+  recordedAt      DateTime  @default(now())
+
+  // Model Metadata
+  modelVersion     String?
+  provider         String?
+  promptVersion    String?
+  processingTimeMs Int?
+  tokensUsed       Int?
+
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([recordedAt])
+}
+
+model FoodAnalysis {
+  id        String   @id @default(uuid())
+  profileId String
+  imageUrl  String
+  mealType  String // "breakfast" | "lunch" | "dinner" | "snack"
+  mealTime  DateTime @default(now())
+
+  foodItems    String[]
+  ingredients  Json // Detailed ingredient list
+  calories     Int
+  protein      Float
+  fat          Float
+  carbs        Float
+  fiber        Float
+  sugar        Float
+  vitamins     Json // Vitamin values
+  minerals     Json // Mineral values
+  glycemicLoad Float?
+
+  portionSize     String
+  confidenceScore Float
+  healthRating    Int
+  alternatives    String[]
+  explanation     String
+  status          ProcessingStatus @default(PENDING)
+  analyzedAt      DateTime         @default(now())
+
+  // Model Metadata
+  modelVersion     String?
+  provider         String?
+  promptVersion    String?
+  processingTimeMs Int?
+  tokensUsed       Int?
+
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([analyzedAt])
+  @@index([status])
+}
+
+model MedicalReportResult {
+  id              String    @id @default(uuid())
+  profileId       String
+  reportId        String    @unique
+  originalFileUrl String?
+  ocrText         String?
+  reportType      String? // e.g. "blood_test", "lipid_panel"
+  labName         String?
+  reportDate      DateTime?
+  doctorName      String?
+
+  summary         Json // Structured AI output
+  abnormalValues  Json // Abnormal flags
+  terminology     Json // Terminology explanations
+  doctorQuestions String[]
+  comparedToId    String? // Previous report link
+  confidence      Float
+  status          ProcessingStatus @default(PENDING)
+  analyzedAt      DateTime         @default(now())
+
+  // Model Metadata
+  modelVersion     String?
+  provider         String?
+  promptVersion    String?
+  processingTimeMs Int?
+  tokensUsed       Int?
+
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([status])
+}
+
+model AIHealthSummary {
+  id          String           @id @default(uuid())
+  profileId   String
+  type        SummaryType
+  priority    String           @default("normal") // "low" | "normal" | "high"
+  read        Boolean          @default(false)
+  expiresAt   DateTime?
+  content     Json // Headline, body summary, action items
+  confidence  Float
+  status      ProcessingStatus @default(PENDING)
+  generatedAt DateTime         @default(now())
+
+  // Model Metadata
+  modelVersion     String?
+  provider         String?
+  promptVersion    String?
+  processingTimeMs Int?
+  tokensUsed       Int?
+
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([generatedAt])
+  @@index([status])
+}
+
+model HealthPrediction {
+  id             String           @id @default(uuid())
+  profileId      String
+  metric         PredictionMetric
+  predictedValue Float
+  confidence     Float
+  timeframeHours Int
+  reasoning      String
+  generatedAt    DateTime         @default(now())
+  profile        UserProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([generatedAt])
+}
+
+model AIRecommendation {
+  id          String                 @id @default(uuid())
+  profileId   String
+  text        String
+  severity    RecommendationSeverity
+  category    String
+  sources     Json // Sources: ["Sleep", "Workout", etc]
+  confidence  Float
+  generatedAt DateTime               @default(now())
+  profile     UserProfile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([generatedAt])
+}
+
+// --- RELATIONAL MEMORY MODULE ---
+
+model MemoryNode {
+  id         String      @id @default(uuid())
+  profileId  String
+  label      String // e.g. "Peanut Allergy", "Prefers Zone 2 Cardio"
+  category   String // "diet", "sleep_habit", "workout_preference", "clinical"
+  confidence Float
+  createdAt  DateTime    @default(now())
+  profile    UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model AIAuditLog {
+  id         String   @id @default(uuid())
+  profileId  String
+  action     String // e.g., "FoodRecognition", "SummaryGeneration"
+  prompt     String
+  model      String
+  response   String
+  latencyMs  Int
+  tokensUsed Int?
+  timestamp  DateTime @default(now())
+}
+
+// --- PHASE 3: AURA ENTERPRISE INTELLIGENCE LAYER ---
+
+model AIModel {
+  id                String  @id @default(uuid())
+  name              String  @unique // e.g., "grok-aura-v4", "gpt-4o"
+  displayName       String // e.g., "AURA-v1", "Thinking Bit"
+  provider          String // e.g., "OpenAI", "Google", "Anthropic"
+  supportsVision    Boolean @default(false)
+  supportsReasoning Boolean @default(false)
+  supportsStreaming Boolean @default(true)
+  maxTokens         Int     @default(8192)
+  temperature       Float   @default(0.7)
+  enabled           Boolean @default(true)
+  priority          Int     @default(1)
+  description       String?
+}
+
+model AIAgent {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g., "HealthAgent", "NutritionAgent"
+  displayName String
+  systemPrompt String
+  modelId     String
+  createdAt   DateTime @default(now())
+}
+
+// --- MCP ARCHITECTURE (TOOLS) ---
+model AITool {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String
+  endpoint    String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model AIToolCall {
+  id             String   @id @default(uuid())
+  conversationId String
+  messageId      String?
+  toolName       String
+  arguments      Json
+  latencyMs      Int?
+  createdAt      DateTime @default(now())
+}
+
+model AIToolResult {
+  id         String   @id @default(uuid())
+  toolCallId String   @unique
+  result     Json
+  createdAt  DateTime @default(now())
+}
+
+// --- MEMORY ARCHITECTURE SPLIT ---
+model LongTermMemory {
+  id         String   @id @default(uuid())
+  profileId  String
+  fact       String
+  confidence Float    @default(1.0)
+  source     String?
+  createdAt  DateTime @default(now())
+  profile    UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model ShortTermMemory {
+  id         String   @id @default(uuid())
+  profileId  String
+  context    String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+model ConversationMemory {
+  id             String   @id @default(uuid())
+  conversationId String
+  summary        String
+  updatedAt      DateTime @updatedAt
+}
+
+model HealthMemory {
+  id         String   @id @default(uuid())
+  profileId  String
+  category   String   // "Clinical", "Dietary", "Fitness"
+  value      String
+  confidence Float
+  createdAt  DateTime @default(now())
+  profile    UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+// --- CONVERSATION & ANALYTICS ---
+model AIConversationSettings {
+  id             String  @id @default(uuid())
+  conversationId String  @unique
+  autoImages     Boolean @default(true)
+  autoDiagrams   Boolean @default(true)
+  memoryEnabled  Boolean @default(true)
+}
+
+model AIAttachment {
+  id             String   @id @default(uuid())
+  conversationId String
+  messageId      String?
+  fileUrl        String
+  fileType       String   // "image/jpeg", "application/pdf"
+  metadata       Json?
+  createdAt      DateTime @default(now())
+}
+
+model AIUsageAnalytics {
+  id               String   @id @default(uuid())
+  profileId        String
+  periodStart      DateTime
+  periodEnd        DateTime
+  totalPromptTokens Int      @default(0)
+  totalCompletionTokens Int  @default(0)
+  totalCost        Float    @default(0.0)
+  updatedAt        DateTime @updatedAt
+  profile          UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model MedicalDocument {
+  id               String   @id @default(uuid())
+  userId           String
+  title            String
+  category         String
+  fileUrl          String
+  storagePath      String
+  fileSize         String
+  mimeType         String
+  uploadedAt       DateTime @default(now())
+  reportDate       DateTime?
+  hospital         String?
+  doctor           String?
+  status           String   @default("pending")
+  summary          String?  @db.Text
+  processingStatus String   @default("PENDING")
+  aiAnalyzed       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis         MedicalReportAnalysis?
+  timelineEvents   MedicalTimeline[]
+
+  @@index([userId])
+}
+
+model MedicalReportAnalysis {
+  id                 String   @id @default(uuid())
+  documentId         String   @unique
+  userId             String
+  overallHealthScore Int      @default(0)
+  summary            String   @db.Text
+  riskLevel          String   @default("LOW")
+  abnormalValues     Json
+  normalValues       Json
+  recommendations    Json
+  doctorQuestions    Json
+  followUpActions    Json
+  dietPlan           Json
+  exercisePlan       Json
+  supplements        Json
+  hydrationAdvice    Json
+  sleepAdvice        Json
+  confidence         Float    @default(1.0)
+  generatedAt        DateTime @default(now())
+
+  document         MedicalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user             UserProfile     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model MedicalTimeline {
+  id          String   @id @default(uuid())
+  userId      String
+  documentId  String
+  eventDate   DateTime @default(now())
+  title       String
+  description String   @db.Text
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user        UserProfile     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document    MedicalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventDate])
+}
+
+model VoiceSession {
+  id        String   @id @default(uuid())
+  profileId String
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE, ENDED
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  transcripts VoiceTranscript[]
+  analytics   VoiceAnalytics[]
+  tools       ToolInvocation[]
+  reasoning   AIReasoning[]
+  summaries   ConversationSummary[]
+
+  @@index([profileId])
+}
+
+model VoiceTranscript {
+  id        String   @id @default(uuid())
+  sessionId String
+  profileId String
+  queryText String   @db.Text
+  replyText String   @db.Text
+  audioUrl  String?
+  timestamp DateTime @default(now())
+
+  session   VoiceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  profile   UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([profileId])
+}
+
+model VoiceAnalytics {
+  id               String   @id @default(uuid())
+  sessionId        String
+  profileId        String
+  modelName        String
+  providerName     String
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  latencyMs        Int      @default(0)
+  sttLatencyMs     Int      @default(0)
+  ttsLatencyMs     Int      @default(0)
+  cacheHit         Boolean  @default(false)
+  errorRate        Float    @default(0.0)
+  timestamp        DateTime @default(now())
+
+  session          VoiceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  profile          UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([profileId])
+}
+
+model ToolInvocation {
+  id         String   @id @default(uuid())
+  sessionId  String
+  profileId  String
+  toolName   String
+  actionType String
+  parameters Json
+  confidence Float    @default(1.0)
+  invokedAt  DateTime @default(now())
+
+  session    VoiceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  profile    UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([profileId])
+}
+
+model AIReasoning {
+  id             String   @id @default(uuid())
+  sessionId      String
+  profileId      String
+  queryText      String   @db.Text
+  recommendation String   @db.Text
+  evidence       Json
+  confidence     Float    @default(1.0)
+  reasoning      String   @db.Text
+  sources        Json
+  createdAt      DateTime @default(now())
+
+  session        VoiceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  profile        UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([profileId])
+}
+
+model ConversationSummary {
+  id         String   @id @default(uuid())
+  sessionId  String
+  profileId  String
+  summary    String   @db.Text
+  tokensUsed Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  session    VoiceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  profile    UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([profileId])
+}
+
+model WakeWordEvents {
+  id                 String   @id @default(uuid())
+  profileId          String
+  detectedAt         DateTime @default(now())
+  audioLevel         Float    @default(0.0)
+  calibrationMetrics Json?
+
+  profile            UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model VoiceSettings {
+  id            String   @id @default(uuid())
+  profileId     String   @unique
+  voiceProvider String   @default("browser")
+  voiceName     String   @default("default")
+  speechRate    Float    @default(1.0)
+  pitch         Float    @default(1.0)
+  sensitivity   Float    @default(0.5)
+  bargeIn       Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
+
+  profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model ScheduleEvent {
+  id               String   @id @default(uuid())
+  profileId        String
+  title            String
+  category         String   // WORKOUT, NUTRITION, RECOVERY, DEEP_WORK, SLEEP, MEDICINE, TRAVEL, GENERAL
+  startTime        DateTime
+  endTime          DateTime
+  durationMinutes  Int
+  purpose          String?
+  priority         Float    @default(0.5) // 0.0 to 1.0
+  energyCost       Int      @default(0)   // -100 to 100
+  recoveryCost     Int      @default(0)
+  healthImpact     String?
+  completionScore  Int      @default(0)
+  aiReasoning      String?  @db.Text
+  confidenceScore  Float    @default(1.0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  profile          UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model CircadianPreference {
+  id                 String   @id @default(uuid())
+  profileId          String   @unique
+  chronotype         String   @default("morning") // morning, night, intermediate
+  peakFocusHour      Int      @default(9)
+  peakWorkoutHour    Int      @default(17)
+  peakRecoveryHour   Int      @default(21)
+  peakCreativityHour Int      @default(14)
+  updatedAt          DateTime @updatedAt
+
+  profile            UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model AISchedulePrediction {
+  id                 String   @id @default(uuid())
+  profileId          String
+  targetDate         DateTime
+  predictedBurnout   Float    @default(0.0) // 0.0 to 1.0
+  predictedStress    Float    @default(0.0)
+  predictedFocus     Float    @default(0.0)
+  predictedEnergy    Float    @default(0.0)
+  predictedMood      Float    @default(0.0)
+  predictedSleep     Float    @default(0.0)
+  predictedCalories  Int      @default(2000)
+  predictedProductivity Float  @default(0.0)
+  confidence         Float    @default(1.0)
+  createdAt          DateTime @default(now())
+
+  profile            UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model MedicationSchedule {
+  id           String   @id @default(uuid())
+  profileId    String
+  name         String
+  dosage       String
+  frequency    String   // DAILY, WEEKLY, AS_NEEDED
+  scheduledTime String  // e.g. "08:00"
+  instructions String?
+  startDate    DateTime
+  endDate      DateTime?
+  active       Boolean  @default(true)
+
+  profile      UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  logs         MedicationLog[]
+  @@index([profileId])
+}
+
+model MedicationLog {
+  id         String   @id @default(uuid())
+  scheduleId String
+  profileId  String
+  takenAt    DateTime @default(now())
+  status     String   // TAKEN, SKIPPED, DELAYED
+
+  schedule   MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  profile    UserProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+  @@index([scheduleId])
+}
+
+model GoalPlan {
+  id          String   @id @default(uuid())
+  profileId   String
+  title       String   // e.g. "Lose 10kg"
+  targetValue Float
+  unit        String   // kg, percent, hrs
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, PAUSED
+
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  milestones  GoalMilestone[]
+  @@index([profileId])
+}
+
+model GoalMilestone {
+  id          String   @id @default(uuid())
+  goalPlanId  String
+  title       String
+  targetValue Float
+  targetDate  DateTime
+  completed   Boolean  @default(false)
+
+  goalPlan    GoalPlan @relation(fields: [goalPlanId], references: [id], onDelete: Cascade)
+  @@index([goalPlanId])
+}
+
+model AIDecisionLog {
+  id              String   @id @default(uuid())
+  profileId       String
+  decision        String   @db.Text
+  reason          String   @db.Text
+  evidence        String?  @db.Text
+  confidence      Float    @default(1.0)
+  affectedMetrics Json?    // Array of metrics affected
+  alternatives    Json?    // Array of alternative suggestions
+  rollbackKey     String?  // to group rollbackable items
+  timestamp       DateTime @default(now())
+
+  profile         UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model ScheduleVersion {
+  id          String   @id @default(uuid())
+  profileId   String
+  version     Int
+  layoutData  Json     // Entire schedule event state at this point
+  createdAt   DateTime @default(now())
+
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model WeatherSnapshot {
+  id            String   @id @default(uuid())
+  profileId     String
+  tempC         Float
+  feelsLikeC    Float
+  humidity      Float
+  windSpeedKph  Float
+  rainProb      Float
+  uvIndex       Float
+  aqi           Int
+  pollenLevel   String   // LOW, MEDIUM, HIGH
+  recordedAt    DateTime @default(now())
+
+  profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model ConnectedFoodPlatform {
+  id          String      @id @default(uuid())
+  profileId   String
+  platform    String      // SWIGGY, ZOMATO
+  connected   Boolean     @default(false)
+  email       String?
+  accessToken String?
+  address     String?
+  favorites   Json?       // array of strings/ids
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model SavedRestaurant {
+  id          String      @id @default(uuid())
+  profileId   String
+  restaurantId String     // ID from the provider/catalog
+  name        String
+  platform    String      // SWIGGY, ZOMATO
+  healthRating Float      @default(0.0)
+  createdAt   DateTime    @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model SavedMeal {
+  id          String      @id @default(uuid())
+  profileId   String
+  mealId      String
+  name        String
+  restaurantName String
+  platform    String
+  auraScore   Int
+  calories    Int
+  protein     Float
+  createdAt   DateTime    @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model MealRecommendation {
+  id          String      @id @default(uuid())
+  profileId   String
+  mealName    String
+  restaurantName String
+  platform    String
+  auraScore   Int
+  explanation String      @db.Text
+  nutrients   Json        // Calories, Protein, Carbs, Fat, etc.
+  recommendedAt DateTime  @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model OrderHistory {
+  id          String      @id @default(uuid())
+  profileId   String
+  mealName    String
+  restaurantName String
+  platform    String      // SWIGGY, ZOMATO
+  price       Float
+  nutrients   Json        // Calories, Protein, etc.
+  orderedAt   DateTime    @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model MealPreference {
+  id          String      @id @default(uuid())
+  profileId   String
+  preference  String      // e.g. KETO, VEGAN, HIGH_PROTEIN
+  createdAt   DateTime    @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model AllergyProfile {
+  id          String      @id @default(uuid())
+  profileId   String
+  allergen    String      // PEANUTS, GLUTEN, etc.
+  createdAt   DateTime    @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model DietaryRestriction {
+  id          String      @id @default(uuid())
+  profileId   String
+  restriction String      // DIABETES_FRIENDLY, HEART_HEALTHY, etc.
+  createdAt   DateTime    @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model MealFeedback {
+  id          String      @id @default(uuid())
+  profileId   String
+  mealName    String
+  satisfaction String     // Sleepy, Full, Energetic, Hungry, Bloated
+  loggedAt    DateTime    @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model MealStreak {
+  id          String      @id @default(uuid())
+  profileId   String
+  streakDays  Int         @default(0)
+  lastStreakAt DateTime   @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
 }

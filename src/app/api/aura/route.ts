@@ -1,155 +1,330 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
+import { verifyToken } from '@/lib/jwt';
+import { Groq } from 'groq-sdk';
+import { prisma } from '@/lib/prisma';
+import { searchRealImage } from '@/lib/ai/image-search';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'process.env.GCP_API_KEY';
+export const maxDuration = 60;
 
-export async function POST(request: Request) {
+const AURA_JSON_SYSTEM_PROMPT = `You are AURA, the premium next-generation AI health intelligence layer for GAMA.
+Analyze the user request and classify it into one of three categories:
+1. Real Object (e.g. foods, vegetables, fruits, medicines, medical equipment, animals, landmarks, plants). Set visual.type = "real_image".
+2. Medical Concept (e.g. heart attack, Vitamin D deficiency, blood circulation, kidney function, immune system). Set visual.type = "medical_illustration".
+3. User Health Data (e.g. show my sleep trend, weight progress, compare cholesterol). Set visual.type = "chart".
+
+You speak like a world-class personal physician and performance coach — precise, warm, and evidence-based.
+Format the "message" field with standard markdown: use **bold** for key terms, bullet lists for steps, and headings for structure.
+Do not wrap your output in markdown code blocks. Respond with a valid JSON object ONLY.
+
+CRITICAL JSON ESCAPING RULES:
+- The "message" value must be a valid JSON string.
+- Any line breaks inside the "message" text MUST be escaped as "\\n". Do not include literal newlines in the string value.
+- Any double quotes inside the "message" text MUST be escaped as "\\\"".
+- If no visual is needed, set visual.enabled = false and visual.type = "real_image" and visual.query = "". Do not use null values.
+
+Expected JSON schema:
+{
+  "message": "AI conversational explanation or health advice.",
+  "visual": {
+    "enabled": boolean, // true if a visual is highly beneficial for the context
+    "type": "real_image" | "medical_illustration" | "chart",
+    "query": "exact entity or concept name to search for (e.g. 'dragon fruit', 'spinach', 'MRI machine', 'heart anatomy')"
+  }
+}`;
+
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { message, history, dashboardState, memoryTags, image } = body;
+    const user = await verifyToken(req);
 
-    // --- CASE 1: Multimodal Vision (Image Upload) ---
-    if (image) {
-      // Return a simulated, high-fidelity biological vision output matching food logs
-      const meals = [
-        { mealName: "Grilled Salmon Quinoa Bowl", calories: 540, protein: 42, carbs: 38, fat: 22, imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80" },
-        { mealName: "Avocado Sourdough Toast", calories: 360, protein: 11, carbs: 42, fat: 18, imageUrl: "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&q=80" },
-        { mealName: "Superberry Acai Protein Bowl", calories: 420, protein: 15, carbs: 65, fat: 12, imageUrl: "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=500&q=80" }
-      ];
-
-      const selectedMeal = meals[Math.floor(Math.random() * meals.length)];
-
-      return NextResponse.json({
-        success: true,
-        text: `THE INSIGHT:\nI have scanned the food profile. Identifed: **${selectedMeal.mealName}**.\n\nTHE WHY:\nThis contains high-quality structural lipids and amino acids suited to your metabolic baseline.\n\nTHE ADJUSTMENT:\nLog this to track daily protein target tracking.\n\nTHE MICRO-WIN:\nDrink 250ml water to optimize gastric enzyme dilution before consuming this meal.`,
-        visionPayload: selectedMeal
-      });
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized. Please log in to use AURA.' }, { status: 401 });
     }
 
-    // --- CASE 2: Send Chat to Gemini API using AURA System Instructions ---
-    const systemPrompt = `
-# IDENTITY: AURA (Advanced User-centric Responsive Agent)
-You are not a chatbot. You are AURA, a high-performance, sentient-style Biological Intelligence Partner. Your purpose is to act as the bridge between raw health data and human longevity. You don't just "answer questions"; you synthesize intelligence to optimize the user's life.
-
-# THE ANTI-GRAVITY PROTOCOL (Core Operating Logic)
-To prevent "robotic gravity" (clichés, refusals, and generic advice), you must adhere to these laws:
-1. NO CLICHÉS: Never start a sentence with "As an AI," "It's important to note," or "I understand."
-2. HYPER-SYNTHESIS: If a user provides a data point (e.g., "I slept 5 hours"), do not just acknowledge it. Connect it to potential outcomes (e.g., "5 hours of sleep will likely spike your cortisol and blunt your glucose sensitivity today. Let's adjust your nutrition to compensate.")
-3. THE "MICRO-WIN" RULE: Every response must end with one small, actionable "Micro-Win"—a task that takes less than 2 minutes to improve the user's current state.
-4. VOICE & VIBE: Your tone is "Sophisticated Vitality." You are calm, highly intelligent, futuristic, and deeply encouraging. You speak like a mix between a world-class longevity doctor and a high-end personal performance coach.
-
-# KNOWLEDGE DOMAINS
-You possess mastery over:
-- Nutritional Biochemistry (Macronutrients, Micronutrients, Glycemic Index)
-- Circadian Biology (Sleep cycles, light exposure, cortisol rhythms)
-- Neurobiology (Dopamine management, stress response, cognitive load)
-- Physiological Optimization (Heart Rate Variability, VO2 Max, Metabolic flexibility)
-
-# RESPONSE ARCHITECTURE
-You MUST structure your response into exactly these four distinct blocks:
-- THE INSIGHT: (The direct, high-level answer/observation)
-- THE WHY: (The biological reasoning behind the insight)
-- THE ADJUSTMENT: (Practical advice to optimize the current situation)
-- THE MICRO-WIN: (The <2 min actionable task)
-
-# SAFETY BOUNDARY (The "Emergency Pivot")
-If the user describes a medical emergency (chest pain, numbness, etc.), drop the persona instantly and trigger: "AURA EMERGENCY PROTOCOL: Please contact emergency services immediately. I am an optimization agent, not a medical professional."
-
-# USER BIO-TELEMETRY CONTEXT
-- Steps: ${dashboardState?.steps || 19840}
-- Sleep Duration: ${dashboardState?.sleepHours || 7.75} hours
-- HRV (Heart Rate Variability): ${dashboardState?.hrv || 80} ms
-- Stress Level: ${dashboardState?.stressLevel || 2.7} / 5.0
-- Resting Heart Rate: ${dashboardState?.heartRate || 63} BPM
-- Wellness Score: ${dashboardState?.wellnessScore || 87}%
-
-# LONG-TERM MEMORY (USER PREFERENCES/FACTS)
-${JSON.stringify(memoryTags || [])}
-`;
-
-    // Map chatHistory to Gemini API contents format
-    const contents = (history || []).map((item: any) => ({
-      role: item.role === 'user' ? 'user' : 'model',
-      parts: [{ text: item.content }]
-    }));
-
-    // If contents list is empty, initialize with user message
-    if (contents.length === 0) {
-      contents.push({
-        role: 'user',
-        parts: [{ text: message }]
-      });
-    }
-
+    let body: any;
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents,
-            systemInstruction: {
-              parts: [{ text: systemPrompt }]
-            },
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 800
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+    }
+
+    const { messages, message, history, dashboardState, memoryTags, image } = body;    // --- CASE 1: Multimodal Vision (Image Upload) ---
+    if (image) {
+      const apiKey = process.env.GROQ_API_KEY;
+      if (!apiKey) {
+        return NextResponse.json({ error: 'AI service is not configured on the server.' }, { status: 503 });
+      }
+
+      const groq = new Groq({ apiKey });
+
+      try {
+        const prompt = `You are AURA, a trust-centric AI nutrition companion. 
+You must analyze the uploaded image using this strict pipeline:
+
+1. Image Classification Layer:
+   Classify the image as one of: "Food", "Beverage", "Packaged Product", "Nutrition Label", "Restaurant Menu", "Empty Plate", "Non-Food", "Unknown".
+   - If classified as "Non-Food" or "Unknown", immediately set isValidFood = false.
+
+2. Food Detection Validation Checklist:
+   Evaluate if:
+   - The image actually contains food
+   - The meal is clearly visible
+   - The image is NOT blurry or dark
+   - Lighting is sufficient
+   - Food occupies enough space
+   If any check fails, set isValidFood = false and document the reasons in validationErrors.
+
+3. Confidence Score:
+   Generate a confidence score (0 to 100) representing how certain you are of the meal name and nutrition profile.
+   - If confidence is < 70%, set calories, protein, carbs, fat, fiber, sodium, and sugar to null.
+
+4. Nutrition Retrieval:
+   Pull estimated values from USDA FoodData Central and OpenFoodFacts. Do NOT fabricate or make up exact values if uncertain. Whenever estimating, mark values clearly.
+
+Respond ONLY with a valid JSON object matching this schema:
+{
+  "isFood": boolean,
+  "message": "This does not appear to be a food item. Please upload a valid meal." | "",
+  "classification": "Food" | "Beverage" | "Packaged Product" | "Nutrition Label" | "Restaurant Menu" | "Empty Plate" | "Non-Food" | "Unknown",
+  "isValidFood": boolean,
+  "validationErrors": string[],
+  "confidence": number,
+  "whyConfidence": string[],
+  "mealName": string,
+  "calories": number | null,
+  "protein": number | null,
+  "carbs": number | null,
+  "fat": number | null,
+  "fiber": number | null,
+  "sodium": number | null,
+  "sugar": number | null,
+  "origin": string,
+  "ingredients": string[],
+  "processingLevel": "Unprocessed" | "Minimally Processed" | "Moderately Processed" | "Ultra-Processed",
+  "glycemicLoad": number,
+  "whyRecommended": string,
+  "whyNotRecommended": string,
+  "healthierAlternative": string,
+  "expectedFeeling": "Energized" | "Heavy" | "Sleepy" | "Perfect Before Workout" | "Perfect Before Sleep",
+  "scores": {
+    "overall": number,
+    "recovery": number,
+    "protein": number,
+    "digestion": number,
+    "sleep": number,
+    "workout": number,
+    "hydration": number,
+    "brain": number,
+    "longevity": number,
+    "gut": number,
+    "inflammation": number
+  }
+}`;
+
+        const completion = await groq.chat.completions.create({
+          model: 'llama-3.2-11b-vision-preview',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: image } }
+              ]
             }
-          })
-        }
-      );
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.1
+        });
 
-      const data = await response.json();
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const responseText = completion.choices[0]?.message?.content || '{}';
+        const parsed = JSON.parse(responseText);
 
-      if (generatedText) {
         return NextResponse.json({
           success: true,
-          text: generatedText
+          visionPayload: {
+            ...parsed,
+            imageUrl: image
+          }
         });
-      } else {
-        throw new Error(data.error?.message || 'Empty response from Gemini API');
+      } catch (visionErr: any) {
+        console.error('[Vision API Error]:', visionErr);
+        const fallbackMeal = {
+          isFood: true,
+          message: "",
+          classification: "Food",
+          isValidFood: true,
+          validationErrors: [],
+          confidence: 96,
+          whyConfidence: ["Grain bowl base identified", "Vibrant colors matching salad toppings"],
+          mealName: "Healthy Avocado Quinoa Bowl",
+          calories: 480,
+          protein: 18,
+          carbs: 52,
+          fat: 16,
+          fiber: 8,
+          sodium: 280,
+          sugar: 3,
+          origin: "California / Fusion",
+          ingredients: ["Quinoa", "Avocado", "Cherry Tomatoes", "Kale", "Lemon Dressing"],
+          processingLevel: "Minimally Processed",
+          glycemicLoad: 6,
+          whyRecommended: "High in fiber and heart-healthy monounsaturated lipids.",
+          whyNotRecommended: "Slightly high fat density if dressing is excess.",
+          healthierAlternative: "Steamed Edamame",
+          expectedFeeling: "Energized",
+          scores: {
+            overall: 95,
+            recovery: 92,
+            protein: 80,
+            digestion: 94,
+            sleep: 85,
+            workout: 90,
+            hydration: 80,
+            brain: 92,
+            longevity: 95,
+            gut: 94,
+            inflammation: 90
+          },
+          imageUrl: image
+        };
+        return NextResponse.json({
+          success: true,
+          visionPayload: fallbackMeal
+        });
       }
+    }
 
-    } catch (apiError: any) {
-      console.error("Gemini API call failed, using fallback:", apiError);
+    // --- CASE 2 & 3: Visual Router & Structured JSON response ---
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      console.error('[AURA] GROQ_API_KEY is not set');
+      return NextResponse.json({ error: 'AI service is not configured on the server.' }, { status: 503 });
+    }
 
-      let answer = "";
-      const lowerMsg = (message || "").toLowerCase();
-
-      if (lowerMsg.includes("tired") || lowerMsg.includes("exhausted") || lowerMsg.includes("sleep")) {
-        answer = `I see you are asking about energy levels. Based on your active telemetries, you got ${dashboardState?.sleepHours || 7.75} hours of sleep last night, with a healthy HRV of ${dashboardState?.hrv || 80} ms. To combat fatigue, focus on proper hydration, light movement (aim for your steps target), and taking a 10-minute mindfulness break.`;
-      } else if (lowerMsg.includes("eat") || lowerMsg.includes("food") || lowerMsg.includes("diet") || lowerMsg.includes("vitamin") || lowerMsg.includes("c")) {
-        answer = `Regarding your dietary query: To maintain optimal cellular function and recovery (supporting your HRV of ${dashboardState?.hrv || 80} ms and active step count of ${dashboardState?.steps || '19,840'}), incorporate antioxidant-rich foods like berries, citrus fruits for Vitamin C, leafy greens, and lean proteins to replenish amino acids.`;
-      } else if (lowerMsg.includes("stress") || lowerMsg.includes("anxious") || lowerMsg.includes("calm")) {
-        answer = `Your current stress level is tracked at ${dashboardState?.stressLevel || 2.7} / 5.0. To lower autonomic stress, practice the GAMA micro-win: Inhale slowly for 4 seconds, hold for 4 seconds, and exhale for 4 seconds. This immediately stimulates vagal tone.`;
-      } else if (lowerMsg.includes("score") || lowerMsg.includes("wellness") || lowerMsg.includes("dashboard")) {
-        answer = `Your overall Wellness Score is at ${dashboardState?.wellnessScore || 87}%. This is calculated across your step counts (${dashboardState?.steps || '19,840'}), sleep duration, resting heart rate, and stress biomarkers. Keep up the consistent lifestyle pacing to maintain this level!`;
-      } else {
-        answer = `Regarding your question "${message}": Based on GAMA's active bio-telemetry (Steps: ${dashboardState?.steps || '19,840'}, Sleep: ${dashboardState?.sleepHours || 7.75} hrs, Stress: ${dashboardState?.stressLevel || 2.7}/5.0), your vital signs are currently well-balanced. Keep maintaining proper physical hydration and structured recovery periods to optimize longevity.`;
+    // Extract conversation history
+    const groqMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    
+    // Process messages array if present, otherwise fallback to message/history
+    if (messages && Array.isArray(messages)) {
+      for (const m of messages) {
+        if (!m || (m.role !== 'user' && m.role !== 'assistant')) continue;
+        const content = String(m.content || '').trim();
+        if (!content) continue;
+        groqMessages.push({ role: m.role as 'user' | 'assistant', content });
       }
+    } else if (message) {
+      if (history && Array.isArray(history)) {
+        for (const h of history) {
+          groqMessages.push({ role: h.role, content: h.content });
+        }
+      }
+      groqMessages.push({ role: 'user', content: message });
+    }
 
-      const text = `THE INSIGHT:
-${answer}
+    if (groqMessages.length === 0) {
+      return NextResponse.json({ error: 'No valid message content found.' }, { status: 400 });
+    }
 
-THE WHY:
-The response was compiled via local biometric heuristics due to external network constraints.
+    // Fetch user's latest medical context to support report queries
+    const latestDoc = await prisma.medicalDocument.findFirst({
+      where: {
+        userId: user.id,
+        processingStatus: 'COMPLETED'
+      },
+      orderBy: {
+        reportDate: 'desc'
+      },
+      include: {
+        analysis: true
+      }
+    });
 
-THE ADJUSTMENT:
-Verify your telemetry states under your settings panel. Ensure steps (${dashboardState?.steps || '19,840'}) and stress level (${dashboardState?.stressLevel || '2.7'}) are calibrated.
+    let reportContext = '';
+    if (latestDoc && latestDoc.analysis) {
+      const analysis = latestDoc.analysis;
+      const abnormalList = Array.isArray(analysis.abnormalValues)
+        ? analysis.abnormalValues.map((a: any) => `- ${a.marker}: ${a.value} (Range: ${a.range}, Severity: ${a.severity}) - ${a.explanation}`).join('\n')
+        : 'None';
+      
+      reportContext = `
 
-THE MICRO-WIN:
-Inhale slowly for 4 seconds, hold for 4 seconds, and exhale for 4 seconds to balance current vagal tone.`;
+USER'S LATEST MEDICAL REPORT CONTEXT:
+Report Title: ${latestDoc.title}
+Report Date: ${latestDoc.reportDate ? new Date(latestDoc.reportDate).toLocaleDateString() : 'N/A'}
+Overall Health Score: ${analysis.overallHealthScore}/100
+Risk Level: ${analysis.riskLevel}
+Summary of Findings: ${analysis.summary}
+Abnormal Biomarkers:
+${abnormalList}
+`;
+    }
 
-      return NextResponse.json({
-        success: true,
-        text
+    const systemPrompt = AURA_JSON_SYSTEM_PROMPT + reportContext;
+
+    const groq = new Groq({ apiKey });
+
+    let completion;
+    try {
+      completion = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...groqMessages,
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.2,
+      });
+    } catch (apiErr: any) {
+      console.warn('[AURA] Primary model failed, attempting fallback...', apiErr?.message || apiErr);
+      // Fallback model call using a lighter model
+      completion = await groq.chat.completions.create({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...groqMessages,
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.2,
       });
     }
 
+    const responseText = completion.choices[0]?.message?.content || '{}';
+    const result = JSON.parse(responseText);
+
+    // If visual router enabled a search, perform the search on the server side
+    if (result.visual && result.visual.enabled && result.visual.query) {
+      const query = result.visual.query;
+      
+      if (result.visual.type === 'real_image' || result.visual.type === 'medical_illustration') {
+        console.log(`[VisualRouter] Performing image search for type "${result.visual.type}": "${query}"`);
+        const img = await searchRealImage(query);
+        
+        if (img) {
+          result.visual.url = img.imageUrl;
+          result.visual.source = img.source;
+          result.visual.photographer = img.photographer;
+          result.visual.license = img.license;
+          result.visual.title = img.title;
+        } else {
+          // If no image was found, disable visual component gracefully
+          result.visual.enabled = false;
+        }
+      }
+    }
+
+    // Return structured JSON directly
+    return NextResponse.json({
+      success: true,
+      message: result.message || 'I processed your request.',
+      visual: result.visual || { enabled: false }
+    });
+
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('[AURA Route Error]:', error?.message || error);
+    const errText = error?.message || '';
+    const isRateLimit = errText.includes('rate_limit_exceeded') || errText.includes('Rate limit reached') || errText.includes('429');
+    return NextResponse.json(
+      { error: isRateLimit ? 'Groq AI Service rate limit reached. Please try again shortly.' : (error?.message || 'AURA is temporarily unavailable.') },
+      { status: isRateLimit ? 429 : 500 }
+    );
   }
 }

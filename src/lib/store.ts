@@ -58,6 +58,25 @@ interface HealthState {
   };
   timeOfDay: string;
 
+  // Providers & Simulation Context
+  provider: "apple" | "garmin" | "fitbit" | "oura" | "manual" | "mock";
+  simulatedHour: number;
+  manualInputs: {
+    steps?: number;
+    sleepHours?: number;
+    hrv?: number;
+    restingHeartRate?: number;
+    currentHeartRate?: number;
+    bloodOxygen?: number;
+    systolic?: number;
+    diastolic?: number;
+    waterIntakeMl?: number;
+    activeCalories?: number;
+    mood?: number;
+    screenTimeMin?: number;
+    deepWorkMin?: number;
+  };
+
   // Actions
   setSteps: (steps: number | ((prev: number) => number)) => void;
   setSleepHours: (hours: number | ((prev: number) => number)) => void;
@@ -65,6 +84,10 @@ interface HealthState {
   setStressLevel: (level: number | ((prev: number) => number)) => void;
   setHeartRate: (rate: number | ((prev: number) => number)) => void;
   
+  setProvider: (prov: "apple" | "garmin" | "fitbit" | "oura" | "manual" | "mock") => void;
+  setSimulatedHour: (hour: number) => void;
+  setManualInputs: (inputs: Partial<HealthState['manualInputs']>) => void;
+
   addMemoryTag: (category: MemoryTag['category'], value: string) => void;
   removeMemoryTag: (id: string) => void;
   
@@ -160,6 +183,11 @@ export const useHealthStore = create<HealthState>((set, get) => ({
   
   timeOfDay: 'Evening',
 
+  // Default Providers & Simulation values
+  provider: 'mock',
+  simulatedHour: 18, // defaults to Evening (18:00)
+  manualInputs: {},
+
   // Actions
   setSteps: (val) => set((state) => ({ steps: typeof val === 'function' ? val(state.steps) : val })),
   setSleepHours: (val) => set((state) => ({ sleepHours: typeof val === 'function' ? val(state.sleepHours) : val })),
@@ -167,6 +195,10 @@ export const useHealthStore = create<HealthState>((set, get) => ({
   setStressLevel: (val) => set((state) => ({ stressLevel: typeof val === 'function' ? val(state.stressLevel) : val })),
   setHeartRate: (val) => set((state) => ({ heartRate: typeof val === 'function' ? val(state.heartRate) : val })),
   
+  setProvider: (prov) => set(() => ({ provider: prov })),
+  setSimulatedHour: (hour) => set(() => ({ simulatedHour: hour })),
+  setManualInputs: (inputs) => set((state) => ({ manualInputs: { ...state.manualInputs, ...inputs } })),
+
   addMemoryTag: (category, value) => set((state) => ({
     memoryTags: [
       ...state.memoryTags,

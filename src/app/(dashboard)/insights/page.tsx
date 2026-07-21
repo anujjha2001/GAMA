@@ -1,223 +1,361 @@
 'use client';
 
 import * as React from 'react';
-import { useHealthStore, HealthStory, calculateWellness } from '@/lib/store';
+import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Heart, Sparkles, AlertTriangle, ArrowUpRight, ArrowDownRight, Compass, Calendar, RefreshCw, Send, HelpCircle
-} from 'lucide-react';
-import { toast } from 'sonner';
+import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Activity, Thermometer, Wind, CheckCircle2, AlertTriangle, Cpu, Droplets, Zap } from 'lucide-react';
+import { simulateAnomaly, resolveAnomaly } from './actions';
 
-export default function InsightsPage() {
-  const { 
-    stories, steps, sleepHours, hrv, stressLevel, heartRate, weather, addStory
-  } = useHealthStore();
-  const [mounted, setMounted] = React.useState(false);
-  const [activeStoryId, setActiveStoryId] = React.useState<string | null>(null);
-  const [askBox, setAskBox] = React.useState('');
+const inter = Inter({ subsets: ['latin'] });
+const jbMono = JetBrains_Mono({ subsets: ['latin'] });
 
-  React.useEffect(() => {
-    setMounted(true);
-    if (stories.length > 0) {
-      setActiveStoryId(stories[0].id);
-    }
-  }, [stories]);
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-  if (!mounted) return null;
+export default function InsightsHUD() {
+  const { data, error, mutate } = useSWR('/api/insights', fetcher, {
+    refreshInterval: 3000 // Poll every 3 seconds for real-time feel
+  });
 
-  const wellnessScore = calculateWellness(sleepHours, hrv, steps, stressLevel);
+  const [isResolving, setIsResolving] = React.useState(false);
+  const [isSimulating, setIsSimulating] = React.useState(false);
 
-  const activeStory = stories.find(s => s.id === activeStoryId) || stories[0];
+  const activeAnomaly = data?.activeAnomaly;
+  const telemetry = data?.telemetry;
+  const history = data?.history || [];
 
-  const handleAskAura = (title: string) => {
-    if (!askBox.trim()) return;
-    toast.success(`Query queued: "${askBox}" relating to "${title}"`);
-    setAskBox('');
+  const isAlertActive = !!activeAnomaly;
+
+  const handleSimulate = async () => {
+    setIsSimulating(true);
+    await simulateAnomaly();
+    await mutate();
+    setIsSimulating(false);
   };
 
-  const handleSimulateNewAnomaly = () => {
-    addStory({
-      title: 'Dehydration Wave',
-      subtitle: 'Correlating high activity and low humidity',
-      category: 'anomaly',
-      metricType: 'heart',
-      content: `Your heart rate average rose to 76 BPM during passive sitting intervals. Combined with current weather conditions (${weather.temp}°C, dry breeze), AURA identifies a moderate cellular dehydration risk. We recommend consuming 650ml water mixed with mineral electrolytes.`,
-      impactValue: '+12 BPM Rest',
-      impactType: 'negative'
-    });
-    toast.success("AURA simulated a physiological anomaly story!");
+  const handleResolve = async () => {
+    if (!activeAnomaly) return;
+    setIsResolving(true);
+    await resolveAnomaly(activeAnomaly.id);
+    await mutate();
+    setIsResolving(false);
   };
+
+  if (error) return <div className="p-10 text-rose-500 font-mono">SYSTEM ERROR: FAILED TO CONNECT TO DATABASE.</div>;
 
   return (
-    <div className="space-y-6">
-      {/* Header Panel */}
-      <div className="relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center min-h-[160px] border border-white/10 hover:border-white/20 transition-all duration-300">
-        <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
-        <div className="space-y-2">
-          <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" /> Autonomic Correlation Engine
+    <div className={`min-h-screen bg-[#0a0a0a] text-white p-4 lg:p-8 flex flex-col ${inter.className}`}>
+
+      {/* 1. Global Header (Slim Top Bar) */}
+      <header className="w-full h-12 bg-black/60 backdrop-blur-[12px] border border-white/10 rounded-2xl flex items-center justify-between px-6 mb-6 shadow-[inset_0_0_20px_rgba(255,255,255,0.02)] relative overflow-hidden">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <motion.div
+              animate={{
+                scale: isAlertActive ? [1, 1.2, 1] : [1, 1.1, 1],
+                opacity: isAlertActive ? [0.8, 1, 0.8] : [0.5, 0.8, 0.5]
+              }}
+              transition={{ repeat: Infinity, duration: isAlertActive ? 0.8 : 1.5 }}
+              className={`w-2.5 h-2.5 rounded-full ${isAlertActive ? 'bg-rose-500 shadow-[0_0_15px_#f43f5e]' : 'bg-emerald-500 shadow-[0_0_15px_#10b981]'}`}
+            />
+            <span className={`text-[10px] font-bold tracking-widest uppercase ${jbMono.className} ${isAlertActive ? 'text-rose-500' : 'text-emerald-500'}`}>
+              System Heartbeat
+            </span>
+          </div>
+          <div className="h-4 w-[1px] bg-white/10" />
+          <span className={`text-[10px] text-neutral-500 ${jbMono.className}`}>
+            AURA ENGINE v4.2
           </span>
-          <h1 className="text-3xl font-bold tracking-tight">Insight Engine</h1>
-          <p className="text-xs text-muted-foreground max-w-xl">
-            Story-based diagnostics and real-time biological correlation feeds. Cross-referencing wearable biometrics, memory, and environment.
-          </p>
         </div>
 
-        <button 
-          onClick={handleSimulateNewAnomaly}
-          className="mt-4 md:mt-0 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs rounded-xl flex items-center gap-2 cursor-pointer transition-colors shadow-lg shadow-emerald-500/10"
+        <button
+          onClick={handleSimulate}
+          disabled={isSimulating || isAlertActive}
+          className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 hover:text-white transition-colors disabled:opacity-50"
         >
-          <RefreshCw className="w-3.5 h-3.5" /> Simulate Anomaly
+          {isSimulating ? 'SIMULATING...' : '[ DEVELOPER: SIMULATE ANOMALY ]'}
         </button>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Side: Story Feed */}
-        <div className="lg:col-span-1 space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-2">Biometric Correlation Log</h3>
-          
-          <div className="space-y-3">
-            <AnimatePresence>
-              {stories.map((story) => {
-                const isActive = story.id === activeStoryId;
-                return (
-                  <motion.div
-                    key={story.id}
-                    layoutId={`story-card-${story.id}`}
-                    onClick={() => setActiveStoryId(story.id)}
-                    className={`p-4 rounded-[24px] border transition-all duration-300 cursor-pointer ${
-                      isActive 
-                        ? 'bg-white/10 border-emerald-500/30 shadow-md ring-1 ring-emerald-500/20 text-white' 
-                        : 'bg-black/35 border-white/5 hover:border-white/10 text-neutral-300 hover:text-white'
-                    }`}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+
+        {/* 2. Active Event Hub (Center Stage) */}
+        <div className="lg:col-span-9 flex flex-col gap-6">
+          <motion.div
+            animate={{
+              borderColor: isAlertActive ? 'rgba(244, 63, 94, 0.3)' : 'rgba(0, 0, 0, 0.1)',
+              boxShadow: isAlertActive ? 'inset 0 0 60px rgba(244,63,94,0.05)' : 'inset 0 0 20px rgba(255,255,255,0.02)'
+            }}
+            className="flex-1 bg-black/40 backdrop-blur-[12px] border rounded-3xl p-8 relative overflow-hidden flex flex-col transition-colors duration-1000"
+          >
+            {/* Background Glow */}
+            <motion.div
+              animate={{ opacity: isAlertActive ? 0.15 : 0 }}
+              className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-rose-500 blur-[100px] rounded-full pointer-events-none"
+            />
+
+            <AnimatePresence mode="wait">
+              {isAlertActive ? (
+                <motion.div
+                  key="alert-state"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="flex-1 flex flex-col"
+                >
+                  <div className="flex items-start justify-between mb-8">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2 text-rose-500">
+                        <AlertTriangle className="w-5 h-5" />
+                        <span className="text-xs font-bold tracking-widest uppercase">Critical Anomaly Detected</span>
+                      </div>
+                      <h1 className="text-whitexl font-bold text-white">{activeAnomaly.title}</h1>
+                    </div>
+                    <div className={`px-4 py-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-500 flex flex-col items-end ${jbMono.className}`}>
+                      <span className="text-[10px] uppercase opacity-70">Impact Severity</span>
+                      <span className="text-xl font-bold">94.2%</span>
+                    </div>
+                  </div>
+
+                  {/* Visual Correlation Map */}
+                  <div className="w-full h-32 border border-white/5 bg-white/5 rounded-2xl mb-8 flex items-center justify-between px-10 relative">
+                    <div className="absolute top-1/2 left-10 right-10 h-[1px] bg-gradient-to-r from-rose-500/20 via-rose-500/50 to-rose-500/20 -translate-y-1/2" />
+
+                    <div className="relative z-10 flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 bg-black border border-rose-500/30 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.2)]">
+                        <Wind className="w-5 h-5 text-rose-400" />
+                      </div>
+                      <span className={`text-[10px] font-bold text-rose-300 ${jbMono.className}`}>ENV: HIGH HEAT</span>
+                    </div>
+
+                    <div className="relative z-10 flex flex-col items-center gap-3">
+                      <div className="w-14 h-14 bg-black border border-rose-500/60 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(244,63,94,0.4)]">
+                        <Activity className="w-6 h-6 text-rose-500" />
+                      </div>
+                      <span className={`text-[10px] font-bold text-rose-400 ${jbMono.className}`}>BIO: +12 BPM SHIFT</span>
+                    </div>
+
+                    <div className="relative z-10 flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 bg-rose-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(244,63,94,0.6)]">
+                        <Droplets className="w-7 h-7 text-white" />
+                      </div>
+                      <span className={`text-[10px] font-bold text-rose-500 ${jbMono.className}`}>SYS: DEHYDRATION</span>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 bg-black/60 border border-rose-500/20 rounded-2xl p-6 mb-8">
+                    <h3 className="text-sm font-bold mb-3 text-rose-200">AURA Diagnostics</h3>
+                    <p className="text-sm text-neutral-300 leading-relaxed mb-6">
+                      {activeAnomaly.message}
+                    </p>
+                    <div className="p-4 bg-rose-500/10 border-l-2 border-rose-500 rounded-r-xl">
+                      <h4 className="text-[10px] font-bold uppercase text-rose-400 mb-1">Actionable Recommendation</h4>
+                      <p className="text-xs text-rose-200">Consume 650ml of water infused with mineral electrolytes immediately. Rest in a cool environment for 15 minutes.</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleResolve}
+                    disabled={isResolving}
+                    className="w-full py-4 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(244,63,94,0.3)] disabled:opacity-50"
                   >
-                    <div className="flex justify-between items-start gap-2 mb-2">
-                      <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
-                        story.category === 'anomaly' 
-                          ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' 
-                          : story.category === 'correlation'
-                          ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                          : 'bg-violet-500/10 text-violet-500 border border-violet-500/20'
-                      }`}>
-                        {story.category}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">{story.timestamp}</span>
-                    </div>
-
-                    <h4 className="text-xs font-bold">{story.title}</h4>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{story.subtitle}</p>
-
-                    <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-white/5">
-                      <span className="text-[10px] font-semibold text-muted-foreground">Impact</span>
-                      <span className={`text-[10px] font-bold flex items-center gap-0.5 ${
-                        story.impactType === 'positive' ? 'text-emerald-500' : 'text-rose-500'
-                      }`}>
-                        {story.impactType === 'positive' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                        {story.impactValue}
-                      </span>
-                    </div>
-                  </motion.div>
-                );
-              })}
+                    <CheckCircle2 className="w-5 h-5" />
+                    {isResolving ? 'STABILIZING SYSTEM...' : 'RESOLVE ANOMALY'}
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="healthy-state"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex-1 flex flex-col items-center justify-center text-center space-y-6"
+                >
+                  <div className="w-24 h-24 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.1)]">
+                    <Cpu className="w-10 h-10 text-emerald-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">Systems Nominal</h2>
+                    <p className="text-sm text-neutral-400 max-w-sm mx-auto">
+                      AURA is actively monitoring your telemetry. No critical anomalies detected in the last 24 hours.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
             </AnimatePresence>
+          </motion.div>
+
+          {/* 4. Archive Log & Explainability */}
+          <div className="lg:col-span-9 flex flex-col lg:flex-row gap-6">
+            <div className="flex-1 bg-black/40 backdrop-blur-[12px] border border-white/10 rounded-3xl p-6 h-64 flex flex-col">
+              <h3 className="text-[10px] uppercase font-bold tracking-widest text-neutral-500 mb-4">Diagnostic Archive Log</h3>
+              <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                {history.map((event: any) => (
+                  <div key={event.id} className="flex items-center justify-between py-2 border-b border-white/5 group hover:bg-white/5 rounded-lg px-3 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <span className={`text-[10px] text-neutral-500 ${jbMono.className}`}>
+                        {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </span>
+                      <span className="text-xs font-semibold text-neutral-300 group-hover:text-white transition-colors">{event.title}</span>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <span className={`text-[10px] ${jbMono.className} ${event.metadata?.impactType === 'positive' ? 'text-emerald-500' : 'text-neutral-500'}`}>
+                        {event.metadata?.impactValue || 'Logged'}
+                      </span>
+                      <span className={`text-[8px] uppercase font-bold px-2 py-0.5 rounded border ${event.type === 'anomaly' ? 'border-rose-500/30 text-rose-500 bg-rose-500/10' :
+                        event.type === 'resolution' ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/10' :
+                          'border-white/10 text-neutral-400 bg-white/5'
+                        }`}>
+                        {event.type}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {history.length === 0 && <div className="text-xs text-neutral-500 text-center mt-6">No historical data available.</div>}
+              </div>
+            </div>
+
+            {/* Phase 2 Explainability Card */}
+            <div className="flex-1 bg-black/40 backdrop-blur-[12px] border border-white/10 rounded-3xl p-6 h-64 flex flex-col relative overflow-hidden group hover:border-white/10 transition-all">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+              </div>
+              <h3 className="text-[10px] uppercase font-bold tracking-widest text-neutral-500 mb-4 flex items-center gap-2 relative z-10">
+                <Activity className="w-3.5 h-3.5 text-white" /> AI Explainability Matrix
+              </h3>
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar relative z-10">
+                {(data?.insights || []).length > 0 ? (
+                  data.insights.slice(0, 2).map((insight: any, i: number) => (
+                    <div key={i} className="p-3 bg-white/5 border border-white/5 rounded-xl space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-xs font-bold text-white">{insight.summary?.headline || 'Insight'}</span>
+                        <span className={`text-[9px] font-bold ${jbMono.className} text-neutral-300`}>{(insight.confidence * 100).toFixed(0)}% Conf</span>
+                      </div>
+                      <p className="text-[10px] text-neutral-400 leading-relaxed">{insight.summary?.explanation}</p>
+                      <div className="pt-2 border-t border-white/5">
+                        <span className="text-[9px] uppercase font-bold text-white block mb-1">Suggested Action</span>
+                        <span className="text-[10px] text-neutral-300">{insight.summary?.recommendations?.[0] || 'No action required.'}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 bg-white/5 border border-white/5 rounded-xl space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-xs font-bold text-white">Protein Intake Trend</span>
+                      <span className={`text-[9px] font-bold ${jbMono.className} text-neutral-300`}>91% Conf</span>
+                    </div>
+                    <p className="text-[10px] text-neutral-400 leading-relaxed">Protein intake averaged 42 g/day over the past week, below your goal of 90 g/day.</p>
+                    <div className="pt-2 border-t border-white/5">
+                      <span className="text-[9px] uppercase font-bold text-white block mb-1">Suggested Action</span>
+                      <span className="text-[10px] text-neutral-300">Include one protein-rich meal before 2 PM.</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right Side: High Fidelity Deep-dive Panel */}
-        <div className="lg:col-span-2">
-          {activeStory ? (
-            <motion.div 
-              key={activeStory.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-[32px] bg-black/35 backdrop-blur-xl p-6 md:p-8 border border-white/10 space-y-6 flex flex-col justify-between h-full min-h-[500px] hover:border-white/20 transition-all duration-300"
-            >
-              <div className="space-y-6">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">{activeStory.category} analysis</span>
-                    <h2 className="text-xl font-bold">{activeStory.title}</h2>
-                    <p className="text-xs text-muted-foreground">{activeStory.subtitle}</p>
-                  </div>
-                  
-                  <div className={`px-4 py-2 rounded-2xl border text-center ${
-                    activeStory.impactType === 'positive' 
-                      ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-500' 
-                      : 'bg-rose-500/5 border-rose-500/20 text-rose-500'
-                  }`}>
-                    <div className="text-[9px] uppercase tracking-wider font-semibold opacity-60">Calculated Impact</div>
-                    <div className="text-xs font-bold mt-0.5">{activeStory.impactValue}</div>
-                  </div>
-                </div>
+        {/* 3. Biometric Telemetry Rail (Right Side) */}
+        <div className="lg:col-span-3 bg-black/40 backdrop-blur-[12px] border border-white/10 rounded-3xl p-6 flex flex-col gap-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-xs font-bold uppercase tracking-widest">Live Telemetry</h3>
+          </div>
 
-                <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-xs leading-relaxed text-neutral-300">
-                  {activeStory.content}
-                </div>
+          <TelemetryGauge
+            label="HEART RATE"
+            value={telemetry?.heartRate || 0}
+            unit="BPM"
+            trend="up"
+            color="text-rose-500"
+            graphColor="#f43f5e"
+            isAlert={isAlertActive}
+          />
+          <TelemetryGauge
+            label="HRV STATE"
+            value={telemetry?.hrv || 0}
+            unit="MS"
+            trend="down"
+            color="text-emerald-500"
+            graphColor="#10b981"
+          />
+          <TelemetryGauge
+            label="STRESS INDEX"
+            value={telemetry?.stressLevel || 0}
+            unit="/5"
+            trend="flat"
+            color="text-amber-500"
+            graphColor="#f59e0b"
+            isAlert={isAlertActive}
+          />
+          <TelemetryGauge
+            label="CORE TEMP"
+            value={36.8}
+            unit="°C"
+            trend="flat"
+            color="text-cyan-500"
+            graphColor="#06b6d4"
+          />
 
-                {/* Correlations Matrix */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 bg-white/5 border border-white/5 rounded-[20px] space-y-2">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">Wearable context</span>
-                    <div className="flex justify-between items-center text-xs">
-                      <span>HRV State:</span>
-                      <span className="font-semibold">{hrv} ms</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span>Stress Score:</span>
-                      <span className="font-semibold">{stressLevel} / 5.0</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-white/5 border border-white/5 rounded-[20px] space-y-2">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">Environment data</span>
-                    <div className="flex justify-between items-center text-xs">
-                      <span>Temperature:</span>
-                      <span className="font-semibold">{weather.temp}°C</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span>Conditions:</span>
-                      <span className="font-semibold">{weather.condition}</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-white/5 border border-white/5 rounded-[20px] space-y-2">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">Global Medical Cross-ref</span>
-                    <div className="text-[10px] text-neutral-450 leading-normal flex items-start gap-1">
-                      <HelpCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                      <span>Validated against circadian cardiac rhythm guidelines.</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ask AURA about this story block */}
-              <div className="border-t border-white/5 pt-6 mt-6">
-                <div className="flex items-center justify-between gap-4 bg-white/5 border border-white/10 rounded-full pl-5 pr-2 py-2">
-                  <input
-                    type="text"
-                    placeholder={`Ask AURA: "Why did my ${activeStory.metricType} drop?"`}
-                    value={askBox}
-                    onChange={(e) => setAskBox(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleAskAura(activeStory.title);
-                    }}
-                    className="flex-1 bg-transparent text-xs text-foreground placeholder-neutral-500 focus:outline-none py-1"
-                  />
-                  <button
-                    onClick={() => handleAskAura(activeStory.title)}
-                    className="p-2.5 bg-foreground text-background hover:opacity-90 rounded-full flex items-center justify-center cursor-pointer transition-opacity"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            <div className="rounded-[32px] bg-black/35 backdrop-blur-xl border border-white/10 p-12 text-center text-muted-foreground hover:border-white/20 transition-all duration-300">
-              Select a correlation story from the log to display analysis details.
+          <div className="mt-auto pt-6 border-t border-white/5">
+            <div className="flex justify-between items-center text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-2">
+              <span>Database Sync</span>
+              <span className="text-emerald-500 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active
+              </span>
             </div>
-          )}
+            <p className={`text-[9px] text-neutral-600 ${jbMono.className}`}>
+              PostgreSQL Connected via Prisma<br />
+              Polling: 3000ms Interval
+            </p>
+          </div>
         </div>
+
+      </div>
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.02);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.1);
+          border-radius: 4px;
+        }
+      `}} />
+    </div>
+  );
+}
+
+// Mini component for the Telemetry Rail gauges
+function TelemetryGauge({ label, value, unit, trend, color, graphColor, isAlert }: any) {
+  // Simulate a live sparkline using SVG
+  const generatePath = () => {
+    let d = "M 0 20";
+    let currY = 20;
+    for (let x = 10; x <= 100; x += 10) {
+      currY = isAlert ? 20 + (Math.random() * 20 - 15) : 20 + (Math.random() * 10 - 5);
+      d += ` L ${x} ${Math.max(0, Math.min(40, currY))}`;
+    }
+    return d;
+  };
+
+  return (
+    <div className={`p-4 rounded-2xl border transition-colors ${isAlert ? 'bg-rose-500/5 border-rose-500/20' : 'bg-white/5 border-white/5'}`}>
+      <div className="flex justify-between items-center mb-3">
+        <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400">{label}</span>
+        <span className={`text-[10px] ${jbMono.className} ${color}`}>{trend === 'up' ? '▲' : trend === 'down' ? '▼' : '−'}</span>
+      </div>
+      <div className="flex items-end justify-between">
+        <div className={`text-2xl font-bold ${jbMono.className} ${isAlert ? 'text-rose-500' : 'text-white'}`}>
+          {value}<span className="text-xs text-neutral-500 ml-1">{unit}</span>
+        </div>
+        <svg width="100" height="40" className="opacity-70">
+          <path d={generatePath()} fill="none" stroke={graphColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </div>
     </div>
   );
