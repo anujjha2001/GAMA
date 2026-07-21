@@ -15,6 +15,19 @@ import HealthOrb3D from '@/components/shared/health-orb-3d';
 
 
 export default function HomePage() {
+  const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const { clientX, clientY } = e;
+      const x = (clientX / window.innerWidth - 0.5) * 30; // max shift
+      const y = (clientY / window.innerHeight - 0.5) * 30;
+      setMousePos({ x, y });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
   // AI Food Scanner Interaction State
   const [scannedFood, setScannedFood] = React.useState<string | null>(null);
   const [isScanning, setIsScanning] = React.useState(false);
@@ -104,22 +117,35 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[black] text-[white] font-sans overflow-x-hidden selection:bg-[#f97316]/30 selection:text-white relative">
+    <div className="min-h-screen bg-[#070709] text-[white] font-sans overflow-x-hidden selection:bg-white/20 selection:text-white relative">
 
       {/* Atmospheric Background Mesh Glows */}
-      <div className="absolute top-[-10%] left-[20%] w-[60%] h-[60%] bg-[#f97316]/5 rounded-full blur-[160px] pointer-events-none z-0" />
-      <div className="absolute top-[40%] right-[-10%] w-[50%] h-[50%] bg-orange-500/5 rounded-full blur-[160px] pointer-events-none z-0" />
-      <div className="absolute bottom-[20%] left-[-10%] w-[55%] h-[55%] bg-orange-500/5 rounded-full blur-[160px] pointer-events-none z-0" />
+      <div className="absolute inset-0 bg-[#070709] z-0 overflow-hidden pointer-events-none">
+        {/* Soft ambient lighting */}
+        <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] rounded-full bg-white/5 blur-[140px]" />
+        <div className="absolute bottom-[20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-violet-600/10 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[10%] w-[600px] h-[600px] rounded-full bg-[#0a84ff]/5 blur-[120px]" />
+        {/* Subtle vignette layer */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0)_0%,rgba(7,7,9,0.95)_100%)]" />
+      </div>
 
       {/* Grid Pattern Background */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none z-0" />
 
       {/* TOP NAVIGATION BAR */}
-      <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-5xl z-50 border border-white/10 bg-black/45 backdrop-blur-md rounded-full px-8 py-3 flex justify-between items-center shadow-2xl">
+      <motion.header
+        initial={{ y: -80, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 100, damping: 20, delay: 0.1 }}
+        className="fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-5xl z-50 border border-white/10 bg-black/45 backdrop-blur-md rounded-full px-8 py-3 flex justify-between items-center shadow-2xl shadow-black/40 hover:border-white/20 transition-all duration-300"
+      >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center">
+          <motion.div
+            whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
+            className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer"
+          >
             <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
-          </div>
+          </motion.div>
           <span className="font-extrabold text-xl tracking-wider text-white">GAMA</span>
         </div>
 
@@ -133,83 +159,169 @@ export default function HomePage() {
         <div className="flex items-center gap-4">
           <Link
             href="/login"
-            className="px-5 py-2.5 bg-white hover:bg-white/95 text-black font-semibold rounded-full text-xs shadow-lg transition-all cursor-pointer flex items-center gap-1"
+            className="px-5 py-2.5 bg-white hover:bg-white/95 text-black font-semibold rounded-full text-xs shadow-lg transition-all cursor-pointer flex items-center gap-1 hover:scale-105 active:scale-95 duration-200"
           >
-            Start Free <span className="text-[10px]"></span>
+            Start Free
           </Link>
         </div>
-      </header>
+      </motion.header>
 
       {/* HERO SECTION */}
       <section id="hero" className="min-h-screen relative flex items-center justify-center pt-28 pb-16 overflow-hidden z-10">
 
-        {/* Background Image of Athlete */}
+        {/* Ambient Neural Dots & Connection Lines Layer */}
+        <div className="absolute inset-0 z-10 pointer-events-none opacity-40">
+          <div className="absolute top-1/4 left-1/3 w-1.5 h-1.5 bg-white text-black font-semibold rounded-full animate-ping duration-1000" />
+          <div className="absolute top-1/2 right-1/4 w-2 h-2 bg-neutral-400 rounded-full animate-pulse" />
+          <div className="absolute bottom-1/3 left-1/4 w-1.5 h-1.5 bg-white text-black font-semibold rounded-full animate-ping duration-700" />
+        </div>
+
+        {/* Background Image of Athlete with Scale & Mouse Parallax */}
         <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-t from-[black] via-[black]/50 to-transparent z-10" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[black] via-[black]/20 to-[black] z-10" />
-          <img
+          <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-[#070709]/40 to-transparent z-10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#070709] via-[#070709]/20 to-[#070709] z-10" />
+          <motion.img
             src="/hero-athlete.png"
             alt="Athlete Hero"
-            className="w-full h-full object-cover opacity-80 max-w-6xl mx-auto scale-100 translate-y-20"
+            initial={{ scale: 1.08, opacity: 0.8 }}
+            animate={{
+              scale: 1.02,
+              opacity: 1,
+              x: mousePos.x * 0.4,
+              y: mousePos.y * 0.4
+            }}
+            transition={{
+              scale: { duration: 2.2, ease: 'easeOut' },
+              opacity: { duration: 1.8 },
+              x: { type: 'spring', stiffness: 50, damping: 20 },
+              y: { type: 'spring', stiffness: 50, damping: 20 }
+            }}
+            className="w-full h-full object-cover max-w-7xl mx-auto translate-y-21"
           />
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 w-full text-center relative z-20 space-y-6">
-          <div className="space-y-4">
-            <h1 className="text-5xl md:text-8xl font-light tracking-tight text-white leading-none">
-              Your Autonomous <span className="italic font-serif font-normal text-[#f97316]">Bio-Intelligence</span>
+        {/* Hero Content Container with Opposite Parallax */}
+        <div className="max-w-4xl mx-auto px-6 w-full text-center relative z-20 mt-16 flex flex-col items-center">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.2,
+                  delayChildren: 0.3
+                }
+              }
+            }}
+            style={{
+              x: mousePos.x * -0.2,
+              y: mousePos.y * -0.2
+            }}
+            className="flex flex-col items-center space-y-10"
+          >
+            {/* Ambient Label Badge */}
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 15 },
+                visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
+              }}
+              className="inline-flex items-center gap-2 px-5 py-2 bg-white/5 border border-white/10 rounded-full backdrop-blur-md shadow-2xl shadow-black/40"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-white text-black font-semibold animate-ping" />
+              <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">GAMA HEALTH</span>
+            </motion.div>
+
+            {/* Apple-Level Headline */}
+            <h1 className="text-5xl md:text-8xl tracking-tight leading-[1.08] drop-shadow-2xl flex flex-col items-center">
+              <motion.span
+                variants={{
+                  hidden: { opacity: 0, y: 35 },
+                  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 80, damping: 18 } }
+                }}
+                className="font-light text-white font-sans"
+              >
+                Your Autonomous
+              </motion.span>
+              <motion.span
+                variants={{
+                  hidden: { opacity: 0, y: 35 },
+                  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 80, damping: 18 } }
+                }}
+                className="font-serif italic font-normal bg-gradient-to-r from-white via-neutral-200 to-neutral-500 bg-clip-text text-transparent mt-2 block"
+              >
+                Bio-Intelligence
+              </motion.span>
             </h1>
-          </div>
 
-          {/* Prompt / Input Console Box */}
-          <div className="max-w-xl mx-auto mt-10 p-4 bg-black/55 backdrop-blur-xl border border-white/10 rounded-[28px] space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-            <div className="flex items-center justify-between gap-3 bg-white/5 border border-white/5 rounded-2xl px-4 py-3">
-              <input
-                type="text"
-                placeholder="Good morning, how are you feeling, and how do you want to move today?"
-                className="flex-1 bg-transparent text-xs text-white placeholder-white/50 focus:outline-none"
-              />
+            {/* Subtext Description (Max width 620px, line height 1.6) */}
+            <motion.p
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+              }}
+              className="text-neutral-400 max-w-[620px] text-sm md:text-base font-medium leading-[1.6] text-center"
+            >
+              GAMA is an AI-native Health Operating System that continuously understands your body, predicts your needs, and optimizes your nutrition, recovery, schedule, sleep, workouts, and overall performance in real time.
+            </motion.p>
+
+            {/* Premium CTA Buttons with Spacing around 24px */}
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+              }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4"
+            >
+              <Link
+                href="/login"
+                className="px-8 py-3.5 bg-white hover:bg-neutral-100 text-black font-semibold rounded-full text-xs shadow-[0_8px_30px_rgb(255,255,255,0.15)] hover:shadow-[0_8px_30px_rgb(255,255,255,0.3)] hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 cursor-pointer"
+              >
+                <span>Initialize GAMA</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+
+              <a
+                href="#why-gama"
+                className="px-8 py-3.5 bg-black/45 hover:bg-black/60 border border-white/10 text-neutral-300 hover:text-white font-semibold rounded-full text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer backdrop-blur-md hover:border-white/20/60"
+              >
+                <span>Explore Ecosystem</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </motion.div>
+
+            {/* Feature Row with Icons */}
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+              }}
+              className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-8 border-t border-white/5 w-full max-w-2xl text-xs text-neutral-400 font-medium"
+            >
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => toast.success("Querying GAMA Bio-intelligence...")}
-                  className="p-1.5 bg-[#f97316] hover:bg-[#ea580c] text-white rounded-full transition-colors cursor-pointer"
-                >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => toast.info("Opening biometric sliders controls...")}
-                  className="p-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-full transition-colors cursor-pointer"
-                >
-                  <Sliders className="w-3.5 h-3.5" />
-                </button>
+                <Brain className="w-4 h-4 text-white" />
+                <span>AI Health Coach</span>
               </div>
-            </div>
-
-            {/* Tag suggestions */}
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-              {[
-                { label: 'Energize', icon: '', color: 'hover:border-[#f97316]/30' },
-                { label: 'Recover', icon: '', color: 'hover:border-orange-500/30' },
-                { label: 'Focus', icon: '', color: 'hover:border-orange-500/30' },
-                { label: 'Calm', icon: '', color: 'hover:border-orange-500/30' },
-                { label: 'Reset', icon: '', color: 'hover:border-orange-500/30' }
-              ].map((tag, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => toast.success(`Simulating ${tag.label} routine...`)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/5 rounded-full text-[10px] font-bold text-white/60 hover:text-white transition-all cursor-pointer ${tag.color}`}
-                >
-                  <span>{tag.icon}</span>
-                  <span>{tag.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-white" />
+                <span>Digital Twin</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-white" />
+                <span>Predictive Insights</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-white" />
+                <span>Real-time Optimization</span>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
       {/* TRUSTED INTEGRATIONS */}
-      <section className="py-12 border-y border-white/5 bg-black/25 relative z-10 overflow-hidden">
+      <section className="py-12 border-y border-white/10 bg-[#070709]/40 backdrop-blur-md relative z-10 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-6">
             Trusted Wearables & Ecosystem Integrations
@@ -236,7 +348,7 @@ export default function HomePage() {
       {/* WHY GAMA */}
       <section id="why-gama" className="py-24 max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest">Why GAMA</span>
+          <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest">Why GAMA</span>
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Beyond Passive Tracking</h2>
           <p className="text-sm text-white/60">
             Traditional health apps tell you what happened. GAMA understands your physiology to shape what you do next.
@@ -245,41 +357,41 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch">
           {/* Traditional Health Apps */}
-          <div className="md:col-span-5 bg-[black]/60 border border-white/5 rounded-3xl p-8 flex flex-col justify-between">
+          <div className="md:col-span-5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 flex flex-col justify-between">
             <div className="space-y-6">
               <h3 className="text-xl font-bold text-white/50 uppercase tracking-wider">Traditional Apps</h3>
               <ul className="space-y-4">
                 {['Track Static Data Only', 'Manual Calorie Estimation', 'Endless Manual Input Logging', 'Static Weekly Reports', 'Generic One-Size-Fits-All Advice'].map((item, idx) => (
                   <li key={idx} className="flex items-center gap-3 text-sm text-white/50">
-                    <span className="text-orange-500">✕</span> {item}
+                    <span className="text-white">✕</span> {item}
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="pt-8 border-t border-white/5 mt-8 text-xs text-white/40">
+            <div className="pt-8 border-t border-white/10 mt-8 text-xs text-white/40">
               Passively logs metrics without offering actionable steps.
             </div>
           </div>
 
           {/* VS Divider */}
           <div className="hidden md:flex md:col-span-2 items-center justify-center">
-            <span className="w-10 h-10 rounded-full border border-white/5 bg-black flex items-center justify-center text-xs font-bold text-white/50">VS</span>
+            <span className="w-10 h-10 rounded-full border border-white/10 bg-[#070709] flex items-center justify-center text-xs font-bold text-white/50">VS</span>
           </div>
 
           {/* GAMA */}
-          <div className="md:col-span-5 bg-[black]/60 border border-[#f97316]/20 rounded-3xl p-8 flex flex-col justify-between shadow-[0_0_50px_rgba(249,115,22,0.05)] relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-[#f97316]/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="md:col-span-5 bg-white/5 backdrop-blur-2xl border border-[#0a84ff]/20 rounded-3xl p-8 flex flex-col justify-between shadow-[0_0_50px_rgba(10, 132, 255,0.1)] relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-[#0a84ff]/5 rounded-full blur-3xl pointer-events-none" />
             <div className="space-y-6">
-              <h3 className="text-xl font-bold text-[#f97316] uppercase tracking-wider">GAMA</h3>
+              <h3 className="text-xl font-bold text-[#0a84ff] uppercase tracking-wider">GAMA</h3>
               <ul className="space-y-4">
                 {['AI Comprehends Wearable Signals', 'Predictive Biomarker Forecasting', 'Proactive Personal Bio-Coach', 'Intelligently Learns Daily Habits', 'Actionable Micro-Decision Prompts'].map((item, idx) => (
                   <li key={idx} className="flex items-center gap-3 text-sm text-white">
-                    <span className="text-[#f97316] font-bold">✓</span> {item}
+                    <span className="text-[#0a84ff] font-bold">✓</span> {item}
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="pt-8 border-t border-[#f97316]/10 mt-8 text-xs text-[#f97316]">
+            <div className="pt-8 border-t border-[#0a84ff]/10 mt-8 text-xs text-[#0a84ff]">
               Continuously processes data loops to guide daily recovery.
             </div>
           </div>
@@ -287,10 +399,10 @@ export default function HomePage() {
       </section>
 
       {/* HEALTH INTELLIGENCE DASHBOARD PREVIEW */}
-      <section id="dashboard" className="py-24 bg-[black] border-y border-white/5 relative z-10">
+      <section id="dashboard" className="py-24 bg-[#070709]/50 border-y border-white/10 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-            <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest">Dashboard Preview</span>
+            <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest">Dashboard Preview</span>
             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Sovereign Health Intelligence</h2>
             <p className="text-sm text-white/60">
               A comprehensive bio-telemetry command center rendering your vital signals in real-time.
@@ -299,29 +411,28 @@ export default function HomePage() {
 
           {/* Dashboard Preview Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-
             {/* Main Score - Large Card */}
-            <div className="md:col-span-8 bg-black/40 border border-white/5 p-6 md:p-8 rounded-3xl flex flex-col justify-between min-h-[350px] relative">
+            <div className="md:col-span-8 bg-white/5 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-3xl flex flex-col justify-between min-h-[350px] relative shadow-2xl">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-[#f97316] uppercase tracking-wider">Metabolic Health Score</span>
-                <span className="text-xs text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-md font-mono">+4.2% this week</span>
+                <span className="text-xs font-bold text-[#0a84ff] uppercase tracking-wider">Metabolic Health Score</span>
+                <span className="text-xs text-white bg-white/5 px-2 py-0.5 rounded-md font-mono">+4.2% this week</span>
               </div>
-
+ 
               <div className="my-6 flex items-baseline gap-4">
-                <span className="text-7xl md:text-9xl font-extrabold text-white">96</span>
+                <span className="text-5xl md:text-7xl font-extrabold text-white">96</span>
                 <div>
                   <span className="text-base font-bold text-white block">Excellent Status</span>
                   <span className="text-xs text-white/50">Optimum endocrine and autonomic balance</span>
                 </div>
               </div>
-
+ 
               {/* Mini Weekly Sparkline graph in SVG */}
               <div className="w-full h-24 mt-4">
                 <svg className="w-full h-full" viewBox="0 0 400 100" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id="gradient-sparkline" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f97316" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
+                      <stop offset="0%" stopColor="#0a84ff" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#0a84ff" stopOpacity="0.0" />
                     </linearGradient>
                   </defs>
                   <path
@@ -331,18 +442,18 @@ export default function HomePage() {
                   <path
                     d="M0,80 Q30,70 60,75 T120,40 T180,60 T240,30 T300,45 T360,20 T400,10"
                     fill="none"
-                    stroke="#f97316"
+                    stroke="#0a84ff"
                     strokeWidth="2.5"
                     strokeLinecap="round"
                   />
                 </svg>
               </div>
             </div>
-
+ 
             {/* Quick Metrics Column */}
             <div className="md:col-span-4 grid grid-cols-1 gap-6">
               {/* Sleep Score Ring */}
-              <div className="bg-black/40 border border-white/5 p-6 rounded-3xl flex justify-between items-center">
+              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl flex justify-between items-center shadow-2xl">
                 <div className="space-y-1">
                   <span className="text-[10px] text-white/50 uppercase font-bold tracking-wider">Sleep</span>
                   <h4 className="text-xl font-bold text-white">8h 42m</h4>
@@ -351,18 +462,18 @@ export default function HomePage() {
                 <div className="relative w-16 h-16 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90">
                     <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="transparent" />
-                    <circle cx="32" cy="32" r="28" stroke="#f97316" strokeWidth="4" fill="transparent" strokeDasharray="175" strokeDashoffset="25" />
+                    <circle cx="32" cy="32" r="28" stroke="#0a84ff" strokeWidth="4" fill="transparent" strokeDasharray="175" strokeDashoffset="25" />
                   </svg>
                   <span className="absolute text-xs font-bold text-white">92</span>
                 </div>
               </div>
-
+ 
               {/* Stress Level Tracker */}
-              <div className="bg-black/40 border border-white/5 p-6 rounded-3xl flex justify-between items-center">
+              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl flex justify-between items-center shadow-2xl">
                 <div className="space-y-1">
                   <span className="text-[10px] text-white/50 uppercase font-bold tracking-wider">Stress (HRV)</span>
                   <h4 className="text-xl font-bold text-white">Low Vagal Tone</h4>
-                  <p className="text-xs text-[#f97316]">Relaxation Activated</p>
+                  <p className="text-xs text-[#0a84ff]">Relaxation Activated</p>
                 </div>
                 <div className="text-right">
                   <span className="text-2xl font-extrabold text-white">12</span>
@@ -370,7 +481,6 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -378,7 +488,7 @@ export default function HomePage() {
       {/* MEET YOUR AI HEALTH TEAM */}
       <section id="ai-team" className="py-24 max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest">Coaching Sandbox</span>
+          <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest">Coaching Sandbox</span>
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Meet Your AI Health Team</h2>
           <p className="text-sm text-white/60">
             A panel of specialized deep learning models tailored to coordinate separate domains of your daily biology.
@@ -390,44 +500,44 @@ export default function HomePage() {
             {
               title: 'Nutrition AI',
               description: 'Examines food profiles, tracks nutrient loads, and optimizes metabolic energy levels throughout the day.',
-              icon: <Flame className="w-6 h-6 text-[#f97316]" />,
-              glow: 'hover:border-[#f97316]/30'
+              icon: <Flame className="w-6 h-6 text-[#0a84ff]" />,
+              glow: 'hover:border-[#0a84ff]/30 hover:shadow-[0_0_30px_rgba(10, 132, 255,0.05)]'
             },
             {
               title: 'Workout AI',
               description: 'Formulates adaptive strength and cardiovascular targets based on current autonomic base readings.',
-              icon: <Activity className="w-6 h-6 text-orange-500" />,
-              glow: 'hover:border-orange-500/30'
+              icon: <Activity className="w-6 h-6 text-white" />,
+              glow: 'hover:border-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]'
             },
             {
               title: 'Recovery AI',
               description: 'Monitors HRV balance, oxygen saturation, and body temperature to prevent athletic overtraining.',
-              icon: <Zap className="w-6 h-6 text-orange-500" />,
-              glow: 'hover:border-orange-500/30'
+              icon: <Zap className="w-6 h-6 text-white" />,
+              glow: 'hover:border-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]'
             },
             {
               title: 'Sleep AI',
               description: 'Analyzes circadian rhythm shifts, bedroom temperatures, and sleep cycle states to build perfect sleep hygiene.',
-              icon: <Moon className="w-6 h-6 text-orange-500" />,
-              glow: 'hover:border-orange-500/30'
+              icon: <Moon className="w-6 h-6 text-white" />,
+              glow: 'hover:border-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]'
             },
             {
               title: 'Mental Wellness AI',
               description: 'Supports focus tracking, schedules parasympathetic breathing sessions, and manages neural recovery cycles.',
-              icon: <Brain className="w-6 h-6 text-orange-500" />,
-              glow: 'hover:border-orange-500/30'
+              icon: <Brain className="w-6 h-6 text-white" />,
+              glow: 'hover:border-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]'
             },
             {
               title: 'Medical Report AI',
               description: 'Deciphers complex biomarker results and lipid panels to summarize critical markers into simple concepts.',
-              icon: <FileText className="w-6 h-6 text-orange-500" />,
-              glow: 'hover:border-orange-500/30'
+              icon: <FileText className="w-6 h-6 text-white" />,
+              glow: 'hover:border-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]'
             }
           ].map((card, idx) => (
             <motion.div
               key={idx}
               whileHover={{ y: -6, transition: { duration: 0.2 } }}
-              className={`bg-[black]/40 backdrop-blur-2xl border border-white/5 p-8 rounded-[32px] space-y-6 shadow-xl flex flex-col justify-between min-h-[250px] transition-all duration-300 ${card.glow}`}
+              className={`bg-white/5 backdrop-blur-2xl border border-white/10 p-8 rounded-[32px] space-y-6 shadow-xl flex flex-col justify-between min-h-[250px] transition-all duration-300 ${card.glow}`}
             >
               <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center">
                 {card.icon}
@@ -442,14 +552,14 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-
+ 
       {/* AI FOOD SCANNER */}
-      <section id="food-scanner" className="py-24 bg-[black] border-t border-white/5 relative z-10 overflow-hidden">
+      <section id="food-scanner" className="py-24 bg-[#070709]/50 border-t border-white/10 backdrop-blur-xl relative z-10 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-
+ 
           <div className="lg:col-span-5 space-y-6 text-left">
-            <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest block">AI Food Scanner</span>
-            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">AI Food Scanner</span>
+            <h2 className="text-5xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
               Instantly scan and analyze nutrients.
             </h2>
             <p className="text-sm text-white/60 leading-relaxed">
@@ -458,7 +568,7 @@ export default function HomePage() {
             <div className="flex gap-4 pt-2">
               <button
                 onClick={() => handleScanFood('salad')}
-                className="px-5 py-3 bg-[#f97316]/10 border border-[#f97316]/20 hover:bg-[#f97316]/20 text-[#f97316] font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                className="px-5 py-3 bg-[#0a84ff]/10 border border-[#0a84ff]/20 hover:bg-[#0a84ff]/20 text-[#0a84ff] font-bold rounded-xl text-xs transition-colors cursor-pointer"
               >
                 Scan Salad (Good)
               </button>
@@ -470,16 +580,16 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-
+ 
           <div className="lg:col-span-7 flex justify-center relative">
             {/* Outer Interactive Mockup Frame */}
-            <div className="w-[320px] h-[580px] bg-black rounded-[48px] border-8 border-white/20 shadow-[0_24px_80px_rgba(0,0,0,0.9)] overflow-hidden relative flex flex-col justify-between text-white font-sans">
+            <div className="w-[320px] h-[580px] bg-[#070709] rounded-[48px] border-8 border-neutral-800 shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden relative flex flex-col justify-between text-white font-sans">
               {/* Dynamic Camera Screen / Viewport */}
-              <div className="h-2/5 bg-[black] relative flex items-center justify-center border-b border-white/5">
+              <div className="h-2/5 bg-[#070709] relative flex items-center justify-center border-b border-white/10">
                 {isScanning ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-20">
-                    <div className="w-12 h-12 rounded-full border-4 border-t-[#f97316] border-white/10 animate-spin" />
-                    <span className="text-[10px] uppercase font-bold tracking-wider mt-4 text-[#f97316]">Analyzing Macros...</span>
+                    <div className="w-12 h-12 rounded-full border-4 border-t-[#0a84ff] border-white/10 animate-spin" />
+                    <span className="text-[10px] uppercase font-bold tracking-wider mt-4 text-[#0a84ff]">Analyzing Macros...</span>
                   </div>
                 ) : null}
 
@@ -507,7 +617,7 @@ export default function HomePage() {
               </div>
 
               {/* Analytical Output Details */}
-              <div className="flex-1 bg-[black] p-6 flex flex-col justify-between">
+              <div className="flex-1 bg-[#070709] p-6 flex flex-col justify-between">
                 <AnimatePresence mode="wait">
                   {scannedFood ? (
                     <motion.div
@@ -519,8 +629,8 @@ export default function HomePage() {
                     >
                       <div className="space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-bold text-[#f97316] uppercase tracking-wider">Health Rating</span>
-                          <span className="text-xs font-mono font-bold text-white bg-[#f97316]/10 border border-[#f97316]/20 px-2 py-0.5 rounded">
+                          <span className="text-[9px] font-bold text-[#0a84ff] uppercase tracking-wider">Health Rating</span>
+                          <span className="text-xs font-mono font-bold text-white bg-[#0a84ff]/10 border border-[#0a84ff]/20 px-2 py-0.5 rounded">
                             {foodOptions[scannedFood as keyof typeof foodOptions].rating}
                           </span>
                         </div>
@@ -582,7 +692,7 @@ export default function HomePage() {
       {/* HEALTH TIMELINE */}
       <section id="chronobiology" className="py-24 max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest">Chronobiology</span>
+          <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest">Chronobiology</span>
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Health Timeline Optimization</h2>
           <p className="text-sm text-white/60">
             Interactive timeline mapping daily chronobiological events paired with context-sensitive AI recommendations.
@@ -597,8 +707,8 @@ export default function HomePage() {
                 key={hourKey}
                 onClick={() => setActiveTimelineHour(hourKey)}
                 className={`w-full text-left px-6 py-4 rounded-2xl border text-sm font-semibold transition-all flex items-center justify-between cursor-pointer ${activeTimelineHour === hourKey
-                  ? 'bg-[#f97316] border-[#f97316] text-white shadow-lg'
-                  : 'bg-[black]/60 border-white/5 hover:border-white/10 text-white/60 hover:text-white'
+                  ? 'bg-gradient-to-r from-[#0a84ff]/25 to-[#0071e3]/15 border-[#0a84ff]/40 text-white shadow-lg shadow-[#0a84ff]/5'
+                  : 'bg-white/5 backdrop-blur-md border-white/10 hover:border-white/20 text-white/60 hover:text-white'
                   }`}
               >
                 <span>{hourKey}</span>
@@ -608,8 +718,8 @@ export default function HomePage() {
           </div>
 
           {/* Interactive display detail card */}
-          <div className="lg:col-span-8 bg-[black]/60 border border-white/5 rounded-3xl p-8 min-h-[300px] flex flex-col justify-between relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="lg:col-span-8 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 min-h-[300px] flex flex-col justify-between relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
             <AnimatePresence mode="wait">
               <motion.div
@@ -621,7 +731,7 @@ export default function HomePage() {
                 className="space-y-6"
               >
                 <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-wider block">
                     {timelineData[activeTimelineHour as keyof typeof timelineData].title}
                   </span>
                   <h3 className="text-2xl font-extrabold text-white">
@@ -631,17 +741,17 @@ export default function HomePage() {
 
                 <div className="space-y-3">
                   <div className="flex gap-2.5 items-center">
-                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                    <span className="text-[10px] text-orange-500 uppercase tracking-widest font-extrabold">Active AI Suggestion</span>
+                    <span className="w-2 h-2 rounded-full bg-white text-black font-semibold animate-pulse" />
+                    <span className="text-[10px] text-white uppercase tracking-widest font-extrabold">Active AI Suggestion</span>
                   </div>
-                  <p className="text-sm text-white/70 leading-relaxed bg-white/5 border border-white/5 p-5 rounded-2xl">
+                  <p className="text-sm text-white/70 leading-relaxed bg-white/5 border border-white/10 p-5 rounded-2xl">
                     {timelineData[activeTimelineHour as keyof typeof timelineData].suggestion}
                   </p>
                 </div>
               </motion.div>
             </AnimatePresence>
 
-            <div className="pt-6 border-t border-white/5 mt-8 flex justify-between items-center text-xs text-white/50">
+            <div className="pt-6 border-t border-white/10 mt-8 flex justify-between items-center text-xs text-white/50">
               <span>Chronobiological Sync Loop</span>
               <span>Event Telemetry provided in real-time</span>
             </div>
@@ -651,57 +761,57 @@ export default function HomePage() {
 
 
       {/* AI HEALTH OVERVIEW */}
-      <section className="py-24 max-w-7xl mx-auto px-6 relative z-10 border-t border-white/5">
+      <section className="py-24 max-w-7xl mx-auto px-6 relative z-10 border-t border-white/10">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest">AI Health Overview</span>
-          <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Your Core Health Score</h2>
+          <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest">AI Health Overview</span>
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Your Core Health Score</h2>
           <p className="text-sm text-white/60">
             A real-time evaluation of your cardiovascular, metabolic, sleep and autonomic biometrics combined into a single unified health status.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-[black]/60 border border-white/5 p-8 rounded-3xl space-y-6 flex flex-col justify-between">
+          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-8 rounded-3xl space-y-6 flex flex-col justify-between shadow-2xl">
             <div className="space-y-4">
-              <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest block">AI Health Score</span>
+              <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">AI Health Score</span>
               <h3 className="text-2xl font-bold text-white">96 / 100</h3>
               <p className="text-xs text-white/60 leading-relaxed">
                 Your biological systems are running at near-optimum performance. Excellent endocrine indicators and stable blood glucose signals detected.
               </p>
             </div>
             <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-              <div className="bg-[#f97316] h-full w-[96%]" />
+              <div className="bg-[#0a84ff] h-full w-[96%]" />
             </div>
           </div>
 
-          <div className="bg-[black]/60 border border-white/5 p-8 rounded-3xl space-y-6 flex flex-col justify-between">
+          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-8 rounded-3xl space-y-6 flex flex-col justify-between shadow-2xl">
             <div className="space-y-4">
-              <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest block">Recovery Score</span>
+              <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">Recovery Score</span>
               <h3 className="text-2xl font-bold text-white">88% (Optimal)</h3>
               <p className="text-xs text-white/60 leading-relaxed">
                 Autonomic signals indicate balanced vagal tone and heart rate variability (HRV) metrics. Ready for normal training load today.
               </p>
             </div>
             <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-              <div className="bg-[#f97316] h-full w-[88%]" />
+              <div className="bg-[#0a84ff] h-full w-[88%]" />
             </div>
           </div>
         </div>
       </section>
 
       {/* AI HEALTH COPILOT & REAL-TIME MEMORY PREVIEW */}
-      <section className="py-24 max-w-7xl mx-auto px-6 relative z-10 border-t border-white/5">
+      <section className="py-24 max-w-7xl mx-auto px-6 relative z-10 border-t border-white/10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-6 space-y-6 text-left">
-            <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest block">AI Health Copilot</span>
-            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">AI Health Copilot</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
               An intelligent conversation with your biology.
             </h2>
             <p className="text-sm text-white/60 leading-relaxed">
               Meet GAMA's conversational copilot. It maintains a secure, client-side personal health memory, tracking details of your historical responses to build personalized biosketches.
             </p>
-            <div className="space-y-3 bg-white/5 border border-white/5 p-4 rounded-2xl">
-              <div className="text-xs text-orange-400 font-mono">User Memory Context Active:</div>
+            <div className="space-y-3 bg-white/5 border border-white/10 p-4 rounded-2xl">
+              <div className="text-xs text-neutral-300 font-mono">User Memory Context Active:</div>
               <p className="text-xs text-white/70 leading-relaxed">
                 • Diet: Plant-Based / High Fiber<br />
                 • Circadian Sleep Schedule: 10:30 PM - 6:30 AM<br />
@@ -711,9 +821,9 @@ export default function HomePage() {
           </div>
 
           <div className="lg:col-span-6 space-y-4">
-            <div className="bg-[black]/60 border border-white/5 p-6 rounded-3xl space-y-4">
+            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl space-y-4 shadow-2xl">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 text-xs font-bold">A</div>
+                <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white text-xs font-bold">A</div>
                 <div className="text-left">
                   <h4 className="text-xs font-bold text-white">GAMA Biometric AI</h4>
                   <span className="text-[9px] text-neutral-400">Response Generated Just Now</span>
@@ -728,34 +838,34 @@ export default function HomePage() {
       </section>
 
       {/* RECOVERY INTELLIGENCE & INSIGHTS */}
-      <section className="py-24 max-w-7xl mx-auto px-6 relative z-10 border-t border-white/5">
+      <section className="py-24 max-w-7xl mx-auto px-6 relative z-10 border-t border-white/10">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest">Recovery & Insights</span>
-          <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Personalized Health Insights</h2>
+          <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest">Recovery & Insights</span>
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Personalized Health Insights</h2>
           <p className="text-sm text-white/60">
             Intelligent analysis of your active telemetry, generating critical biophysical suggestions.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-[black]/60 border border-white/5 p-6 rounded-3xl space-y-4">
-            <span className="text-[9px] font-bold text-[#f97316] uppercase tracking-widest">Metabolic curve</span>
+          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl space-y-4 shadow-2xl">
+            <span className="text-[9px] font-bold text-[#0a84ff] uppercase tracking-widest">Metabolic curve</span>
             <h4 className="text-base font-bold text-white">Glucose Stability Alert</h4>
             <p className="text-xs text-white/60 leading-relaxed">
               Post-lunch glucose peak offset by 1500-step activity window. Circadian synchronization loops locked.
             </p>
           </div>
 
-          <div className="bg-[black]/60 border border-white/5 p-6 rounded-3xl space-y-4">
-            <span className="text-[9px] font-bold text-[#f97316] uppercase tracking-widest">Circadian curve</span>
+          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl space-y-4 shadow-2xl">
+            <span className="text-[9px] font-bold text-[#0a84ff] uppercase tracking-widest">Circadian curve</span>
             <h4 className="text-base font-bold text-white">Optimal Melatonin Window</h4>
             <p className="text-xs text-white/60 leading-relaxed">
               Ideal dim-lighting schedule starts at 09:30 PM to trigger normal parasympathetic autonomic transitions.
             </p>
           </div>
 
-          <div className="bg-[black]/60 border border-white/5 p-6 rounded-3xl space-y-4">
-            <span className="text-[9px] font-bold text-[#f97316] uppercase tracking-widest">Cardiovascular health</span>
+          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl space-y-4 shadow-2xl">
+            <span className="text-[9px] font-bold text-[#0a84ff] uppercase tracking-widest">Cardiovascular health</span>
             <h4 className="text-base font-bold text-white">Vagal Tone Synced</h4>
             <p className="text-xs text-white/60 leading-relaxed">
               HRV index registers positive 4.2% weekly increase. Restoring cardiovascular base resilience.
@@ -765,15 +875,15 @@ export default function HomePage() {
       </section>
 
       {/* SMART HEALTH REPORTS & DIGITAL TWIN */}
-      <section className="py-24 max-w-7xl mx-auto px-6 relative z-10 border-t border-white/5">
+      <section className="py-24 max-w-7xl mx-auto px-6 relative z-10 border-t border-white/10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-6 space-y-4">
-            <div className="bg-[black]/60 border border-white/5 p-8 rounded-[32px] space-y-6">
-              <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest block">Digital Twin Telemetry</span>
-              <div className="w-full h-44 border border-white/5 bg-white/5 rounded-2xl flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/10 via-transparent to-transparent" />
-                <div className="w-20 h-20 rounded-full border border-orange-500/30 animate-pulse flex items-center justify-center">
-                  <span className="text-xs text-orange-500 font-mono">Twin Synced</span>
+            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-8 rounded-[32px] space-y-6 shadow-2xl">
+              <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">Digital Twin Telemetry</span>
+              <div className="w-full h-44 border border-white/10 bg-white/5 rounded-2xl flex items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent" />
+                <div className="w-20 h-20 rounded-full border border-white/10 animate-pulse flex items-center justify-center">
+                  <span className="text-xs text-white font-mono">Twin Synced</span>
                 </div>
               </div>
               <p className="text-xs text-white/60 leading-relaxed">
@@ -783,8 +893,8 @@ export default function HomePage() {
           </div>
 
           <div className="lg:col-span-6 space-y-6 text-left">
-            <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest block">Clinical Reports</span>
-            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">Clinical Reports</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
               Smart Clinical Health Summaries.
             </h2>
             <p className="text-sm text-white/60 leading-relaxed">
@@ -800,12 +910,12 @@ export default function HomePage() {
       </section>
 
       {/* WEARABLE ECOSYSTEM CONNECTION GRAPH */}
-      <section className="py-24 bg-[black] border-t border-white/5 relative z-10 overflow-hidden">
+      <section className="py-24 bg-[#070709]/50 border-t border-white/10 backdrop-blur-xl relative z-10 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
 
           <div className="lg:col-span-5 space-y-6 text-left">
-            <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest block">Wearable Ecosystem</span>
-            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">Wearable Ecosystem</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
               A united, synced ecosystem.
             </h2>
             <p className="text-sm text-white/60 leading-relaxed">
@@ -813,7 +923,7 @@ export default function HomePage() {
             </p>
             <div className="flex flex-wrap gap-2 pt-2">
               {['Apple Watch', 'Fitbit', 'WHOOP', 'Garmin', 'Samsung Health'].map((device, idx) => (
-                <span key={idx} className="text-[10px] font-bold text-white/60 bg-white/5 border border-white/5 px-3 py-1 rounded-full uppercase">
+                <span key={idx} className="text-[10px] font-bold text-white/60 bg-white/5 border border-white/10 px-3 py-1 rounded-full uppercase">
                   {device}
                 </span>
               ))}
@@ -836,31 +946,31 @@ export default function HomePage() {
               <circle cx="100" cy="100" r="80" fill="url(#glow-svg)" />
 
               {/* Connection Lines */}
-              <line x1="100" y1="100" x2="30" y2="60" stroke="rgba(249,115,22,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
-              <line x1="100" y1="100" x2="170" y2="60" stroke="rgba(249,115,22,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
-              <line x1="100" y1="100" x2="30" y2="140" stroke="rgba(249,115,22,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
-              <line x1="100" y1="100" x2="170" y2="140" stroke="rgba(249,115,22,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
-              <line x1="100" y1="100" x2="100" y2="25" stroke="rgba(249,115,22,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
-              <line x1="100" y1="100" x2="100" y2="175" stroke="rgba(249,115,22,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
+              <line x1="100" y1="100" x2="30" y2="60" stroke="rgba(10, 132, 255,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
+              <line x1="100" y1="100" x2="170" y2="60" stroke="rgba(10, 132, 255,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
+              <line x1="100" y1="100" x2="30" y2="140" stroke="rgba(10, 132, 255,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
+              <line x1="100" y1="100" x2="170" y2="140" stroke="rgba(10, 132, 255,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
+              <line x1="100" y1="100" x2="100" y2="25" stroke="rgba(10, 132, 255,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
+              <line x1="100" y1="100" x2="100" y2="175" stroke="rgba(10, 132, 255,0.15)" strokeWidth="1.5" strokeDasharray="3 3" />
 
               {/* Pulsing Core */}
-              <circle cx="100" cy="100" r="22" fill="black" stroke="#ffffff" strokeWidth="2.5" />
-              <circle cx="100" cy="100" r="30" fill="transparent" stroke="#f97316" strokeWidth="1" className="animate-ping origin-center" style={{ transformOrigin: '100px 100px' }} />
+              <circle cx="100" cy="100" r="22" fill="#070709" stroke="#ffffff" strokeWidth="2.5" />
+              <circle cx="100" cy="100" r="30" fill="transparent" stroke="#0a84ff" strokeWidth="1" className="animate-ping origin-center" style={{ transformOrigin: '100px 100px' }} />
               <image href="/logo.jpg" x="79" y="79" width="42" height="42" clipPath="url(#logo-clip)" />
 
               {/* Surrounding Nodes */}
               {/* Top Node (Apple Health) */}
-              <circle cx="100" cy="25" r="8" fill="black" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <circle cx="100" cy="25" r="8" fill="#070709" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
               {/* Right Top Node (Garmin) */}
-              <circle cx="170" cy="60" r="8" fill="black" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <circle cx="170" cy="60" r="8" fill="#070709" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
               {/* Right Bottom Node (Fitbit) */}
-              <circle cx="170" cy="140" r="8" fill="black" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <circle cx="170" cy="140" r="8" fill="#070709" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
               {/* Bottom Node (Samsung) */}
-              <circle cx="100" cy="175" r="8" fill="black" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <circle cx="100" cy="175" r="8" fill="#070709" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
               {/* Left Bottom Node (WHOOP) */}
-              <circle cx="30" cy="140" r="8" fill="black" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <circle cx="30" cy="140" r="8" fill="#070709" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
               {/* Left Top Node (Oura) */}
-              <circle cx="30" cy="60" r="8" fill="black" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <circle cx="30" cy="60" r="8" fill="#070709" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
             </svg>
           </div>
 
@@ -870,8 +980,8 @@ export default function HomePage() {
       {/* SECURITY & PRIVACY */}
       <section id="encryption" className="py-24 max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest">Sovereign Encryption</span>
-          <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Military-Grade Security</h2>
+          <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest">Sovereign Encryption</span>
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Military-Grade Security</h2>
           <p className="text-sm text-white/60">
             We value privacy as a basic human right. Your biological data is fully sandboxed under your client-side keys.
           </p>
@@ -882,27 +992,27 @@ export default function HomePage() {
             {
               title: 'Private AI Memory',
               description: 'AI model parameters reside in private sandbox runtimes. Your personal interactions are never utilized for global model updates.',
-              icon: <Database className="w-5 h-5 text-[#f97316]" />
+              icon: <Database className="w-5 h-5 text-[#0a84ff]" />
             },
             {
               title: 'GDPR Compliance',
               description: 'Exceeding standard European regulations. Absolute right-to-be-forgotten and portable clinical telemetry storage export loops.',
-              icon: <Shield className="w-5 h-5 text-orange-500" />
+              icon: <Shield className="w-5 h-5 text-white" />
             },
             {
               title: 'HIPAA Ready Architecture',
               description: 'Secure clinical-grade storage servers built using strict verification processes to satisfy all healthcare integration guidelines.',
-              icon: <Check className="w-5 h-5 text-orange-500" />
+              icon: <Check className="w-5 h-5 text-white" />
             },
             {
               title: 'Client-Side Encryption',
               description: 'Biometric indicators are locked locally on your terminal device using cryptographic signature pipelines.',
-              icon: <Shield className="w-5 h-5 text-orange-500" />
+              icon: <Shield className="w-5 h-5 text-white" />
             }
           ].map((card, idx) => (
             <div
               key={idx}
-              className="bg-[black]/60 border border-white/5 p-6 rounded-3xl space-y-4 hover:border-[#f97316]/20 transition-colors"
+              className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl space-y-4 hover:border-[#0a84ff]/30 transition-colors shadow-2xl"
             >
               <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center">
                 {card.icon}
@@ -917,11 +1027,11 @@ export default function HomePage() {
       </section>
 
       {/* PRICING PREVIEW */}
-      <section id="pricing" className="py-24 bg-[black] border-t border-white/5 relative z-10">
+      <section id="pricing" className="py-24 bg-[#070709]/50 border-t border-white/10 backdrop-blur-xl relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-            <span className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest">Pricing Plans</span>
-            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Choose Your Access Level</h2>
+            <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest">Pricing Plans</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Choose Your Access Level</h2>
             <p className="text-sm text-white/60">
               Sovereign health intelligence tools tailored for everyday performance optimization.
             </p>
@@ -929,7 +1039,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* Free Plan */}
-            <div className="bg-black/40 border border-white/5 p-8 rounded-3xl flex flex-col justify-between min-h-[400px]">
+            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-8 rounded-3xl flex flex-col justify-between min-h-[400px] shadow-2xl">
               <div className="space-y-4">
                 <span className="text-[10px] text-white/50 uppercase font-bold tracking-wider">Free Access</span>
                 <div className="flex items-baseline gap-1">
@@ -952,12 +1062,12 @@ export default function HomePage() {
             </div>
 
             {/* Pro Plan - Best Value */}
-            <div className="bg-[black]/60 border border-[#f97316]/30 p-8 rounded-3xl flex flex-col justify-between min-h-[400px] relative shadow-[0_0_50px_rgba(249,115,22,0.05)]">
-              <div className="absolute top-4 right-4 bg-[#f97316] text-white text-[8px] uppercase font-bold px-2 py-0.5 rounded-full tracking-wider">
+            <div className="bg-white/5 backdrop-blur-2xl border border-[#0a84ff]/30 p-8 rounded-3xl flex flex-col justify-between min-h-[400px] relative shadow-[0_0_50px_rgba(10, 132, 255,0.08)]">
+              <div className="absolute top-4 right-4 bg-[#0a84ff] text-white text-[8px] uppercase font-bold px-2 py-0.5 rounded-full tracking-wider">
                 Recommended
               </div>
               <div className="space-y-4">
-                <span className="text-[10px] text-[#f97316] uppercase font-bold tracking-wider">Pro Core</span>
+                <span className="text-[10px] text-[#0a84ff] uppercase font-bold tracking-wider">Pro Core</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-extrabold text-white">999 INR</span>
                   <span className="text-xs text-white/50">/ month</span>
@@ -972,14 +1082,14 @@ export default function HomePage() {
               </div>
               <Link
                 href="/login"
-                className="w-full py-3 bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold rounded-xl text-center text-xs transition-all mt-8 shadow-lg shadow-[#f97316]/20"
+                className="w-full py-3 bg-[#0a84ff] hover:bg-[#0071e3] text-white font-semibold rounded-xl text-center text-xs transition-all mt-8 shadow-lg shadow-[#0a84ff]/20"
               >
                 Upgrade to Pro
               </Link>
             </div>
 
             {/* Enterprise Plan */}
-            <div className="bg-black/40 border border-white/5 p-8 rounded-3xl flex flex-col justify-between min-h-[400px]">
+            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-8 rounded-3xl flex flex-col justify-between min-h-[400px] shadow-2xl">
               <div className="space-y-4">
                 <span className="text-[10px] text-white/50 uppercase font-bold tracking-wider">Enterprise Elite</span>
                 <div className="flex items-baseline gap-1">
@@ -1004,7 +1114,7 @@ export default function HomePage() {
       </section>
 
       {/* SECTION 4: COOL FOOTER */}
-      <footer className="border-t border-white/5 bg-black/40 backdrop-blur-xl py-12 relative z-10">
+      <footer className="border-t border-white/10 bg-[#070709]/60 backdrop-blur-xl py-12 relative z-10">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
 
           <div className="space-y-4 col-span-1 md:col-span-2">
@@ -1014,13 +1124,13 @@ export default function HomePage() {
               </div>
               <span className="font-extrabold text-2xl tracking-wider text-white">GAMA</span>
             </div>
-            <p className="text-xs text-white/60 leading-relaxed max-w-sm">
-              Sovereign biological diagnostic dashboard and epigenetic modeling coordinate framework.
+            <p className="text-xs text-white/65 leading-relaxed max-w-sm">
+              AI-native personal health intelligence, continuously learning, predicting, and optimizing every day.
             </p>
           </div>
 
           <div className="space-y-4">
-            <h5 className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Platform</h5>
+            <h5 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Platform</h5>
             <ul className="space-y-2 text-xs text-white/60">
               <li><Link href="/dashboard" className="hover:text-white transition-colors">Overview</Link></li>
               <li><Link href="/twin" className="hover:text-white transition-colors">Digital Twin</Link></li>
@@ -1030,7 +1140,7 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-4">
-            <h5 className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Connect</h5>
+            <h5 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Connect</h5>
             <div className="flex gap-4 text-white/60">
               <a href="#" className="hover:text-white transition-colors">
                 {/* Twitter SVG */}
@@ -1056,7 +1166,7 @@ export default function HomePage() {
 
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[10px] text-white/50 font-bold uppercase tracking-wider">
             © 2026 GAMA. All rights reserved.
           </p>
