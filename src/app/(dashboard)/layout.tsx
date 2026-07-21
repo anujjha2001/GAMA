@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, LogOut, ChefHat, ShoppingBag
@@ -15,11 +15,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [mounted, setMounted] = React.useState(false);
-
   React.useEffect(() => {
-    setMounted(true);
     // Fetch logged in user profile data to sync with database
     fetch('/api/auth')
       .then((res) => res.json())
@@ -40,8 +36,6 @@ export default function DashboardLayout({
     } catch (e) { }
     window.location.href = '/login';
   };
-
-  if (!mounted) return null;
 
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },

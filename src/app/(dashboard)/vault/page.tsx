@@ -98,7 +98,11 @@ export default function VaultPage() {
     }
   }, [documents]);
 
-  if (!mounted) return null;
+  if (!mounted) return (
+    <div className="min-h-screen bg-[#070709] flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-white/10 border-t-orange-500 rounded-full animate-spin" />
+    </div>
+  );
 
   const activeDoc = documents.find(d => d.id === activeDocId) || documents[0];
 
