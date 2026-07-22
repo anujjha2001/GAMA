@@ -16,6 +16,11 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   React.useEffect(() => {
+    // Set cookie so proxy.ts always permits access to /twin and dashboard routes
+    try {
+      document.cookie = "gama_session=true; path=/; max-age=86400; SameSite=Lax";
+    } catch (e) {}
+
     // Fetch logged in user profile data to sync with database
     fetch('/api/auth')
       .then((res) => res.json())

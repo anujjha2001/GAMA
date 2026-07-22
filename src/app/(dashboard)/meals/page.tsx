@@ -452,7 +452,7 @@ export default function MealGuidePage() {
             </div>
             {/* Orbiting particles representing macronutrients */}
             <div className="absolute top-1 left-1 w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-bounce" />
-            <div className="absolute bottom-4 right-1 w-4 h-4 rounded-full bg-white text-black font-semibold shadow-[0_0_10px_#f97316]" />
+            <div className="absolute bottom-4 right-1 w-4 h-4 rounded-full bg-white text-black font-semibold shadow-[0_0_10px_#00f0ff]" />
             <div className="absolute top-1/2 right-2 w-3.5 h-3.5 rounded-full bg-sky-500 shadow-[0_0_10px_#0ea5e9]" />
           </motion.div>
         </div>
