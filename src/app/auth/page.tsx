@@ -579,7 +579,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                         className="rounded bg-[black] border-white/10 text-white focus:ring-0 focus:ring-offset-0 h-4 w-4 mt-0.5 cursor-pointer"
                       />
                       <label htmlFor="terms" className="cursor-pointer select-none">
-                        I accept the <span className="text-[#f97316] hover:underline">Terms of Service</span> and <span className="text-[#f97316] hover:underline">Privacy Policy</span>.
+                        I accept the <span className="text-[#00f0ff] hover:underline">Terms of Service</span> and <span className="text-[#00f0ff] hover:underline">Privacy Policy</span>.
                       </label>
                     </div>
                   )}

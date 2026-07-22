@@ -617,6 +617,24 @@ export function DashboardView() {
 
             {/* 2. Burnout Risk & Medical Summary Column */}
             <div className="flex flex-col gap-4">
+              {/* Digital Twin Gateway Card */}
+              <a
+                href="/twin"
+                className="bg-black/45 backdrop-blur-2xl border border-[#00f0ff]/20 hover:border-[#00f0ff]/50 rounded-[28px] p-4 flex items-center justify-between transition-all duration-500 cursor-pointer shadow-lg group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#0a84ff]/10 border border-[#0a84ff]/20 flex items-center justify-center text-[#00f0ff] group-hover:scale-105 transition-transform">
+                    <ActivitySquare className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-[9px] font-black uppercase tracking-wider text-[#00f0ff]">Digital Twin Telemetry</h4>
+                    <p className="text-sm font-extrabold text-white">Interactive 3D Body</p>
+                    <span className="text-[9px] text-neutral-300 font-medium">Real-time biological model</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-[#00f0ff] group-hover:translate-x-1 transition-all" />
+              </a>
+
               {/* Burnout Risk Dial */}
               <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-center gap-4 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg">
                 <div className="relative w-12 h-12 shrink-0">

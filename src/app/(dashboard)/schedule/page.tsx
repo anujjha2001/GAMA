@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Search, Plus,
   MapPin, Clock, Calendar, AlertCircle,
-  Zap, Brain, ShieldAlert, Thermometer, Droplets, Sun, Wind
+  Zap, Brain, ShieldAlert, Thermometer, Droplets, Sun, Wind,
+  Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -157,7 +158,7 @@ export default function SchedulePage() {
           {/* Weather Widget */}
           <div className="bg-black/35 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 shadow-2xl">
             <h2 className="text-lg font-bold tracking-wide text-neutral-200 mb-4 flex items-center gap-2">
-              <Sun className="w-5 h-5 text-yellow-500" /> Live Environment
+              Live Environment
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white/5 border border-white/5 p-3 rounded-xl flex items-center gap-2">
