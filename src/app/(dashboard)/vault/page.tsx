@@ -637,7 +637,7 @@ export default function VaultPage() {
                                   contentStyle={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
                                   labelStyle={{ color: '#fff', fontSize: '10px' }}
                                 />
-                                <Line type="monotone" dataKey="Wellness Score" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} />
+                                <Line type="monotone" dataKey="Wellness Score" stroke="#00f0ff" strokeWidth={2} dot={{ r: 3 }} />
                               </LineChart>
                             </ResponsiveContainer>
                           ) : (

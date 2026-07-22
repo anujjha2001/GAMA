@@ -29,7 +29,7 @@ export default function DigitalTwinPage() {
 
   if (!mounted) return (
     <div className="min-h-screen bg-[#070709] flex items-center justify-center">
-      <div className="w-10 h-10 border-4 border-white/10 border-t-orange-500 rounded-full animate-spin" />
+      <div className="w-10 h-10 border-4 border-white/10 border-t-[#00f0ff] rounded-full animate-spin" />
     </div>
   );
 
@@ -38,7 +38,7 @@ export default function DigitalTwinPage() {
       
       {/* Background cinematic warm/dark glows */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-white/5 blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-orange-600/5 blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#0a84ff]/5 blur-[150px] pointer-events-none" />
 
       {/* Header Portal */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 z-10">
@@ -125,7 +125,7 @@ export default function DigitalTwinPage() {
               <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle cx="32" cy="32" r="26" stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="transparent" />
-                  <circle cx="32" cy="32" r="26" stroke="#f97316" strokeWidth="4" fill="transparent"
+                  <circle cx="32" cy="32" r="26" stroke="#00f0ff" strokeWidth="4" fill="transparent"
                     strokeDasharray={2 * Math.PI * 26}
                     strokeDashoffset={2 * Math.PI * 26 * (1 - 0.82)}
                     strokeLinecap="round"
@@ -144,11 +144,11 @@ export default function DigitalTwinPage() {
                   <span className="text-white">85%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-orange-500" /> Activity</span>
+                  <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#00f0ff]" /> Activity</span>
                   <span className="text-white">78%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-yellow-500" /> Nutrition</span>
+                  <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#0a84ff]" /> Nutrition</span>
                   <span className="text-white">80%</span>
                 </div>
                 <div className="flex justify-between">
@@ -208,7 +208,7 @@ export default function DigitalTwinPage() {
                       toast.success(`Health environment shifted to ${world.label}`);
                     }}
                     className={`relative p-2.5 rounded-2xl overflow-hidden border text-left cursor-pointer transition-all ${healthWorld === world.key
-                      ? 'border-[#f97316] bg-black/60 shadow-[0_0_12px_rgba(249,115,22,0.25)]'
+                      ? 'border-[#00f0ff] bg-black/60 shadow-[0_0_12px_rgba(0,240,255,0.25)]'
                       : 'border-white/5 bg-black/30 hover:border-white/20'
                     }`}
                   >
@@ -220,8 +220,8 @@ export default function DigitalTwinPage() {
                     <div className="text-[9px] font-black text-white">{world.label}</div>
                     <div className="text-[8px] text-neutral-500 font-bold">{world.range}</div>
                     {healthWorld === world.key && (
-                      <div className="absolute top-1 right-1 w-3 h-3 bg-[#f97316] rounded-full flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-white" />
+                      <div className="absolute top-1 right-1 w-3 h-3 bg-[#00f0ff] rounded-full flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-black" />
                       </div>
                     )}
                   </button>
@@ -256,13 +256,13 @@ export default function DigitalTwinPage() {
               </div>
               <div className="text-right">
                 <span className="text-[9px] font-black uppercase text-neutral-500 tracking-wider block">Trend (24h)</span>
-                <span className="text-xs font-black text-[#f97316] mt-2 block">+12 Improving 📈</span>
+                <span className="text-xs font-black text-[#00f0ff] mt-2 block">+12 Improving 📈</span>
               </div>
             </div>
 
             {/* AURA Insight */}
             <div className="mt-4 p-3 bg-white/5 border border-white/10 rounded-2xl flex items-start gap-2.5">
-              <div className="w-7 h-7 bg-orange-500/10 border border-orange-500/20 text-[#f97316] rounded-xl flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 bg-[#0a84ff]/10 border border-[#0a84ff]/20 text-[#00f0ff] rounded-xl flex items-center justify-center shrink-0">
                 <Sparkles className="w-3.5 h-3.5" />
               </div>
               <div className="flex-1">
@@ -272,7 +272,7 @@ export default function DigitalTwinPage() {
                 </p>
                 <button 
                   onClick={() => toast.info('Loading deep biological reports...')}
-                  className="text-[9px] font-black text-[#f97316] uppercase tracking-wider flex items-center gap-0.5 mt-2 cursor-pointer"
+                  className="text-[9px] font-black text-[#00f0ff] uppercase tracking-wider flex items-center gap-0.5 mt-2 cursor-pointer"
                 >
                   View Details <ChevronRight className="w-3 h-3" />
                 </button>
@@ -284,9 +284,9 @@ export default function DigitalTwinPage() {
           <div className="rounded-3xl bg-[#09090b]/80 border border-white/5 p-5 shadow-lg">
             <div className="flex justify-between items-center mb-4">
               <span className="text-[9px] font-black uppercase text-neutral-500 tracking-wider">Live Health Sync</span>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded-md">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f97316] text-black font-semibold animate-pulse" />
-                <span className="text-[8px] font-black text-[#f97316] uppercase tracking-wide">Sync active</span>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#0a84ff]/10 border border-[#0a84ff]/20 rounded-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00f0ff] text-black font-semibold animate-pulse" />
+                <span className="text-[8px] font-black text-[#00f0ff] uppercase tracking-wide">Sync active</span>
               </div>
             </div>
 
@@ -294,10 +294,10 @@ export default function DigitalTwinPage() {
               {[
                 { label: 'Heart Rate', value: '64 bpm', icon: Heart, color: 'text-rose-500' },
                 { label: 'Stress Level', value: 'Low', icon: Zap, color: 'text-yellow-500' },
-                { label: 'Energy Level', value: '78%', icon: Activity, color: 'text-amber-500' },
+                { label: 'Energy Level', value: '78%', icon: Activity, color: 'text-[#00f0ff]' },
                 { label: 'Sleep Quality', value: '85%', icon: Moon, color: 'text-purple-500' },
                 { label: 'Hydration', value: '65%', icon: Droplets, color: 'text-sky-500' },
-                { label: 'Steps Today', value: '7,842', icon: Trophy, color: 'text-[#f97316]' }
+                { label: 'Steps Today', value: '7,842', icon: Trophy, color: 'text-[#0a84ff]' }
               ].map((metric, i) => (
                 <div key={i} className="flex justify-between items-center py-1 border-b border-white/5 text-xs font-bold text-neutral-400">
                   <span className="flex items-center gap-2"><metric.icon className={`w-3.5 h-3.5 ${metric.color}`} /> {metric.label}</span>
@@ -313,8 +313,8 @@ export default function DigitalTwinPage() {
             {/* AURA Coach */}
             <div className="flex items-start gap-3">
               {/* Profile/avatar mock */}
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#f97316] to-[#ea580c] flex items-center justify-center shrink-0 border border-white/10 shadow shadow-orange-500/30">
-                <span className="text-xs font-black text-white">AI</span>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#00f0ff] to-[#0a84ff] flex items-center justify-center shrink-0 border border-white/10 shadow shadow-[#00f0ff]/30">
+                <span className="text-xs font-black text-black">AI</span>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex-1">
                 <h4 className="text-[10px] font-black text-white uppercase tracking-wider">AURA Coach</h4>
@@ -339,7 +339,7 @@ export default function DigitalTwinPage() {
                     className="w-full flex justify-between items-center p-2.5 bg-[#141416]/50 border border-white/5 hover:border-white/10 hover:bg-[#141416] rounded-xl text-left cursor-pointer transition-all"
                   >
                     <span className="text-xs font-bold text-neutral-300">{act.label}</span>
-                    <span className="text-[9px] font-black uppercase text-[#f97316] bg-orange-500/10 px-2 py-0.5 rounded">{act.duration}</span>
+                    <span className="text-[9px] font-black uppercase text-[#00f0ff] bg-[#0a84ff]/10 px-2 py-0.5 rounded">{act.duration}</span>
                   </button>
                 ))}
               </div>

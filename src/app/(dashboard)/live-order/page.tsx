@@ -542,8 +542,8 @@ export default function LiveOrderPage() {
                 </button>
               ))}
               <button
-                onClick={() => setActiveTab('nearby' as any)}
-                className={`px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${'nearby' === (activeTab as any) ? 'bg-emerald-500 text-white shadow-md' : 'text-emerald-400 hover:text-white border border-emerald-500/30'}`}
+                onClick={() => setActiveTab('nearby')}
+                className={`px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${activeTab === 'nearby' ? 'bg-emerald-500 text-white shadow-md' : 'text-emerald-400 hover:text-white border border-emerald-500/30'}`}
               >
                 📍 Nearby
               </button>
@@ -816,7 +816,7 @@ export default function LiveOrderPage() {
           )}
 
           {/* ── NEARBY TAB — Full GPS-powered content ── */}
-          {(activeTab as any) === 'nearby' && (
+          {activeTab === 'nearby' && (
             <div className="space-y-6">
               <div className="p-5 rounded-[32px] bg-[#14100e]/95 border border-emerald-500/15 shadow-lg">
                 <div className="flex items-center gap-3 mb-2">
