@@ -8,11 +8,11 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-pool.query('SELECT NOW()', (err, res) => {
+pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'", (err, res) => {
   if (err) {
     console.error('Connection error', err.stack);
   } else {
-    console.log('Connected:', res.rows);
+    console.log('Tables:', res.rows.map(r => r.table_name));
   }
   pool.end();
 });
