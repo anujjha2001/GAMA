@@ -72,4 +72,37 @@ export class AIOrchestrator {
     const res = await this.generateText(messages);
     return res.content;
   }
+
+  static async scanFoodImage(base64Image: string): Promise<any> {
+    // Calls standard AIGateway vision handler which falls back to Groq if Poolside lacks vision
+    const messages = [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: `Analyze this image. You must be GAMA's production food detection engine.
+Identify if there is food in the image.
+1. Check if the image contains food. If it does not contain food (e.g. laptop, car, dog, bottle, medicine, human, tv, chair, landscape), confidence MUST be below 95% and isFood must be false.
+2. If food is present, detect every visible food item (e.g. "Rice", "Dal", "Paneer", "Salad"). Each food should be a separate string.
+Return a JSON object in this exact format:
+{
+  "isFood": boolean,
+  "confidence": number, // 0 to 100
+  "foods": string[]
+}`
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:image/jpeg;base64,${base64Image}`
+            }
+          }
+        ]
+      }
+    ];
+    const { AIGateway } = await import('@/shared/ai/ai-gateway');
+    const response = await AIGateway.generateText(messages, 'llama-3.2-11b-vision-preview');
+    return JSON.parse(response.content);
+  }
 }
