@@ -4,7 +4,7 @@
 
 const CACHE_NAME = 'gama-static-v1';
 const STATIC_ASSETS = [
-  '/logo.jpg',
+  '/logo.webp',
   '/manifest.json',
   '/dashboard-bg-clean.png',
 ];

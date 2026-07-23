@@ -152,7 +152,7 @@ export default function HomePage() {
             whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
             className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer"
           >
-            <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
+            <img src="/logo.webp" alt="GAMA" className="w-full h-full object-cover" />
           </motion.div>
           <span className="font-extrabold text-xl tracking-wider text-white">GAMA</span>
         </div>
@@ -316,7 +316,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-[#00f0ff]" />
-                  <span>Digital Twin</span>
+                  <span>Biometrics Sync</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-[#00f0ff]" />
@@ -913,20 +913,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SMART HEALTH REPORTS & DIGITAL TWIN */}
+      {/* SMART HEALTH REPORTS & BIOMETRICS */}
       <section className="py-24 max-w-7xl mx-auto px-6 relative z-10 border-t border-white/10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-6 space-y-4">
             <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-8 rounded-[32px] space-y-6 shadow-2xl">
-              <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">Digital Twin Telemetry</span>
+              <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">Biometrics Telemetry</span>
               <div className="w-full h-44 border border-white/10 bg-white/5 rounded-2xl flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent" />
                 <div className="w-20 h-20 rounded-full border border-white/10 animate-pulse flex items-center justify-center">
-                  <span className="text-xs text-white font-mono">Twin Synced</span>
+                  <span className="text-xs text-white font-mono">Health Synced</span>
                 </div>
               </div>
               <p className="text-xs text-white/60 leading-relaxed">
-                Your digital twin maps real-time dynamic biomarkers to simulate recovery outcomes under various physical and cognitive stress events.
+                Your health profile maps real-time dynamic biomarkers to simulate recovery outcomes under various physical and cognitive stress events.
               </p>
             </div>
           </div>
@@ -937,7 +937,7 @@ export default function HomePage() {
               Smart Clinical Health Summaries.
             </h2>
             <p className="text-sm text-white/60 leading-relaxed">
-              Upload blood biomarker profiles or lipid panels. Our clinical parser structures key metrics, tracking historical changes across your digital twin.
+              Upload blood biomarker profiles or lipid panels. Our clinical parser structures key metrics, tracking historical changes across your health dashboard.
             </p>
             <ul className="space-y-2 text-xs text-white/60">
               <li className="flex items-center gap-2">✓ Automated PDF & Clinical blood report parsing</li>
@@ -995,7 +995,7 @@ export default function HomePage() {
               {/* Pulsing Core */}
               <circle cx="100" cy="100" r="22" fill="#070709" stroke="#ffffff" strokeWidth="2.5" />
               <circle cx="100" cy="100" r="30" fill="transparent" stroke="#0a84ff" strokeWidth="1" className="animate-ping origin-center" style={{ transformOrigin: '100px 100px' }} />
-              <image href="/logo.jpg" x="79" y="79" width="42" height="42" clipPath="url(#logo-clip)" />
+              <image href="/logo.webp" x="79" y="79" width="42" height="42" clipPath="url(#logo-clip)" />
 
               {/* Surrounding Nodes */}
               {/* Top Node (Apple Health) */}
@@ -1159,7 +1159,7 @@ export default function HomePage() {
           <div className="space-y-4 col-span-1 md:col-span-2">
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center">
-                <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
+                <img src="/logo.webp" alt="GAMA" className="w-full h-full object-cover" />
               </div>
               <span className="font-extrabold text-2xl tracking-wider text-white">GAMA</span>
             </div>
@@ -1172,7 +1172,6 @@ export default function HomePage() {
             <h5 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Platform</h5>
             <ul className="space-y-2 text-xs text-white/60">
               <li><Link href="/dashboard" className="hover:text-white transition-colors">Overview</Link></li>
-              <li><Link href="/twin" className="hover:text-white transition-colors">Digital Twin</Link></li>
               <li><Link href="/insights" className="hover:text-white transition-colors">Insights</Link></li>
               <li><Link href="/vault" className="hover:text-white transition-colors">Secure Vault</Link></li>
             </ul>

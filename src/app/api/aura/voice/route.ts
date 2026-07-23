@@ -21,7 +21,6 @@ RESPONSE CONSTRAINTS:
 Available Tools to Trigger:
 - "meal_guide": Use if the user wants to check recipes, planning, or is hungry.
 - "food_scanner": Use if they want to scan a plate, fridge, take a picture of food, or start the scanner.
-- "digital_twin": Use if they ask to see their body, muscles, avatar, or digital twin.
 - "health_vault": Use if they want to view medical reports, upload files, or view lab documents.
 - "insights": Use if they ask for trends, recovery logs, burnout warnings, or suggestions.
 - "schedule": Use if they ask for their calendar, reminders, circadian rhythm, or workout schedules.
@@ -33,7 +32,7 @@ JSON SCHEMA:
   "message": "Friendly, short speech response under 3 sentences.",
   "caption": "Subtitles caption (can match message exactly, stripped of markdown symbols).",
   "tool": {
-    "name": "meal_guide" | "digital_twin" | "food_scanner" | "health_vault" | "insights" | "schedule" | "settings" | "dashboard" | "none",
+    "name": "meal_guide" | "food_scanner" | "health_vault" | "insights" | "schedule" | "settings" | "dashboard" | "none",
     "actionType": "NAVIGATE" | "TRIGGER_SCANNER" | "NONE",
     "parameter": "route path or target payload"
   },

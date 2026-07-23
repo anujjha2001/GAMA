@@ -16,15 +16,6 @@ import {
 import { toast } from 'sonner';
 
 import { useHealthStore } from '@/lib/store';
-
-const BodyTwinModel = dynamic(() => import('@/components/twin/BodyTwinModel'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[180px] flex items-center justify-center bg-black/40 rounded-2xl border border-white/5">
-      <div className="w-6 h-6 border-2 border-white/10 border-t-[#00f0ff] rounded-full animate-spin" />
-    </div>
-  ),
-});
 import { HealthPipeline } from '@/lib/health-engine/orchestrator/health-pipeline';
 import { BaselineEngine } from '@/lib/health-engine/core/baseline';
 import { AppleProvider } from '@/lib/health-engine/providers/apple';
@@ -39,11 +30,6 @@ export function DashboardView() {
   const [mounted, setMounted] = React.useState(false);
   const [explainMetric, setExplainMetric] = React.useState<string | null>(null);
   const [isManualInputOpen, setIsManualInputOpen] = React.useState(false);
-
-  // Digital Twin Dashboard 3D viewer state
-  const [isTwinModalOpen, setIsTwinModalOpen] = React.useState(false);
-  const [dashboardTwinLayer, setDashboardTwinLayer] = React.useState('Cardiovascular');
-  const [dashboardOrgan, setDashboardOrgan] = React.useState<string | null>(null);
 
   const {
     steps, setSteps,
@@ -462,7 +448,7 @@ export function DashboardView() {
                     }}
                     className="p-1 bg-white text-black font-semibold hover:bg-neutral-200 rounded-xl cursor-pointer transition-all w-8 h-8 flex items-center justify-center overflow-hidden border border-white/10 hover:scale-105"
                   >
-                    <img src="/logo.jpg" alt="Send" className="w-full h-full object-cover rounded-xl" />
+                    <img src="/logo.webp" alt="Send" className="w-full h-full object-cover rounded-xl" />
                   </button>
                 </div>
               </div>
@@ -1280,119 +1266,6 @@ export function DashboardView() {
                 >
                   Discard
                 </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-        {/* DIGITAL TWIN 3D INSPECTION MODAL */}
-        {isTwinModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#09090b] border border-[#00f0ff]/30 rounded-[36px] w-full max-w-4xl p-6 relative shadow-2xl overflow-hidden flex flex-col gap-5 max-h-[90vh]"
-            >
-              <div className="flex justify-between items-center pb-4 border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#00f0ff]/10 border border-[#00f0ff]/30 flex items-center justify-center text-[#00f0ff]">
-                    <ActivitySquare className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-white tracking-tight">Interactive 3D Digital Twin</h3>
-                    <p className="text-xs text-neutral-400">Live biological simulation & subsystem telemetry</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/twin"
-                    onClick={() => setIsTwinModalOpen(false)}
-                    className="px-4 py-2 bg-[#00f0ff] text-black font-extrabold text-xs rounded-xl uppercase tracking-wider hover:bg-[#00f0ff]/90 transition-all cursor-pointer"
-                  >
-                    Open Workspace
-                  </Link>
-                  <button
-                    onClick={() => setIsTwinModalOpen(false)}
-                    className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-[420px]">
-                {/* Left Layer Controls */}
-                <div className="md:col-span-4 space-y-3">
-                  <span className="text-[9px] font-black uppercase text-neutral-400 tracking-wider">Subsystem Layers</span>
-                  <div className="space-y-2">
-                    {[
-                      { id: 'Cardiovascular', label: 'Cardiovascular System', desc: `${heartRate || 64} BPM • HRV ${hrv || 58}ms` },
-                      { id: 'Nervous System', label: 'Nervous System', desc: `Stress index: ${stressLevel || 3}/10` },
-                      { id: 'Muscular', label: 'Muscular System', desc: 'Skeletal muscle mass active' },
-                      { id: 'Skeletal', label: 'Skeletal Frame', desc: 'Bone mineral density baseline' },
-                    ].map((layer) => (
-                      <button
-                        key={layer.id}
-                        onClick={() => setDashboardTwinLayer(layer.id)}
-                        className={`w-full p-3 rounded-2xl border text-left cursor-pointer transition-all ${dashboardTwinLayer === layer.id
-                            ? 'border-[#00f0ff] bg-[#00f0ff]/10 text-white shadow-[0_0_12px_rgba(0,240,255,0.2)]'
-                            : 'border-white/5 bg-black/40 text-neutral-400 hover:border-white/20 hover:text-white'
-                          }`}
-                      >
-                        <div className="text-xs font-extrabold">{layer.label}</div>
-                        <div className="text-[9px] text-neutral-400 mt-0.5">{layer.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="pt-3 border-t border-white/5">
-                    <span className="text-[9px] font-black uppercase text-neutral-500 tracking-wider block mb-2">Focus Organ</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      {['Brain', 'Heart', 'Lungs', 'Stomach'].map((organ) => (
-                        <button
-                          key={organ}
-                          onClick={() => setDashboardOrgan(organ)}
-                          className={`py-2 px-2.5 rounded-xl border text-[9px] font-extrabold uppercase tracking-wider text-center cursor-pointer transition-all ${dashboardOrgan === organ
-                              ? 'border-white bg-white text-black font-black'
-                              : 'border-white/5 bg-black/30 text-neutral-400 hover:text-white'
-                            }`}
-                        >
-                          {organ}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Center 3D Viewer */}
-                <div className="md:col-span-8 bg-black/70 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[400px]">
-                  <div className="absolute inset-0 z-10 flex items-center justify-center p-2">
-                    <BodyTwinModel
-                      layer={dashboardTwinLayer}
-                      recoveryScore={82}
-                      stressLevel={stressLevel || 3}
-                      selectedOrgan={dashboardOrgan}
-                      onSelectOrgan={(organ) => setDashboardOrgan(organ)}
-                      heartRate={heartRate || 64}
-                    />
-                  </div>
-
-                  <div className="p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-                    <span className="text-xs font-extrabold text-[#00f0ff] uppercase tracking-wider">
-                      {dashboardTwinLayer} • Holographic Model
-                    </span>
-                    {dashboardOrgan && (
-                      <button
-                        onClick={() => setDashboardOrgan(null)}
-                        className="pointer-events-auto text-[9px] font-black text-white bg-white/10 px-2 py-1 rounded-lg hover:bg-white/20 cursor-pointer"
-                      >
-                        Reset Focus
-                      </button>
-                    )}
-                  </div>
-                </div>
               </div>
             </motion.div>
           </div>
