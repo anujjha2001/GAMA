@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Moon, Heart, Search, Edit2, Plus, Calendar, ChevronRight,
@@ -14,6 +16,15 @@ import {
 import { toast } from 'sonner';
 
 import { useHealthStore } from '@/lib/store';
+
+const BodyTwinModel = dynamic(() => import('@/components/twin/BodyTwinModel'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[180px] flex items-center justify-center bg-black/40 rounded-2xl border border-white/5">
+      <div className="w-6 h-6 border-2 border-white/10 border-t-[#00f0ff] rounded-full animate-spin" />
+    </div>
+  ),
+});
 import { HealthPipeline } from '@/lib/health-engine/orchestrator/health-pipeline';
 import { BaselineEngine } from '@/lib/health-engine/core/baseline';
 import { AppleProvider } from '@/lib/health-engine/providers/apple';
@@ -28,6 +39,11 @@ export function DashboardView() {
   const [mounted, setMounted] = React.useState(false);
   const [explainMetric, setExplainMetric] = React.useState<string | null>(null);
   const [isManualInputOpen, setIsManualInputOpen] = React.useState(false);
+
+  // Digital Twin Dashboard 3D viewer state
+  const [isTwinModalOpen, setIsTwinModalOpen] = React.useState(false);
+  const [dashboardTwinLayer, setDashboardTwinLayer] = React.useState('Cardiovascular');
+  const [dashboardOrgan, setDashboardOrgan] = React.useState<string | null>(null);
 
   const {
     steps, setSteps,
@@ -378,11 +394,8 @@ export function DashboardView() {
       {/* Main Glassmorphic Panel Wrapper */}
       <div className="relative w-full rounded-[40px] border border-white/5 overflow-hidden z-10 bg-[#09090b]/80 backdrop-blur-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
 
-        {/* Subtle Background Image (Clean without text) */}
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-22 pointer-events-none z-0"
-          style={{ backgroundImage: "url('/dashboard-bg-clean.png')" }}
-        />
+        {/* Subtle Ambient Background */}
+        <div className="absolute inset-0 bg-[#09090b]/80 backdrop-blur-3xl pointer-events-none z-0" />
 
         {/* Ambient Gradient Highlights */}
         <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-0" />
@@ -588,9 +601,9 @@ export function DashboardView() {
             </div>
           </div>
 
-          {/* --- PHASE 2 INTELLIGENCE HEADER WIDGETS --- */}
+          {/* --- AURA MORNING BRIEFING & SUMMARY HEADER WIDGETS --- */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-            {/* 1. AI Morning Brief Widget Banner */}
+            {/* 1. AI Morning Brief Widget Banner (Adjusted original size) */}
             <div className="md:col-span-2 relative rounded-[32px] overflow-hidden bg-black/45 backdrop-blur-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-white/5 hover:border-white/10 transition-all duration-500 w-full group shadow-2xl">
               <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-white/5 via-transparent to-transparent pointer-events-none group-hover:from-brand/15 transition-all duration-500" />
               <div className="space-y-3 text-left max-w-xl relative z-10">
@@ -616,27 +629,9 @@ export function DashboardView() {
             </div>
 
             {/* 2. Burnout Risk & Medical Summary Column */}
-            <div className="flex flex-col gap-4">
-              {/* Digital Twin Gateway Card */}
-              <a
-                href="/twin"
-                className="bg-black/45 backdrop-blur-2xl border border-[#00f0ff]/20 hover:border-[#00f0ff]/50 rounded-[28px] p-4 flex items-center justify-between transition-all duration-500 cursor-pointer shadow-lg group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#0a84ff]/10 border border-[#0a84ff]/20 flex items-center justify-center text-[#00f0ff] group-hover:scale-105 transition-transform">
-                    <ActivitySquare className="w-5 h-5" />
-                  </div>
-                  <div className="text-left">
-                    <h4 className="text-[9px] font-black uppercase tracking-wider text-[#00f0ff]">Digital Twin Telemetry</h4>
-                    <p className="text-sm font-extrabold text-white">Interactive 3D Body</p>
-                    <span className="text-[9px] text-neutral-300 font-medium">Real-time biological model</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-[#00f0ff] group-hover:translate-x-1 transition-all" />
-              </a>
-
+            <div className="flex flex-col justify-between gap-3">
               {/* Burnout Risk Dial */}
-              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-center gap-4 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg">
+              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-center gap-4 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg flex-1">
                 <div className="relative w-12 h-12 shrink-0">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                     <path
@@ -665,7 +660,7 @@ export function DashboardView() {
               </div>
 
               {/* Recent Medical Report */}
-              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-start gap-3 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg">
+              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-start gap-3 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg flex-1">
                 <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                   <Activity className="w-4 h-4 text-white" />
                 </div>
@@ -1285,6 +1280,119 @@ export function DashboardView() {
                 >
                   Discard
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* DIGITAL TWIN 3D INSPECTION MODAL */}
+        {isTwinModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#09090b] border border-[#00f0ff]/30 rounded-[36px] w-full max-w-4xl p-6 relative shadow-2xl overflow-hidden flex flex-col gap-5 max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#00f0ff]/10 border border-[#00f0ff]/30 flex items-center justify-center text-[#00f0ff]">
+                    <ActivitySquare className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white tracking-tight">Interactive 3D Digital Twin</h3>
+                    <p className="text-xs text-neutral-400">Live biological simulation & subsystem telemetry</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/twin"
+                    onClick={() => setIsTwinModalOpen(false)}
+                    className="px-4 py-2 bg-[#00f0ff] text-black font-extrabold text-xs rounded-xl uppercase tracking-wider hover:bg-[#00f0ff]/90 transition-all cursor-pointer"
+                  >
+                    Open Workspace
+                  </Link>
+                  <button
+                    onClick={() => setIsTwinModalOpen(false)}
+                    className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-[420px]">
+                {/* Left Layer Controls */}
+                <div className="md:col-span-4 space-y-3">
+                  <span className="text-[9px] font-black uppercase text-neutral-400 tracking-wider">Subsystem Layers</span>
+                  <div className="space-y-2">
+                    {[
+                      { id: 'Cardiovascular', label: 'Cardiovascular System', desc: `${heartRate || 64} BPM • HRV ${hrv || 58}ms` },
+                      { id: 'Nervous System', label: 'Nervous System', desc: `Stress index: ${stressLevel || 3}/10` },
+                      { id: 'Muscular', label: 'Muscular System', desc: 'Skeletal muscle mass active' },
+                      { id: 'Skeletal', label: 'Skeletal Frame', desc: 'Bone mineral density baseline' },
+                    ].map((layer) => (
+                      <button
+                        key={layer.id}
+                        onClick={() => setDashboardTwinLayer(layer.id)}
+                        className={`w-full p-3 rounded-2xl border text-left cursor-pointer transition-all ${dashboardTwinLayer === layer.id
+                            ? 'border-[#00f0ff] bg-[#00f0ff]/10 text-white shadow-[0_0_12px_rgba(0,240,255,0.2)]'
+                            : 'border-white/5 bg-black/40 text-neutral-400 hover:border-white/20 hover:text-white'
+                          }`}
+                      >
+                        <div className="text-xs font-extrabold">{layer.label}</div>
+                        <div className="text-[9px] text-neutral-400 mt-0.5">{layer.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="pt-3 border-t border-white/5">
+                    <span className="text-[9px] font-black uppercase text-neutral-500 tracking-wider block mb-2">Focus Organ</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Brain', 'Heart', 'Lungs', 'Stomach'].map((organ) => (
+                        <button
+                          key={organ}
+                          onClick={() => setDashboardOrgan(organ)}
+                          className={`py-2 px-2.5 rounded-xl border text-[9px] font-extrabold uppercase tracking-wider text-center cursor-pointer transition-all ${dashboardOrgan === organ
+                              ? 'border-white bg-white text-black font-black'
+                              : 'border-white/5 bg-black/30 text-neutral-400 hover:text-white'
+                            }`}
+                        >
+                          {organ}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Center 3D Viewer */}
+                <div className="md:col-span-8 bg-black/70 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[400px]">
+                  <div className="absolute inset-0 z-10 flex items-center justify-center p-2">
+                    <BodyTwinModel
+                      layer={dashboardTwinLayer}
+                      recoveryScore={82}
+                      stressLevel={stressLevel || 3}
+                      selectedOrgan={dashboardOrgan}
+                      onSelectOrgan={(organ) => setDashboardOrgan(organ)}
+                      heartRate={heartRate || 64}
+                    />
+                  </div>
+
+                  <div className="p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+                    <span className="text-xs font-extrabold text-[#00f0ff] uppercase tracking-wider">
+                      {dashboardTwinLayer} • Holographic Model
+                    </span>
+                    {dashboardOrgan && (
+                      <button
+                        onClick={() => setDashboardOrgan(null)}
+                        className="pointer-events-auto text-[9px] font-black text-white bg-white/10 px-2 py-1 rounded-lg hover:bg-white/20 cursor-pointer"
+                      >
+                        Reset Focus
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>

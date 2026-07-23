@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Heart, Shield, Calendar, Users, ChevronRight,
   ArrowRight, Globe, Check, Activity, Zap,
@@ -11,8 +12,14 @@ import {
   Plus, CircleDot, Database, FileText, Smartphone, AlertCircle, Sliders,
   Apple, Utensils, Droplets
 } from 'lucide-react';
-import { toast } from 'sonner';
-import HealthOrb3D from '@/components/shared/health-orb-3d';
+const HealthOrb3D = dynamic(() => import('@/components/shared/health-orb-3d'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] md:h-[600px] relative flex items-center justify-center bg-transparent">
+      <div className="h-48 w-48 rounded-full bg-cyan-500/10 animate-pulse blur-xl" />
+    </div>
+  ),
+});
 
 
 export default function HomePage() {
