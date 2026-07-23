@@ -38,21 +38,41 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Get session state instantly using the local cookie (0ms latency, no blocking network requests)
-  const hasSession = request.cookies.has('gama_session');
+  // Check if session cookie exists
+  const hasSessionCookie = request.cookies.has('gama_session');
 
-  const isDashboardRoute = ['/dashboard', '/twin', '/insights', '/schedule', '/vault', '/meals', '/settings'].some(
-    (path) => pathname === path || pathname.startsWith(path + '/')
-  );
+  const isDashboardRoute = [
+    '/dashboard',
+    '/insights',
+    '/schedule',
+    '/vault',
+    '/meals',
+    '/settings',
+    '/live-order',
+  ].some((path) => pathname === path || pathname.startsWith(path + '/'));
 
-  if (isDashboardRoute && !hasSession) {
+  const isAuthRoute = [
+    '/login',
+    '/register',
+    '/forgot',
+    '/forgot-password',
+    '/auth',
+  ].some((path) => pathname === path || pathname.startsWith(path + '/'));
+
+  // Allow landing page and public assets directly
+  if (pathname === '/') {
+    return supabaseResponse;
+  }
+
+  // Redirect unauthenticated user trying to access dashboard routes to /login
+  if (isDashboardRoute && !hasSessionCookie) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  // Redirect to dashboard if logged in and hitting auth pages or the root page
-  if ((pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/auth') && hasSession) {
+  // Redirect authenticated user trying to access auth pages to /dashboard
+  if (isAuthRoute && hasSessionCookie) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);

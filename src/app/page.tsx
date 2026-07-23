@@ -4,14 +4,22 @@ import * as React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Heart, Shield, Calendar, Users, ChevronRight,
   ArrowRight, Globe, Check, Activity, Zap,
   Moon, Flame, Brain, BookOpen, Compass, Upload,
-  Plus, CircleDot, Database, FileText, Smartphone, AlertCircle, Sliders
+  Plus, CircleDot, Database, FileText, Smartphone, AlertCircle, Sliders,
+  Apple, Utensils, Droplets
 } from 'lucide-react';
-import { toast } from 'sonner';
-import HealthOrb3D from '@/components/shared/health-orb-3d';
+const HealthOrb3D = dynamic(() => import('@/components/shared/health-orb-3d'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] md:h-[600px] relative flex items-center justify-center bg-transparent">
+      <div className="h-48 w-48 rounded-full bg-cyan-500/10 animate-pulse blur-xl" />
+    </div>
+  ),
+});
 
 
 export default function HomePage() {
@@ -144,7 +152,7 @@ export default function HomePage() {
             whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
             className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer"
           >
-            <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
+            <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
           </motion.div>
           <span className="font-extrabold text-xl tracking-wider text-white">GAMA</span>
         </div>
@@ -201,122 +209,149 @@ export default function HomePage() {
         </div>
 
         {/* Hero Content Container with Opposite Parallax */}
-        <div className="max-w-4xl mx-auto px-6 w-full text-center relative z-20 mt-16 flex flex-col items-center">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: {
-                opacity: 1,
-                transition: {
-                  staggerChildren: 0.2,
-                  delayChildren: 0.3
+        <div className="max-w-4xl mx-auto px-6 w-full relative z-20 mt-16">
+          <div className="flex flex-col items-center text-center space-y-6">
+
+            {/* Headline and Actions */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.15,
+                    delayChildren: 0.2
+                  }
                 }
-              }
-            }}
-            style={{
-              x: mousePos.x * -0.2,
-              y: mousePos.y * -0.2
-            }}
-            className="flex flex-col items-center space-y-10"
-          >
-            {/* Ambient Label Badge */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 15 },
-                visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
               }}
-              className="inline-flex items-center gap-2 px-5 py-2 bg-white/5 border border-white/10 rounded-full backdrop-blur-md shadow-2xl shadow-black/40"
+              style={{
+                x: mousePos.x * -0.2,
+                y: mousePos.y * -0.2
+              }}
+              className="flex flex-col items-center space-y-6 text-center"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-white text-black font-semibold animate-ping" />
-              <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">GAMA HEALTH</span>
-            </motion.div>
-
-            {/* Apple-Level Headline */}
-            <h1 className="text-5xl md:text-8xl tracking-tight leading-[1.08] drop-shadow-2xl flex flex-col items-center">
-              <motion.span
+              {/* Ambient Label Badge */}
+              <motion.div
                 variants={{
-                  hidden: { opacity: 0, y: 35 },
-                  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 80, damping: 18 } }
+                  hidden: { opacity: 0, y: 15 },
+                  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
                 }}
-                className="font-light text-white font-sans"
+                className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#0a84ff]/10 border border-[#0a84ff]/30 rounded-full backdrop-blur-md shadow-lg"
               >
-                Your Autonomous
-              </motion.span>
-              <motion.span
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00f0ff] text-black font-semibold animate-pulse" />
+                <span className="text-[9px] font-black text-[#00f0ff] uppercase tracking-[0.2em]">AURA HEALTH OS v6.0</span>
+              </motion.div>
+
+              {/* Apple-Level Headline */}
+              <h1 className="text-4xl md:text-7xl font-black tracking-tight leading-[1.1] text-white flex flex-col items-center">
+                <motion.span
+                  variants={{
+                    hidden: { opacity: 0, y: 35 },
+                    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 80, damping: 18 } }
+                  }}
+                  className="font-light text-white font-sans"
+                >
+                  Your Autonomous
+                </motion.span>
+                <motion.span
+                  variants={{
+                    hidden: { opacity: 0, y: 35 },
+                    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 80, damping: 18 } }
+                  }}
+                  className="font-black bg-gradient-to-r from-[#00f0ff] via-[#0a84ff] to-[#3b82f6] bg-clip-text text-transparent mt-1 block"
+                >
+                  Bio-Intelligence
+                </motion.span>
+              </h1>
+
+              {/* Subtext Description */}
+              <motion.p
                 variants={{
-                  hidden: { opacity: 0, y: 35 },
-                  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 80, damping: 18 } }
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
                 }}
-                className="font-serif italic font-normal bg-gradient-to-r from-white via-neutral-200 to-neutral-500 bg-clip-text text-transparent mt-2 block"
+                className="text-neutral-400 max-w-[620px] text-sm md:text-base font-medium leading-[1.6]"
               >
-                Bio-Intelligence
-              </motion.span>
-            </h1>
+                Connect your wearables, analyze biometrics in real-time, and let AURA optimize your health, schedule, nutrition, and recovery — automatically.
+              </motion.p>
 
-            {/* Subtext Description (Max width 620px, line height 1.6) */}
-            <motion.p
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
-              }}
-              className="text-neutral-400 max-w-[620px] text-sm md:text-base font-medium leading-[1.6] text-center"
-            >
-              GAMA is an AI-native Health Operating System that continuously understands your body, predicts your needs, and optimizes your nutrition, recovery, schedule, sleep, workouts, and overall performance in real time.
-            </motion.p>
-
-            {/* Premium CTA Buttons with Spacing around 24px */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
-              }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4"
-            >
-              <Link
-                href="/login"
-                className="px-8 py-3.5 bg-white hover:bg-neutral-100 text-black font-semibold rounded-full text-xs shadow-[0_8px_30px_rgb(255,255,255,0.15)] hover:shadow-[0_8px_30px_rgb(255,255,255,0.3)] hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 cursor-pointer"
+              {/* Premium CTA Buttons */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+                }}
+                className="flex flex-row items-center gap-4 pt-2 justify-center"
               >
-                <span>Initialize GAMA</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+                <Link
+                  href="/login"
+                  className="px-6 py-3 bg-white hover:bg-neutral-100 text-black font-semibold rounded-full text-xs shadow-[0_8px_30px_rgba(10,132,255,0.25)] hover:shadow-[0_8px_30px_rgba(0,240,255,0.4)] hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 cursor-pointer"
+                >
+                  <span>Initialize GAMA</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
 
-              <a
-                href="#why-gama"
-                className="px-8 py-3.5 bg-black/45 hover:bg-black/60 border border-white/10 text-neutral-300 hover:text-white font-semibold rounded-full text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer backdrop-blur-md hover:border-white/20/60"
+                <a
+                  href="#why-gama"
+                  className="px-6 py-3 bg-transparent hover:bg-white/5 border border-[#0a84ff] text-white hover:text-white font-semibold rounded-full text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer backdrop-blur-md"
+                >
+                  <span>Explore Ecosystem</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </a>
+              </motion.div>
+
+              {/* Feature Row with Icons */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+                }}
+                className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 pt-6 border-t border-white/5 w-full max-w-2xl text-[10px] text-neutral-400 font-bold uppercase tracking-wider"
               >
-                <span>Explore Ecosystem</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </a>
+                <div className="flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-[#00f0ff]" />
+                  <span>AI Health Coach</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-[#00f0ff]" />
+                  <span>Predictive Insights</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-[#00f0ff]" />
+                  <span>Real-time Optimization</span>
+                </div>
+              </motion.div>
+
+              {/* Muted Brand Logos */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 0.4, transition: { delay: 0.8 } }
+                }}
+                className="pt-10 flex flex-col items-center gap-2"
+              >
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-neutral-500">TRUSTED BY THOUSANDS</span>
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-black text-white/60 tracking-wider">
+                  <span>FORBES</span>
+                  <span>TECHCRUNCH</span>
+                  <span>THE VERGE</span>
+                  <span>WIRED</span>
+                  <span>BUSINESS INSIDER</span>
+                </div>
+              </motion.div>
             </motion.div>
 
-            {/* Feature Row with Icons */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
-              }}
-              className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-8 border-t border-white/5 w-full max-w-2xl text-xs text-neutral-400 font-medium"
-            >
-              <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-white" />
-                <span>AI Health Coach</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-white" />
-                <span>Digital Twin</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-white" />
-                <span>Predictive Insights</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-white" />
-                <span>Real-time Optimization</span>
-              </div>
-            </motion.div>
-          </motion.div>
+          </div>
+        </div>
+
+        {/* Scroll to explore bottom indicator */}
+        <div className="absolute bottom-6 right-6 z-20 flex flex-col items-center gap-1.5">
+          <span className="text-[8px] font-black uppercase tracking-[0.25em] text-neutral-500">Scroll to explore</span>
+          <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 animate-bounce">
+            <ArrowRight className="w-3.5 h-3.5 transform rotate-90" />
+          </div>
         </div>
       </section>
 
@@ -417,7 +452,7 @@ export default function HomePage() {
                 <span className="text-xs font-bold text-[#0a84ff] uppercase tracking-wider">Metabolic Health Score</span>
                 <span className="text-xs text-white bg-white/5 px-2 py-0.5 rounded-md font-mono">+4.2% this week</span>
               </div>
- 
+
               <div className="my-6 flex items-baseline gap-4">
                 <span className="text-5xl md:text-7xl font-extrabold text-white">96</span>
                 <div>
@@ -425,7 +460,7 @@ export default function HomePage() {
                   <span className="text-xs text-white/50">Optimum endocrine and autonomic balance</span>
                 </div>
               </div>
- 
+
               {/* Mini Weekly Sparkline graph in SVG */}
               <div className="w-full h-24 mt-4">
                 <svg className="w-full h-full" viewBox="0 0 400 100" preserveAspectRatio="none">
@@ -449,7 +484,7 @@ export default function HomePage() {
                 </svg>
               </div>
             </div>
- 
+
             {/* Quick Metrics Column */}
             <div className="md:col-span-4 grid grid-cols-1 gap-6">
               {/* Sleep Score Ring */}
@@ -467,7 +502,7 @@ export default function HomePage() {
                   <span className="absolute text-xs font-bold text-white">92</span>
                 </div>
               </div>
- 
+
               {/* Stress Level Tracker */}
               <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl flex justify-between items-center shadow-2xl">
                 <div className="space-y-1">
@@ -552,11 +587,11 @@ export default function HomePage() {
           ))}
         </div>
       </section>
- 
+
       {/* AI FOOD SCANNER */}
       <section id="food-scanner" className="py-24 bg-[#070709]/50 border-t border-white/10 backdrop-blur-xl relative z-10 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
- 
+
           <div className="lg:col-span-5 space-y-6 text-left">
             <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">AI Food Scanner</span>
             <h2 className="text-5xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
@@ -580,7 +615,7 @@ export default function HomePage() {
               </button>
             </div>
           </div>
- 
+
           <div className="lg:col-span-7 flex justify-center relative">
             {/* Outer Interactive Mockup Frame */}
             <div className="w-[320px] h-[580px] bg-[#070709] rounded-[48px] border-8 border-neutral-800 shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden relative flex flex-col justify-between text-white font-sans">
@@ -874,31 +909,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SMART HEALTH REPORTS & DIGITAL TWIN */}
+      {/* SMART HEALTH REPORTS */}
       <section className="py-24 max-w-7xl mx-auto px-6 relative z-10 border-t border-white/10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          <div className="lg:col-span-6 space-y-4">
-            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-8 rounded-[32px] space-y-6 shadow-2xl">
-              <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">Digital Twin Telemetry</span>
-              <div className="w-full h-44 border border-white/10 bg-white/5 rounded-2xl flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent" />
-                <div className="w-20 h-20 rounded-full border border-white/10 animate-pulse flex items-center justify-center">
-                  <span className="text-xs text-white font-mono">Twin Synced</span>
-                </div>
-              </div>
-              <p className="text-xs text-white/60 leading-relaxed">
-                Your digital twin maps real-time dynamic biomarkers to simulate recovery outcomes under various physical and cognitive stress events.
-              </p>
-            </div>
-          </div>
-
-          <div className="lg:col-span-6 space-y-6 text-left">
+          <div className="lg:col-span-12 space-y-6 text-left max-w-2xl mx-auto text-center">
             <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest block">Clinical Reports</span>
             <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
               Smart Clinical Health Summaries.
             </h2>
             <p className="text-sm text-white/60 leading-relaxed">
-              Upload blood biomarker profiles or lipid panels. Our clinical parser structures key metrics, tracking historical changes across your digital twin.
+              Upload blood biomarker profiles or lipid panels. Our clinical parser structures key metrics, tracking historical changes seamlessly.
             </p>
             <ul className="space-y-2 text-xs text-white/60">
               <li className="flex items-center gap-2">✓ Automated PDF & Clinical blood report parsing</li>
@@ -956,7 +976,7 @@ export default function HomePage() {
               {/* Pulsing Core */}
               <circle cx="100" cy="100" r="22" fill="#070709" stroke="#ffffff" strokeWidth="2.5" />
               <circle cx="100" cy="100" r="30" fill="transparent" stroke="#0a84ff" strokeWidth="1" className="animate-ping origin-center" style={{ transformOrigin: '100px 100px' }} />
-              <image href="/logo.jpg" x="79" y="79" width="42" height="42" clipPath="url(#logo-clip)" />
+              <image href="/logo.jpg?v=2" x="79" y="79" width="42" height="42" clipPath="url(#logo-clip)" />
 
               {/* Surrounding Nodes */}
               {/* Top Node (Apple Health) */}
@@ -1120,7 +1140,7 @@ export default function HomePage() {
           <div className="space-y-4 col-span-1 md:col-span-2">
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center">
-                <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
+                <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
               </div>
               <span className="font-extrabold text-2xl tracking-wider text-white">GAMA</span>
             </div>
@@ -1133,7 +1153,6 @@ export default function HomePage() {
             <h5 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Platform</h5>
             <ul className="space-y-2 text-xs text-white/60">
               <li><Link href="/dashboard" className="hover:text-white transition-colors">Overview</Link></li>
-              <li><Link href="/twin" className="hover:text-white transition-colors">Digital Twin</Link></li>
               <li><Link href="/insights" className="hover:text-white transition-colors">Insights</Link></li>
               <li><Link href="/vault" className="hover:text-white transition-colors">Secure Vault</Link></li>
             </ul>

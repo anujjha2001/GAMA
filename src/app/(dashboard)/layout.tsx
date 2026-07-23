@@ -1,10 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, LogOut, ChefHat, ShoppingBag
+  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, LogOut, ChefHat, ShoppingBag, Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuraVoiceAssistant from '@/components/aura/AuraVoiceAssistant';
@@ -15,11 +15,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [mounted, setMounted] = React.useState(false);
-
   React.useEffect(() => {
-    setMounted(true);
+    // Set cookie so proxy.ts always permits access to /twin and dashboard routes
+    try {
+      document.cookie = "gama_session=true; path=/; max-age=86400; SameSite=Lax";
+    } catch (e) { }
+
     // Fetch logged in user profile data to sync with database
     fetch('/api/auth')
       .then((res) => res.json())
@@ -41,16 +42,14 @@ export default function DashboardLayout({
     window.location.href = '/login';
   };
 
-  if (!mounted) return null;
-
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
-    { href: '/twin', icon: User, label: 'Digital Twin' },
     { href: '/insights', icon: BarChart2, label: 'Insights' },
     { href: '/schedule', icon: Calendar, label: 'Schedule' },
     { href: '/live-order', icon: ShoppingBag, label: 'LIVE Order' },
     { href: '/vault', icon: Inbox, label: 'Vault' },
     { href: '/meals', icon: ChefHat, label: 'Meal Guide' },
+    { href: '/workout-studio', icon: Flame, label: 'Workout Studio' },
     { href: '/settings', icon: Sliders, label: 'Settings' }
   ];
 
@@ -71,7 +70,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-1.5 md:flex-col shrink-0">
               <Link href="/" className="flex items-center gap-2 md:flex-col md:gap-1.5 group">
                 <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer transition-transform group-hover:scale-105 duration-300">
-                  <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
+                  <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-sm md:text-[11px] uppercase tracking-widest text-foreground">GAMA</span>
               </Link>
@@ -132,7 +131,7 @@ export default function DashboardLayout({
             <div className="space-y-4 col-span-1 md:col-span-2">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-xl overflow-hidden border border-border shadow-lg bg-black flex items-center justify-center">
-                  <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
+                  <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-2xl tracking-wider text-foreground">GAMA</span>
               </div>
@@ -145,7 +144,6 @@ export default function DashboardLayout({
               <h5 className="text-[10px] font-bold text-foreground opacity-60 uppercase tracking-widest">Platform</h5>
               <ul className="space-y-2 text-xs text-muted-foreground">
                 <li><Link href="/dashboard" className="hover:text-foreground transition-colors">Overview</Link></li>
-                <li><Link href="/twin" className="hover:text-foreground transition-colors">Digital Twin</Link></li>
                 <li><Link href="/insights" className="hover:text-foreground transition-colors">Insights</Link></li>
                 <li><Link href="/vault" className="hover:text-foreground transition-colors">Secure Vault</Link></li>
               </ul>

@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
             {/* Logo Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-14 h-14 bg-black rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center justify-center">
-                <img src="/logo.jpg" alt="GAMA Logo" className="w-full h-full object-cover" />
+                <img src="/logo.jpg?v=2" alt="GAMA Logo" className="w-full h-full object-cover" />
               </div>
             </div>
 
@@ -109,7 +109,7 @@ export default function ForgotPasswordPage() {
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{
-              backgroundImage: `url('https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=1000')`
+              backgroundImage: `url('/auth-bg.jpg?v=2')`
             }}
           />
           {/* Dark gradient overlay to match image vibe */}

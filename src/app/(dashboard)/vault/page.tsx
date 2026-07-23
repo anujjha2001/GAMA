@@ -98,7 +98,11 @@ export default function VaultPage() {
     }
   }, [documents]);
 
-  if (!mounted) return null;
+  if (!mounted) return (
+    <div className="min-h-screen bg-[#070709] flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-white/10 border-t-orange-500 rounded-full animate-spin" />
+    </div>
+  );
 
   const activeDoc = documents.find(d => d.id === activeDocId) || documents[0];
 
@@ -633,7 +637,7 @@ export default function VaultPage() {
                                   contentStyle={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
                                   labelStyle={{ color: '#fff', fontSize: '10px' }}
                                 />
-                                <Line type="monotone" dataKey="Wellness Score" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} />
+                                <Line type="monotone" dataKey="Wellness Score" stroke="#00f0ff" strokeWidth={2} dot={{ r: 3 }} />
                               </LineChart>
                             </ResponsiveContainer>
                           ) : (

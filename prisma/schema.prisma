@@ -36,6 +36,7 @@ model UserProfile {
   symptoms      Symptom[]
   achievements  UserAchievement[]
   workouts      Workout[]
+  workoutSessions WorkoutSession[]
   preferences   UserPreference[]
   baselines     UserBaseline[]
   predictions   Prediction[]
@@ -186,6 +187,23 @@ model Workout {
   profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
+model WorkoutSession {
+  id               String         @id @default(uuid())
+  profileId        String
+  exerciseName     String
+  difficulty       String         // BEGINNER, INTERMEDIATE, ADVANCED
+  equipment        String[]
+  durationSec      Int
+  caloriesBurned   Int
+  repCount         Int
+  avgAccuracy      Float
+  muscleLoad       Json           // Map of loaded muscle group scores
+  safetyFlags      String[]
+  jointAngleLogs   Json           // High/Low angle ranges per joint
+  recordedAt       DateTime       @default(now())
+  profile          UserProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
 model SleepLog {
   id            String      @id @default(uuid())
   profileId     String
@@ -258,6 +276,14 @@ model Food {
   iron      Float?
   vitaminC  Float?
   vitaminD  Float?
+  magnesium    Float?
+  vitaminA     Float?
+  vitaminB12   Float?
+  glycemicIndex Float?
+  glycemicLoad  Float?
+  apiSource    String?
+  confidence   Float?
+  cachedAt     DateTime?
 
   isVegetarian Boolean @default(false)
   isVegan      Boolean @default(false)

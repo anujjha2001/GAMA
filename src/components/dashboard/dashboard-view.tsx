@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Moon, Heart, Search, Edit2, Plus, Calendar, ChevronRight,
@@ -14,6 +16,7 @@ import {
 import { toast } from 'sonner';
 
 import { useHealthStore } from '@/lib/store';
+
 import { HealthPipeline } from '@/lib/health-engine/orchestrator/health-pipeline';
 import { BaselineEngine } from '@/lib/health-engine/core/baseline';
 import { AppleProvider } from '@/lib/health-engine/providers/apple';
@@ -28,6 +31,7 @@ export function DashboardView() {
   const [mounted, setMounted] = React.useState(false);
   const [explainMetric, setExplainMetric] = React.useState<string | null>(null);
   const [isManualInputOpen, setIsManualInputOpen] = React.useState(false);
+
 
   const {
     steps, setSteps,
@@ -378,11 +382,18 @@ export function DashboardView() {
       {/* Main Glassmorphic Panel Wrapper */}
       <div className="relative w-full rounded-[40px] border border-white/5 overflow-hidden z-10 bg-[#09090b]/80 backdrop-blur-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
 
-        {/* Subtle Background Image (Clean without text) */}
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-22 pointer-events-none z-0"
-          style={{ backgroundImage: "url('/dashboard-bg-clean.png')" }}
+        {/* Dashboard Hero Background - HD Motion Vision (No blur) */}
+        <motion.div 
+          initial={{ scale: 1 }}
+          animate={{ scale: 1.05 }}
+          transition={{ duration: 20, repeat: Infinity, repeatType: 'reverse', ease: "linear" }}
+          className="absolute inset-0 bg-cover bg-center opacity-85 pointer-events-none z-0" 
+          style={{ backgroundImage: 'url("/dashboard-hero-clean.jpg")' }}
         />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#09090b] via-[#09090b]/85 to-transparent pointer-events-none z-0" />
+
+        {/* Subtle Ambient Background */}
+        <div className="absolute inset-0 bg-[#09090b]/40 pointer-events-none z-0" />
 
         {/* Ambient Gradient Highlights */}
         <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-0" />
@@ -449,7 +460,7 @@ export function DashboardView() {
                     }}
                     className="p-1 bg-white text-black font-semibold hover:bg-neutral-200 rounded-xl cursor-pointer transition-all w-8 h-8 flex items-center justify-center overflow-hidden border border-white/10 hover:scale-105"
                   >
-                    <img src="/logo.jpg" alt="Send" className="w-full h-full object-cover rounded-xl" />
+                    <img src="/logo.jpg?v=2" alt="Send" className="w-full h-full object-cover rounded-xl" />
                   </button>
                 </div>
               </div>
@@ -588,9 +599,9 @@ export function DashboardView() {
             </div>
           </div>
 
-          {/* --- PHASE 2 INTELLIGENCE HEADER WIDGETS --- */}
+          {/* --- AURA MORNING BRIEFING & SUMMARY HEADER WIDGETS --- */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-            {/* 1. AI Morning Brief Widget Banner */}
+            {/* 1. AI Morning Brief Widget Banner (Adjusted original size) */}
             <div className="md:col-span-2 relative rounded-[32px] overflow-hidden bg-black/45 backdrop-blur-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-white/5 hover:border-white/10 transition-all duration-500 w-full group shadow-2xl">
               <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-white/5 via-transparent to-transparent pointer-events-none group-hover:from-brand/15 transition-all duration-500" />
               <div className="space-y-3 text-left max-w-xl relative z-10">
@@ -616,9 +627,9 @@ export function DashboardView() {
             </div>
 
             {/* 2. Burnout Risk & Medical Summary Column */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col justify-between gap-3">
               {/* Burnout Risk Dial */}
-              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-center gap-4 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg">
+              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-center gap-4 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg flex-1">
                 <div className="relative w-12 h-12 shrink-0">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                     <path
@@ -647,7 +658,7 @@ export function DashboardView() {
               </div>
 
               {/* Recent Medical Report */}
-              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-start gap-3 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg">
+              <div className="bg-black/45 backdrop-blur-2xl border border-white/5 rounded-[28px] p-4 flex items-start gap-3 hover:border-white/10 transition-all duration-500 cursor-pointer shadow-lg flex-1">
                 <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                   <Activity className="w-4 h-4 text-white" />
                 </div>
@@ -1271,6 +1282,7 @@ export function DashboardView() {
             </motion.div>
           </div>
         )}
+
       </AnimatePresence>
     </div>
   );

@@ -23,7 +23,11 @@ export default function SettingsPage() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted) return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-white/10 border-t-orange-500 rounded-full animate-spin" />
+    </div>
+  );
 
   const handleAddTag = () => {
     if (!newTagVal.trim()) return;

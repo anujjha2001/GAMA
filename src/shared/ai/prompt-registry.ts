@@ -19,7 +19,7 @@ Schema:
   "message": "Spoken text response (under 3 sentences).",
   "caption": "Subtitles caption.",
   "tool": {
-    "name": "meal_guide" | "digital_twin" | "food_scanner" | "health_vault" | "insights" | "none",
+    "name": "meal_guide" | "food_scanner" | "health_vault" | "insights" | "none",
     "actionType": "NAVIGATE" | "TRIGGER_SCANNER" | "NONE",
     "parameter": "route or target highlights"
   }
