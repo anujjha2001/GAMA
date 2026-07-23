@@ -333,7 +333,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
             {/* Logo Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-20 h-20 bg-black rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center justify-center">
-                <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
+                <img src="/logo.webp" alt="GAMA" className="w-full h-full object-cover" />
               </div>
             </div>
 

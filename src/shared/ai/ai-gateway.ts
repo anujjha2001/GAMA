@@ -1,9 +1,10 @@
 import { Groq } from 'groq-sdk';
 import { AI_CONFIG } from '@/config/ai.config';
 import { LLMResponse } from './sdk/provider';
+import { PoolsideProvider } from '@/lib/ai/providers/poolside-provider';
 
 export class AIGateway {
-  private static providersOrder = ['groq', 'gemini', 'openai', 'claude', 'local'];
+  private static providersOrder = ['poolside', 'groq', 'gemini', 'openai', 'claude', 'local'];
 
   static async generateText(messages: any[], activeModelOverride?: string): Promise<LLMResponse> {
     let lastError: any = null;
@@ -14,6 +15,20 @@ export class AIGateway {
 
       try {
         console.log(`[AIGateway] Trying provider: ${providerKey}`);
+
+        if (providerKey === 'poolside') {
+          const apiKey = process.env.POOLSIDE_API_KEY;
+          if (!apiKey) throw new Error('Poolside key not configured');
+
+          const response = await PoolsideProvider.generateText(messages);
+          return {
+            content: response.content,
+            usage: {
+              promptTokens: response.usage?.promptTokens || 0,
+              completionTokens: response.usage?.completionTokens || 0
+            }
+          };
+        }
 
         if (providerKey === 'groq') {
           const apiKey = process.env.GROQ_API_KEY;

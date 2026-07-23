@@ -22,7 +22,7 @@ export function AuraMessage({ message }: AuraMessageProps) {
     <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
         <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center shrink-0 border border-white/10 overflow-hidden">
-          <img src="/logo.jpg" alt="AURA" className="w-full h-full object-cover" />
+          <img src="/logo.webp" alt="AURA" className="w-full h-full object-cover" />
         </div>
       )}
       

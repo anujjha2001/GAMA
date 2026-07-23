@@ -44,7 +44,6 @@ export default function DashboardLayout({
 
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
-    { href: '/twin', icon: User, label: 'Digital Twin' },
     { href: '/insights', icon: BarChart2, label: 'Insights' },
     { href: '/schedule', icon: Calendar, label: 'Schedule' },
     { href: '/live-order', icon: ShoppingBag, label: 'LIVE Order' },
@@ -70,7 +69,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-1.5 md:flex-col shrink-0">
               <Link href="/" className="flex items-center gap-2 md:flex-col md:gap-1.5 group">
                 <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer transition-transform group-hover:scale-105 duration-300">
-                  <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
+                  <img src="/logo.webp" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-sm md:text-[11px] uppercase tracking-widest text-foreground">GAMA</span>
               </Link>
@@ -131,7 +130,7 @@ export default function DashboardLayout({
             <div className="space-y-4 col-span-1 md:col-span-2">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-xl overflow-hidden border border-border shadow-lg bg-black flex items-center justify-center">
-                  <img src="/logo.jpg" alt="GAMA" className="w-full h-full object-cover" />
+                  <img src="/logo.webp" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-2xl tracking-wider text-foreground">GAMA</span>
               </div>
@@ -144,7 +143,6 @@ export default function DashboardLayout({
               <h5 className="text-[10px] font-bold text-foreground opacity-60 uppercase tracking-widest">Platform</h5>
               <ul className="space-y-2 text-xs text-muted-foreground">
                 <li><Link href="/dashboard" className="hover:text-foreground transition-colors">Overview</Link></li>
-                <li><Link href="/twin" className="hover:text-foreground transition-colors">Digital Twin</Link></li>
                 <li><Link href="/insights" className="hover:text-foreground transition-colors">Insights</Link></li>
                 <li><Link href="/vault" className="hover:text-foreground transition-colors">Secure Vault</Link></li>
               </ul>

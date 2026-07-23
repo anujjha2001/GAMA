@@ -41,7 +41,7 @@ export function AuraInput({ input, setInput, handleSubmit, isLoading }: AuraInpu
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
             <>
-              <img src="/logo.jpg" alt="AURA Send" className="w-8 h-8 rounded-lg object-cover group-hover:scale-105 transition-transform" />
+              <img src="/logo.webp" alt="AURA Send" className="w-8 h-8 rounded-lg object-cover group-hover:scale-105 transition-transform" />
             </>
           )}
         </button>

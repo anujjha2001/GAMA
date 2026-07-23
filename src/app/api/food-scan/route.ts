@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { groqClient } from '@/lib/ai/client';
 import { FoodIntelligenceService } from '@/lib/services/FoodIntelligenceService';
 
 export async function POST(req: NextRequest) {
@@ -13,44 +12,9 @@ export async function POST(req: NextRequest) {
     // Strip base64 prefix if present
     const base64Image = image.replace(/^data:image\/\w+;base64,/, '');
 
-    // Call Groq Vision Model
-    const response = await groqClient.chat.completions.create({
-      model: 'llama-3.2-11b-vision-preview',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Analyze this image. You must be GAMA's production food detection engine.
-Identify if there is food in the image.
-1. Check if the image contains food. If it does not contain food (e.g. laptop, car, dog, bottle, medicine, human, tv, chair, landscape), confidence MUST be below 95% and isFood must be false.
-2. If food is present, detect every visible food item (e.g. "Rice", "Dal", "Paneer", "Salad"). Each food should be a separate string.
-Return a JSON object in this exact format:
-{
-  "isFood": boolean,
-  "confidence": number, // 0 to 100
-  "foods": string[]
-}`
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`
-              }
-            }
-          ]
-        }
-      ],
-      response_format: { type: 'json_object' }
-    });
-
-    const resultText = response.choices[0]?.message?.content;
-    if (!resultText) {
-      throw new Error('Empty response from vision model');
-    }
-
-    const analysis = JSON.parse(resultText);
+    // Call Unified AI Orchestrator
+    const { AIOrchestrator } = await import('@/lib/ai/orchestrator');
+    const analysis = await AIOrchestrator.scanFoodImage(base64Image);
 
     // Strict validation check
     if (!analysis.isFood || analysis.confidence < 95) {

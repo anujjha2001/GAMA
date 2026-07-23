@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
             {/* Logo Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-14 h-14 bg-black rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center justify-center">
-                <img src="/logo.jpg" alt="GAMA Logo" className="w-full h-full object-cover" />
+                <img src="/logo.webp" alt="GAMA Logo" className="w-full h-full object-cover" />
               </div>
             </div>
 
