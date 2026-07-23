@@ -4,13 +4,13 @@ import { deleteFromVault } from '@/lib/supabase/vault-storage';
 // Mock DOM classes for Node.js environment to satisfy pdf-parse runtime dependencies
 if (typeof globalThis !== 'undefined') {
   if (!(globalThis as any).DOMMatrix) {
-    (globalThis as any).DOMMatrix = class DOMMatrix {};
+    (globalThis as any).DOMMatrix = class DOMMatrix { };
   }
   if (!(globalThis as any).ImageData) {
-    (globalThis as any).ImageData = class ImageData {};
+    (globalThis as any).ImageData = class ImageData { };
   }
   if (!(globalThis as any).Path2D) {
-    (globalThis as any).Path2D = class Path2D {};
+    (globalThis as any).Path2D = class Path2D { };
   }
 }
 
@@ -79,7 +79,7 @@ export class VaultService {
    */
   static async analyzeDocument(userId: string, docId: string, docTitle: string, fileBuffer: Buffer, mimeType: string = 'application/pdf') {
     console.log(`[VaultService] Starting AI analysis pipeline for: ${docTitle} (${docId})`);
-    
+
     let extractedText = '';
 
     try {
@@ -90,7 +90,7 @@ export class VaultService {
           where: { id: docId },
           data: { status: 'scanning', processingStatus: 'EXTRACTING_TEXT' }
         });
-        
+
         let parsed: any;
         if (pdf && pdf.PDFParse) {
           console.log('[VaultService] Instantiating PDFParse class using Uint8Array...');
@@ -103,9 +103,9 @@ export class VaultService {
           }
           parsed = await pdfParser(fileBuffer);
         }
-        
+
         extractedText = parsed.text || '';
-        
+
         if (extractedText.trim().length < 50) {
           console.log(`[VaultService] PDF text content too short (${extractedText.trim().length} chars). Scanned PDF suspected.`);
           throw new Error('PDF has no extractable digital text layer (scanned PDF). Please upload an image format (PNG/JPEG) of this report to run optical character recognition (OCR).');
@@ -228,7 +228,7 @@ ${extractedText}
       });
 
       const reportDate = result.reportDate ? new Date(result.reportDate) : new Date();
-      
+
       const analysis = await prisma.medicalReportAnalysis.create({
         data: {
           documentId: docId,
@@ -292,7 +292,7 @@ ${extractedText}
               category: 'clinical',
               confidence: 0.95
             }
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
 
@@ -300,15 +300,15 @@ ${extractedText}
       return { success: true, analysis };
     } catch (err: any) {
       console.error(`[VaultService] Error analyzing document ${docId}:`, err);
-      
+
       await prisma.medicalDocument.update({
         where: { id: docId },
-        data: { 
-          status: 'failed', 
+        data: {
+          status: 'failed',
           processingStatus: 'FAILED',
           summary: err.message || 'Analysis failed.'
         }
-      }).catch(() => {});
+      }).catch(() => { });
 
       throw err;
     }

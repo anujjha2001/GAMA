@@ -36,6 +36,7 @@ model UserProfile {
   symptoms      Symptom[]
   achievements  UserAchievement[]
   workouts      Workout[]
+  workoutSessions WorkoutSession[]
   preferences   UserPreference[]
   baselines     UserBaseline[]
   predictions   Prediction[]
@@ -184,6 +185,23 @@ model Workout {
   notes          String?
   recordedAt     DateTime    @default(now())
   profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model WorkoutSession {
+  id               String         @id @default(uuid())
+  profileId        String
+  exerciseName     String
+  difficulty       String         // BEGINNER, INTERMEDIATE, ADVANCED
+  equipment        String[]
+  durationSec      Int
+  caloriesBurned   Int
+  repCount         Int
+  avgAccuracy      Float
+  muscleLoad       Json           // Map of loaded muscle group scores
+  safetyFlags      String[]
+  jointAngleLogs   Json           // High/Low angle ranges per joint
+  recordedAt       DateTime       @default(now())
+  profile          UserProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model SleepLog {

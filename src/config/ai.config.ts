@@ -1,11 +1,6 @@
 export const AI_CONFIG = {
-  defaultProvider: 'poolside',
+  defaultProvider: 'groq',
   providers: {
-    poolside: {
-      apiKey: process.env.POOLSIDE_API_KEY || '',
-      baseURL: process.env.POOLSIDE_API_URL || 'https://inference.poolside.ai/v1',
-      defaultModel: 'laguna-s-2.1',
-    },
     groq: {
       apiKey: process.env.GROQ_API_KEY || '',
       defaultModel: 'llama-3.3-70b-versatile',

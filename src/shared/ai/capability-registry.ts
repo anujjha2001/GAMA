@@ -50,25 +50,7 @@ export const CAPABILITY_REGISTRY: Record<string, Capability> = {
       }
     ]
   },
-  'digital-twin': {
-    id: 'digital-twin',
-    name: '3D Digital Twin body highlighting',
-    enabled: true,
-    tools: [
-      {
-        name: 'navigate_twin',
-        description: 'Open the digital twin body view.',
-        parameters: {
-          type: 'object',
-          properties: {
-            highlight: { type: 'string', description: 'Body part to highlight, e.g. heart, liver, brain, lungs, muscles' }
-          }
-        },
-        keywords: ['twin', 'body', 'avatar', 'muscles', 'digital twin', 'muscle', 'anatomy', '3d body', 'heart', 'brain', 'liver', 'lungs'],
-        handler: async (args) => ({ action: 'NAVIGATE', payload: `/twin?highlight=${args.highlight || 'none'}` })
-      }
-    ]
-  },
+
   insights: {
     id: 'insights',
     name: 'Health Trends & Insights',

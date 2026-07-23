@@ -21,12 +21,7 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     keywords: ['scan', 'scanner', 'camera', 'photo', 'identify food', 'food picture'],
     action: { type: 'TRIGGER_SCANNER' }
   },
-  {
-    name: 'digital_twin',
-    description: 'Open the Digital Twin 3D human body model.',
-    keywords: ['twin', 'body', 'avatar', 'muscles', 'digital twin', 'muscle', 'anatomy', '3d body'],
-    action: { type: 'NAVIGATE', payload: '/twin' }
-  },
+
   {
     name: 'health_vault',
     description: 'Open the Secure Health Vault containing medical documents and reports.',

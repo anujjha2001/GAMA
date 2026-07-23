@@ -495,7 +495,7 @@ export default function AuraVoiceAssistant() {
               >
                 {/* Floating Glow effects */}
                 <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
-                <img src="/logo.webp" alt="GAMA" className="w-8 h-8 rounded-full object-cover" />
+                <img src="/logo.jpg?v=2" alt="GAMA" className="w-8 h-8 rounded-full object-cover" />
                 <span className="absolute -inset-0.5 rounded-full border border-white/20 animate-ping opacity-25" />
               </button>
             </motion.div>
@@ -601,28 +601,28 @@ export default function AuraVoiceAssistant() {
                     {/* Inner GAMA logo with active indicators based on voice state */}
                     {voiceState === 'LISTENING' ? (
                       <div className="relative w-12 h-12 flex items-center justify-center">
-                        <img src="/logo.webp" className="w-10 h-10 rounded-full object-cover animate-pulse" alt="GAMA Logo" />
+                        <img src="/logo.jpg?v=2" className="w-10 h-10 rounded-full object-cover animate-pulse" alt="GAMA Logo" />
                         <span className="absolute inset-0 rounded-full border border-white/20 animate-ping opacity-75" />
                       </div>
                     ) : voiceState === 'WAITING' ? (
-                      <img src="/logo.webp" className="w-10 h-10 rounded-full object-cover opacity-50 grayscale" alt="GAMA Logo" />
+                      <img src="/logo.jpg?v=2" className="w-10 h-10 rounded-full object-cover opacity-50 grayscale" alt="GAMA Logo" />
                     ) : voiceState === 'SPEAKING' ? (
                       <div className="relative w-12 h-12 flex items-center justify-center">
-                        <img src="/logo.webp" className="w-10 h-10 rounded-full object-cover" alt="GAMA Logo" />
+                        <img src="/logo.jpg?v=2" className="w-10 h-10 rounded-full object-cover" alt="GAMA Logo" />
                         <span className="absolute inset-0 rounded-full border border-white/50 animate-ping opacity-75" />
                       </div>
                     ) : (voiceState === 'GENERATING' || voiceState === 'RETRIEVING_CONTEXT') ? (
                       <div className="relative w-12 h-12 flex items-center justify-center">
-                        <img src="/logo.webp" className="w-10 h-10 rounded-full object-cover" alt="GAMA Logo" />
+                        <img src="/logo.jpg?v=2" className="w-10 h-10 rounded-full object-cover" alt="GAMA Logo" />
                         <div className="absolute inset-0 border-2 border-white/45 border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : voiceState === 'CALLING_TOOL' ? (
                       <div className="relative w-12 h-12 flex items-center justify-center">
-                        <img src="/logo.webp" className="w-10 h-10 rounded-full object-cover" alt="GAMA Logo" />
+                        <img src="/logo.jpg?v=2" className="w-10 h-10 rounded-full object-cover" alt="GAMA Logo" />
                         <Navigation className="absolute bottom-0 right-0 w-4 h-4 text-purple-500 bg-black rounded-full p-0.5" />
                       </div>
                     ) : (
-                      <img src="/logo.webp" className="w-10 h-10 rounded-full object-cover" alt="GAMA Logo" />
+                      <img src="/logo.jpg?v=2" className="w-10 h-10 rounded-full object-cover" alt="GAMA Logo" />
                     )}
                   </div>
                 </div>
