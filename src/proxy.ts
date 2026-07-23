@@ -43,7 +43,6 @@ export async function proxy(request: NextRequest) {
 
   const isDashboardRoute = [
     '/dashboard',
-    '/twin',
     '/insights',
     '/schedule',
     '/vault',
