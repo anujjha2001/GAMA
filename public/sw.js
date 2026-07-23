@@ -2,17 +2,18 @@
 // IMPORTANT: Do NOT intercept navigation requests or RSC requests.
 // Doing so strips Next.js RSC headers and causes "Failed to fetch" errors.
 
-const CACHE_NAME = 'gama-static-v1';
+const CACHE_NAME = 'gama-static-v3';
 const STATIC_ASSETS = [
-  '/logo.webp',
+  '/logo.jpg?v=2',
   '/manifest.json',
+  '/auth-bg.jpg?v=2',
   '/dashboard-bg-clean.png',
 ];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).catch(() => {})
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).catch(() => { })
   );
 });
 

@@ -2049,6 +2049,7 @@ export const swiggyDataset = [{
         "Thali",
         "Punjabi",
         "Chinese"
+
     ],
     "rating": 4.3,
     "rating_count": "15K+",
@@ -3835,7 +3836,7 @@ export const swiggyDataset = [{
     "last_mile_distance_km": 7.9,
     "address": "SHOP NO.9-10-11 SATGURU PRIME-11 GRAM BICHOLI MARDANA,INDORE, Indore, Indore, Madhya Pradesh-452001",
     "locality": "140th Scheme",
-    "area_name": "Bicholi Mardana",
+    "area_name": "Bicholi",
     "city": "indore",
     "is_open": true,
     "next_close_time": null,

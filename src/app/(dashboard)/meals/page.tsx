@@ -448,7 +448,7 @@ export default function MealGuidePage() {
             className="w-40 h-40 rounded-full border border-white/5 bg-gradient-to-tr from-white/5 to-white/10 backdrop-blur-md shadow-2xl flex items-center justify-center"
           >
             <div className="absolute inset-0 rounded-full border border-white/10 flex items-center justify-center overflow-hidden">
-              <img src="/logo.webp" alt="GAMA" className="w-full h-full object-cover opacity-80 animate-black" />
+              <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover opacity-80 animate-black" />
             </div>
             {/* Orbiting particles representing macronutrients */}
             <div className="absolute top-1 left-1 w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-bounce" />
@@ -937,7 +937,7 @@ export default function MealGuidePage() {
                                           }}
                                           className="w-full py-3 bg-white text-black font-semibold hover:bg-neutral-200 text-black text-xs font-black uppercase tracking-wider rounded-2xl cursor-pointer transition-colors"
                                         >
-                                          ✓ Log Meal to History
+                                          ✓ Log Meal to Health Twin
                                         </button>
                                       </div>
                                     );

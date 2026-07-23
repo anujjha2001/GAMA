@@ -131,10 +131,10 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
           const checkRes = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              action: 'register', 
-              email, 
-              password, 
+            body: JSON.stringify({
+              action: 'register',
+              email,
+              password,
               fullName: computedFullName,
               firstName,
               lastName,
@@ -176,10 +176,10 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
           const res = await fetch('/api/verify-otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              email, 
-              code: otpCode, 
-              fullName: computedFullName, 
+            body: JSON.stringify({
+              email,
+              code: otpCode,
+              fullName: computedFullName,
               password,
               firstName,
               lastName,
@@ -201,7 +201,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
               localStorage.setItem('gama_user_name', data.user.fullName);
             }
             localStorage.setItem('gama_session', 'true');
-          } catch (e) {}
+          } catch (e) { }
 
           toast.success('Account created successfully! Welcome to GAMA.');
           window.location.href = '/dashboard';
@@ -258,7 +258,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
               localStorage.setItem('gama_user_name', data.user.fullName);
             }
             localStorage.setItem('gama_session', 'true');
-          } catch (e) {}
+          } catch (e) { }
 
           toast.success('Access recovered successfully!');
           window.location.href = '/dashboard';
@@ -288,7 +288,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
           localStorage.setItem('gama_user_name', data.user.fullName);
         }
         localStorage.setItem('gama_session', 'true');
-      } catch (e) {}
+      } catch (e) { }
 
       setTimeout(() => {
         setIsLoading(false);
@@ -333,7 +333,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
             {/* Logo Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-20 h-20 bg-black rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center justify-center">
-                <img src="/logo.webp" alt="GAMA" className="w-full h-full object-cover" />
+                <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
               </div>
             </div>
 
@@ -372,7 +372,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                       className="w-full px-4 py-3 bg-[black] border border-white/5 rounded-xl text-sm focus:border-white/20 focus:outline-none transition-all placeholder-white/50 text-white tracking-[0.15em] text-center font-mono"
                     />
                   </div>
-                  
+
                   <div className="text-center text-xs text-white/60">
                     {otpTimer > 0 ? (
                       <p>Code expires in: <span className="text-white font-semibold">{formatTime(otpTimer)}</span></p>
@@ -716,12 +716,12 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
 
         {/* RIGHT COLUMN: BEAUTIFUL RESET/BREATHE BANNER */}
         <div className="hidden md:block w-[52%] relative h-full">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage: `url('/auth.png')`
-            }}
-          />
+            <div 
+              className="absolute inset-0 bg-cover bg-center transition-transform duration-[20s] ease-linear hover:scale-110"
+              style={{ 
+                backgroundImage: `url('/auth-bg.jpg?v=2')`
+              }}
+            />
           {/* Dark gradient overlay to match image vibe */}
           <div className="absolute inset-0 bg-gradient-to-r from-[black] via-transparent to-transparent opacity-80" />
         </div>
