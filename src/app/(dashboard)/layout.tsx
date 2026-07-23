@@ -4,7 +4,7 @@ import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, LogOut, ChefHat, ShoppingBag
+  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, LogOut, ChefHat, ShoppingBag, Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuraVoiceAssistant from '@/components/aura/AuraVoiceAssistant';
@@ -19,7 +19,7 @@ export default function DashboardLayout({
     // Set cookie so proxy.ts always permits access to /twin and dashboard routes
     try {
       document.cookie = "gama_session=true; path=/; max-age=86400; SameSite=Lax";
-    } catch (e) {}
+    } catch (e) { }
 
     // Fetch logged in user profile data to sync with database
     fetch('/api/auth')
@@ -49,6 +49,7 @@ export default function DashboardLayout({
     { href: '/live-order', icon: ShoppingBag, label: 'LIVE Order' },
     { href: '/vault', icon: Inbox, label: 'Vault' },
     { href: '/meals', icon: ChefHat, label: 'Meal Guide' },
+    { href: '/workout-studio', icon: Flame, label: 'Workout Studio' },
     { href: '/settings', icon: Sliders, label: 'Settings' }
   ];
 
@@ -69,7 +70,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-1.5 md:flex-col shrink-0">
               <Link href="/" className="flex items-center gap-2 md:flex-col md:gap-1.5 group">
                 <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer transition-transform group-hover:scale-105 duration-300">
-                  <img src="/logo.webp" alt="GAMA" className="w-full h-full object-cover" />
+                  <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-sm md:text-[11px] uppercase tracking-widest text-foreground">GAMA</span>
               </Link>
@@ -130,7 +131,7 @@ export default function DashboardLayout({
             <div className="space-y-4 col-span-1 md:col-span-2">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-xl overflow-hidden border border-border shadow-lg bg-black flex items-center justify-center">
-                  <img src="/logo.webp" alt="GAMA" className="w-full h-full object-cover" />
+                  <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-2xl tracking-wider text-foreground">GAMA</span>
               </div>

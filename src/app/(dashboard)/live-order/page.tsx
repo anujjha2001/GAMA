@@ -1119,14 +1119,14 @@ export default function LiveOrderPage() {
 
                   <div className="grid grid-cols-2 gap-3 text-[10px] text-neutral-300">
                     <div className="space-y-1.5">
-                      <span className="text-rose-400 font-bold block">❌ Raw Meal Profile</span>
-                      <p>💥 High Glycemic spike in 30 mins</p>
+                      <span className="text-rose-400 font-bold block"> Raw Meal Profile</span>
+                      <p> High Glycemic spike in 30 mins</p>
                       <p>💤 Drowsiness & energy crash in 2 hrs</p>
                     </div>
                     <div className="space-y-1.5 border-l border-[#2c1e15] pl-3">
                       <span className="text-emerald-400 font-bold block">✓ Optimized Profile</span>
-                      <p>📈 Stabilized blood sugar curve</p>
-                      <p>⚡ Sustained energy & Focus (+25%)</p>
+                      <p> Stabilized blood sugar curve</p>
+                      <p> Sustained energy & Focus (+25%)</p>
                     </div>
                   </div>
                 </div>

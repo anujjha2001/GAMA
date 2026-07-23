@@ -3,7 +3,7 @@ import { AURAIntent } from './types';
 
 export async function detectIntent(message: string): Promise<AURAIntent> {
   const model = await getValidatedModel();
-  
+
   try {
     const response = await groqClient.chat.completions.create({
       model: model,
@@ -29,7 +29,7 @@ Available Tools:
       response_format: { type: "json_object" },
       temperature: 0.1,
     });
-    
+
     const content = response.choices[0]?.message?.content;
     if (content) {
       return JSON.parse(content) as AURAIntent;
@@ -37,7 +37,7 @@ Available Tools:
   } catch (err) {
     console.error("Failed to detect intent with Groq:", err);
   }
-  
+
   // Fallback intent
   return { category: 'general', requiresTools: false, suggestedTools: [], confidence: 0 };
 }

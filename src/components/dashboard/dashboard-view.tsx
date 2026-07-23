@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner';
 
 import { useHealthStore } from '@/lib/store';
+
 import { HealthPipeline } from '@/lib/health-engine/orchestrator/health-pipeline';
 import { BaselineEngine } from '@/lib/health-engine/core/baseline';
 import { AppleProvider } from '@/lib/health-engine/providers/apple';
@@ -30,6 +31,7 @@ export function DashboardView() {
   const [mounted, setMounted] = React.useState(false);
   const [explainMetric, setExplainMetric] = React.useState<string | null>(null);
   const [isManualInputOpen, setIsManualInputOpen] = React.useState(false);
+
 
   const {
     steps, setSteps,
@@ -380,8 +382,18 @@ export function DashboardView() {
       {/* Main Glassmorphic Panel Wrapper */}
       <div className="relative w-full rounded-[40px] border border-white/5 overflow-hidden z-10 bg-[#09090b]/80 backdrop-blur-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
 
+        {/* Dashboard Hero Background - HD Motion Vision (No blur) */}
+        <motion.div 
+          initial={{ scale: 1 }}
+          animate={{ scale: 1.05 }}
+          transition={{ duration: 20, repeat: Infinity, repeatType: 'reverse', ease: "linear" }}
+          className="absolute inset-0 bg-cover bg-center opacity-85 pointer-events-none z-0" 
+          style={{ backgroundImage: 'url("/dashboard-hero-clean.jpg")' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#09090b] via-[#09090b]/85 to-transparent pointer-events-none z-0" />
+
         {/* Subtle Ambient Background */}
-        <div className="absolute inset-0 bg-[#09090b]/80 backdrop-blur-3xl pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-[#09090b]/40 pointer-events-none z-0" />
 
         {/* Ambient Gradient Highlights */}
         <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-0" />
@@ -448,7 +460,7 @@ export function DashboardView() {
                     }}
                     className="p-1 bg-white text-black font-semibold hover:bg-neutral-200 rounded-xl cursor-pointer transition-all w-8 h-8 flex items-center justify-center overflow-hidden border border-white/10 hover:scale-105"
                   >
-                    <img src="/logo.webp" alt="Send" className="w-full h-full object-cover rounded-xl" />
+                    <img src="/logo.jpg?v=2" alt="Send" className="w-full h-full object-cover rounded-xl" />
                   </button>
                 </div>
               </div>
@@ -1270,6 +1282,7 @@ export function DashboardView() {
             </motion.div>
           </div>
         )}
+
       </AnimatePresence>
     </div>
   );
