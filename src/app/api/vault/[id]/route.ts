@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
 import { VaultService } from '@/lib/ai/services/vault-service';
-import { getVaultSignedUrl } from '@/lib/supabase/vault-storage';
+import { getVaultSignedUrl, downloadFromVault } from '@/lib/supabase/vault-storage';
 import { createClient } from '@/lib/supabase/server';
 
 // GET /api/vault/[id]
@@ -85,18 +85,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ success: false, error: 'Document not found' }, { status: 404 });
     }
 
-    // Download file from Supabase storage into buffer to re-analyze
-    const supabase = await createClient();
-    const { data, error } = await supabase.storage
-      .from('medical-documents')
-      .download(doc.storagePath);
-
-    if (error || !data) {
-      throw new Error(`Failed to download document from storage for re-analysis: ${error?.message}`);
-    }
-
-    const arrayBuffer = await data.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Download file from storage into buffer to re-analyze
+    const buffer = await downloadFromVault(doc.storagePath);
 
     // Delete old analysis if exists to avoid unique constraint clash
     await prisma.medicalReportAnalysis.deleteMany({

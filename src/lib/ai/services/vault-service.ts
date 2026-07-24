@@ -332,8 +332,17 @@ ${extractedText}
     });
 
     // Delete from DB (cascade handles relations)
-    return await prisma.medicalDocument.delete({
-      where: { id: docId }
-    });
+    try {
+      return await prisma.medicalDocument.delete({
+        where: { id: docId }
+      });
+    } catch (e: any) {
+      // Prisma error code P2025: Record to delete does not exist.
+      // If it's already deleted, we can safely ignore the error.
+      if (e.code === 'P2025') {
+        return null;
+      }
+      throw e;
+    }
   }
 }
