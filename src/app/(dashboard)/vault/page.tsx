@@ -315,73 +315,86 @@ export default function VaultPage() {
   const chartData = getBiomarkerChartData();
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col justify-between min-h-[160px] border border-white/10 hover:border-white/20 transition-all duration-300">
-        <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-white/5 via-transparent to-transparent pointer-events-none" />
-        <div className="space-y-2">
-          <span className="text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5" /> AI-Powered Medical Intelligence Vault
+    <div className="space-y-6 relative pb-10 min-h-screen text-white font-sans">
+      {/* HUD Header Bar */}
+      <div className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-[24px] backdrop-blur-2xl">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest">Aura Vault OS</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-xs font-mono text-neutral-300 bg-white/5 px-3 py-1 rounded-full border border-white/5">
+            {new Date().toLocaleDateString()}
           </span>
-          <h1 className="text-whitexl font-bold tracking-tight">Health Vault</h1>
-          <p className="text-xs text-muted-foreground max-w-xl">
-            Upload PDF/image diagnostic reports. AURA automatically runs OCR, parses biomarkers, calculates longevity metrics, and schedules follow-up checkups.
-          </p>
+          <button
+            onClick={() => { fetchDocuments(); toast.success('Vault index synced live.'); }}
+            className="flex items-center gap-1 px-3 py-1 bg-white text-black font-extrabold text-[10px] uppercase rounded-full hover:bg-neutral-200 cursor-pointer"
+          >
+            Sync OS
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* CORE SPATIAL GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
         {/* Left Columns: Upload & Doc List */}
-        <div className="lg:col-span-1 space-y-6">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-2">Upload Diagnostic Portal</h3>
+        <div className="lg:col-span-5 flex flex-col gap-6">
 
           {/* Upload Dropzone */}
-          <div
-            className={`border-2 border-dashed rounded-[24px] p-6 text-center transition-all ${isDragging ? 'border-white/20 bg-white/5' : 'border-white/10 hover:border-white/20/40 bg-black/35'}`}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragging(false);
-              handleFileUpload(e);
-            }}
-          >
-            <input
-              type="file"
-              id="vault-file"
-              accept=".pdf,.png,.jpg,.jpeg,.webp,.docx"
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-            <label htmlFor="vault-file" className="cursor-pointer space-y-3 block">
-              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-white">
-                {uploadProgress !== null ? (
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Upload className="w-5 h-5" />
-                )}
-              </div>
-              <div>
-                <span className="text-xs font-bold text-whiteoreground hover:underline">
-                  {uploadProgress !== null ? `Uploading (${uploadProgress}%)` : 'Click to upload'}
-                </span>
-                <span className="text-[10px] text-muted-foreground block mt-1">
-                  Drag & drop medical PDFs or lab report images (Max 10MB)
-                </span>
-              </div>
-            </label>
+          <div className="relative bg-[#0c0c0e]/60 border border-white/10 rounded-[32px] p-6 backdrop-blur-3xl shadow-2xl overflow-hidden">
+            <h3 className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest mb-4">Diagnostic Portal</h3>
+
+            <div
+              className={`border-2 border-dashed rounded-[24px] p-6 text-center transition-all ${isDragging ? 'border-white/20 bg-white/5' : 'border-white/10 hover:border-white/20 bg-black/40'}`}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                handleFileUpload(e);
+              }}
+            >
+              <input
+                type="file"
+                id="vault-file"
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.docx"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <label htmlFor="vault-file" className="cursor-pointer space-y-3 block">
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-white transition-transform hover:scale-110">
+                  {uploadProgress !== null ? (
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Upload className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <span className="text-sm font-black text-white hover:underline uppercase tracking-tight">
+                    {uploadProgress !== null ? `Uploading (${uploadProgress}%)` : 'Click to upload'}
+                  </span>
+                  <span className="text-[10px] text-neutral-500 font-bold block mt-1 uppercase">
+                    Drag & drop PDFs or images (Max 10MB)
+                  </span>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Document list & History */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center px-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Document Index</h3>
-              <div className="flex items-center gap-2">
+          <div className="relative bg-[#0c0c0e]/60 border border-white/10 rounded-[32px] p-6 backdrop-blur-3xl overflow-hidden flex-1 shadow-2xl flex flex-col">
+            <div className="absolute inset-0 opacity-[0.05] pointer-events-none select-none">
+              <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=800&auto=format&fit=crop" alt="Medical background" className="w-full h-full object-cover" />
+            </div>
+
+            <div className="relative z-10 flex flex-col h-full space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest">Document Index</h3>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-lg text-[10px] px-2 py-1 text-white"
+                  className="bg-white/5 border border-white/10 rounded-lg text-[9px] font-bold uppercase tracking-wider px-2 py-1.5 text-white outline-none focus:border-white/20"
                 >
                   <option value="All">All Categories</option>
                   <option value="Blood Report">Blood Reports</option>
@@ -391,74 +404,78 @@ export default function VaultPage() {
                   <option value="Other">Other</option>
                 </select>
               </div>
-            </div>
 
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search hospital, doctor, biomarker..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/20"
-              />
-            </div>
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search hospital, doctor, biomarker..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs font-bold text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 transition-all"
+                />
+              </div>
 
-            {/* List */}
-            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1 scrollbar-thin">
-              {loadingDocs ? (
-                <div className="text-center py-8 text-neutral-500 text-xs">Loading vault...</div>
-              ) : documents.length === 0 ? (
-                <div className="text-center py-8 text-neutral-500 text-xs">No documents matching filter.</div>
-              ) : (
-                documents.map((doc) => {
-                  const isActive = doc.id === activeDocId;
-                  const isChecked = compareIds.includes(doc.id);
-                  return (
-                    <div
-                      key={doc.id}
-                      className={`p-3 rounded-2xl border transition-all flex items-center gap-3 justify-between ${isActive
-                        ? 'bg-white/10 border-white/10 shadow-md text-white'
-                        : 'bg-black/35 border-white/5 hover:border-white/10 text-neutral-300'
-                        }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" onClick={() => setActiveDocId(doc.id)}>
-                        <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white shrink-0">
-                          <FileText className="w-4 h-4" />
+              {/* List */}
+              <div className="space-y-3 flex-1 overflow-y-auto pr-2 scrollbar-thin max-h-[400px]">
+                {loadingDocs ? (
+                  <div className="text-center py-8 text-neutral-500 text-[10px] font-extrabold uppercase tracking-widest">Loading vault...</div>
+                ) : documents.length === 0 ? (
+                  <div className="text-center py-8 text-neutral-500 text-[10px] font-extrabold uppercase tracking-widest">No documents matching filter.</div>
+                ) : (
+                  documents.map((doc) => {
+                    const isActive = doc.id === activeDocId;
+                    const isChecked = compareIds.includes(doc.id);
+                    const docDate = doc.reportDate ? new Date(doc.reportDate) : new Date();
+                    
+                    return (
+                      <div
+                        key={doc.id}
+                        className={`p-3.5 rounded-2xl border transition-all flex items-center gap-4 justify-between cursor-pointer ${isActive
+                          ? 'bg-white/10 border-white/20 shadow-lg text-white scale-[1.02]'
+                          : 'bg-white/2 border-white/5 hover:bg-white/5 hover:border-white/10 text-neutral-300'
+                          }`}
+                        onClick={() => setActiveDocId(doc.id)}
+                      >
+                        <div className="w-12 text-center border-r border-white/10 pr-3 shrink-0">
+                          <span className="text-[9px] text-neutral-500 font-bold uppercase block leading-none">{docDate.toLocaleDateString('en-US', { month: 'short' })}</span>
+                          <span className="text-base font-black text-white mt-1 block leading-none">{docDate.getDate()}</span>
                         </div>
+
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-bold truncate">{doc.title}</h4>
-                          <span className="text-[9px] text-neutral-400 block mt-0.5">
-                            {doc.reportDate ? new Date(doc.reportDate).toLocaleDateString() : 'Unknown Date'} • {doc.fileSize}
+                          <span className="px-2 py-0.5 bg-white/5 border border-white/10 rounded-full text-[8px] font-black text-neutral-400 uppercase tracking-widest">
+                            {doc.category}
+                          </span>
+                          <h4 className="text-sm font-bold text-white mt-1.5 truncate">{doc.title}</h4>
+                          <span className="text-[10px] text-neutral-500 font-mono mt-0.5 block truncate">
+                            {doc.hospital} • {doc.fileSize}
                           </span>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        {/* Compare Checkbox */}
-                        <button
-                          onClick={() => handleToggleCompare(doc.id)}
-                          className={`p-1 rounded-md border text-[9px] font-bold ${isChecked ? 'bg-white/10 border-white/20 text-white' : 'border-white/10 text-neutral-500'}`}
-                          title="Add to comparison list"
-                        >
-                          Compare
-                        </button>
-                        <div>
-                          {doc.processingStatus === 'COMPLETED' ? (
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 block" title="Analyzed" />
-                          ) : doc.processingStatus === 'FAILED' ? (
-                            <span className="w-2 h-2 rounded-full bg-red-500 block" title={`Analysis Failed: ${doc.summary}`} />
-                          ) : (
-                            <span className="w-2 h-2 rounded-full bg-white text-black font-semibold animate-pulse block" title={getStatusLabel(doc.processingStatus)} />
-                          )}
+                        <div className="flex flex-col items-end justify-between h-full gap-2 shrink-0">
+                          {/* Compare Checkbox */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleToggleCompare(doc.id); }}
+                            className={`px-2 py-1 rounded-lg border text-[9px] font-bold uppercase transition-colors ${isChecked ? 'bg-white text-black border-white' : 'border-white/10 text-neutral-500 hover:text-white hover:border-white/20'}`}
+                          >
+                            Compare
+                          </button>
+                          <div>
+                            {doc.processingStatus === 'COMPLETED' ? (
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 block shadow-[0_0_8px_rgba(16,185,129,0.5)]" title="Analyzed" />
+                            ) : doc.processingStatus === 'FAILED' ? (
+                              <span className="w-2.5 h-2.5 rounded-full bg-red-500 block shadow-[0_0_8px_rgba(239,68,68,0.5)]" title={`Analysis Failed: ${doc.summary}`} />
+                            ) : (
+                              <span className="w-2.5 h-2.5 rounded-full bg-white block animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.5)]" title={getStatusLabel(doc.processingStatus)} />
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+                    );
+                  })
+                )}
+              </div>
 
             {/* Compare Trigger Button */}
             {compareIds.length >= 2 && (
@@ -475,7 +492,7 @@ export default function VaultPage() {
         </div>
 
         {/* Right Side: Extraction Details & Plans */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-7 flex flex-col gap-6">
 
           {/* Comparison Modal/Block Overlay if triggered */}
           {comparisonResult && (
@@ -491,7 +508,7 @@ export default function VaultPage() {
                 <X className="w-4 h-4" />
               </button>
               <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-base uppercase tracking-wider">AURA Health Report Comparison</h3>
+                <h3 className="font-extrabold text-base uppercase tracking-wider text-white">AURA Health Report Comparison</h3>
               </div>
 
               {/* Comparison list */}
@@ -517,30 +534,27 @@ export default function VaultPage() {
           )}
 
           {activeDoc ? (
-            <motion.div
-              key={activeDoc.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-[32px] bg-black/35 backdrop-blur-xl p-6 md:p-8 border border-white/10 space-y-6 flex flex-col justify-between min-h-[500px]"
-            >
-              <div>
-                {/* File Details Title bar */}
-                <div className="flex justify-between items-start gap-4 pb-6 border-b border-white/5">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-1">
-                      {activeDoc.hospital} • Ref: {activeDoc.doctor}
-                    </span>
-                    <h2 className="text-xl font-bold">{activeDoc.title}</h2>
-                    <p className="text-xs text-muted-foreground">
-                      Report Date: {activeDoc.reportDate ? new Date(activeDoc.reportDate).toLocaleDateString() : 'Analyzing...'}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
+            <div className="space-y-6 flex flex-col flex-1">
+              
+              {/* PREMIUM DOCUMENT HEADER CARD */}
+              <motion.div
+                key={activeDoc.id + "-header"}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative h-64 rounded-[32px] overflow-hidden border border-white/10 group shadow-2xl flex flex-col justify-end p-8 bg-black/40 shrink-0"
+              >
+                <img
+                  src="https://images.unsplash.com/photo-1530497610245-94d3c16cda28?q=80&w=800&auto=format&fit=crop"
+                  alt="Medical Scan"
+                  className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                
+                <div className="absolute top-6 right-6 flex items-center gap-2 z-20">
                     <button
                       onClick={() => handleReanalyze(activeDoc.id)}
                       disabled={reanalyzingId === activeDoc.id}
-                      className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-neutral-300 transition-colors"
+                      className="p-2.5 bg-white/5 hover:bg-white/20 rounded-full border border-white/10 text-white transition-all backdrop-blur-md"
                       title="Re-run AI Analysis"
                     >
                       <RefreshCw className={`w-4 h-4 ${reanalyzingId === activeDoc.id ? 'animate-spin' : ''}`} />
@@ -550,7 +564,7 @@ export default function VaultPage() {
                         href={activeDoc.fileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-neutral-300 transition-colors flex items-center justify-center"
+                        className="p-2.5 bg-white/5 hover:bg-white/20 rounded-full border border-white/10 text-white transition-all backdrop-blur-md flex items-center justify-center"
                         title="Download / View Original File"
                       >
                         <Download className="w-4 h-4" />
@@ -558,13 +572,32 @@ export default function VaultPage() {
                     )}
                     <button
                       onClick={() => handleDelete(activeDoc.id)}
-                      className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-xl border border-red-500/20 text-red-500 transition-colors"
+                      className="p-2.5 bg-red-500/20 hover:bg-red-500/40 rounded-full border border-red-500/30 text-red-100 transition-all backdrop-blur-md"
                       title="Delete Report"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                </div>
+
+                <div className="relative z-10 space-y-1">
+                  <span className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest block">{activeDoc.hospital} • Ref: {activeDoc.doctor}</span>
+                  <h2 className="text-3xl font-black text-white tracking-tight leading-none uppercase">{activeDoc.title}</h2>
+
+                  <div className="flex items-end gap-8 pt-4">
+                    <div>
+                      <span className="text-[10px] text-neutral-500 font-bold block uppercase">Date Logged</span>
+                      <span className="text-xl font-black text-white mt-1 block">{activeDoc.reportDate ? new Date(activeDoc.reportDate).toLocaleDateString() : 'Analyzing...'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-neutral-500 font-bold block uppercase">Type</span>
+                      <span className="text-xl font-black text-white mt-1 block">{activeDoc.category}</span>
+                    </div>
                   </div>
                 </div>
+              </motion.div>
+
+              {/* PROCESSING STATES OR TABS */}
+              <div className="relative bg-[#0c0c0e]/60 border border-white/10 rounded-[32px] p-6 backdrop-blur-3xl shadow-2xl flex-1 flex flex-col">
 
                 {activeDoc.processingStatus !== 'COMPLETED' && activeDoc.processingStatus !== 'FAILED' ? (
                   <div className="py-24 text-center space-y-4">
@@ -884,7 +917,7 @@ export default function VaultPage() {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
           ) : (
             <div className="rounded-[32px] bg-black/35 backdrop-blur-xl border border-white/10 p-12 text-center text-muted-foreground hover:border-white/20 transition-all duration-300">
               Please upload or select a clinical document from the index.

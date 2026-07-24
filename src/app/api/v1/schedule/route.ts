@@ -25,8 +25,16 @@ export async function GET(req: NextRequest) {
     // 1. Fetch/Generate optimized schedule blocks
     const { blocks, decisionLog } = await ScheduleOrchestrator.optimizeSchedule(user.id);
 
-    // Save blocks to DB ScheduleEvent table
-    await prisma.scheduleEvent.deleteMany({ where: { profileId: user.id } });
+    // Save auto-generated blocks to DB, leaving manual ones intact
+    await prisma.scheduleEvent.deleteMany({
+      where: {
+        profileId: user.id,
+        NOT: {
+          aiReasoning: 'Manual schedule insertion.'
+        }
+      }
+    });
+
     for (const b of blocks) {
       await prisma.scheduleEvent.create({
         data: {
@@ -47,6 +55,12 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Fetch all schedule events from DB (both auto-generated and manual ones)
+    const dbEvents = await prisma.scheduleEvent.findMany({
+      where: { profileId: user.id },
+      orderBy: { startTime: 'asc' }
+    });
+
     // 2. Fetch predictions and habits
     const predictions = PredictionEngine.getForecast(user.id);
     const habits = HabitIntelligenceEngine.analyzeUserHabits(user.id);
@@ -54,7 +68,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      blocks,
+      blocks: dbEvents,
       decisionLog,
       predictions,
       habits,
@@ -69,6 +83,49 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     console.error('[Schedule API GET Error]:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const user = await verifyToken(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const { title, category, startTime, endTime, purpose = 'Manual task' } = body;
+
+    if (!title || !category || !startTime || !endTime) {
+      return NextResponse.json({ error: 'Missing required parameters.' }, { status: 400 });
+    }
+
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+
+    const event = await prisma.scheduleEvent.create({
+      data: {
+        profileId: user.id,
+        title,
+        category,
+        startTime: start,
+        endTime: end,
+        durationMinutes,
+        purpose,
+        priority: 0.8,
+        energyCost: 15,
+        recoveryCost: 5,
+        healthImpact: 'Manually logged schedule block.',
+        aiReasoning: 'Manual schedule insertion.',
+        confidenceScore: 1.0
+      }
+    });
+
+    return NextResponse.json({ success: true, event });
+  } catch (error: any) {
+    console.error('[Schedule API POST Error]:', error);
     return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
