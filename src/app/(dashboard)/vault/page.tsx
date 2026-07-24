@@ -489,6 +489,7 @@ export default function VaultPage() {
               </button>
             )}
           </div>
+          </div>
         </div>
 
         {/* Right Side: Extraction Details & Plans */}
@@ -497,38 +498,44 @@ export default function VaultPage() {
           {/* Comparison Modal/Block Overlay if triggered */}
           {comparisonResult && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-[32px] bg-neutral-950/80 backdrop-blur-2xl p-6 border border-white/10 space-y-4 relative"
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="rounded-[32px] bg-black/90 backdrop-blur-3xl p-8 border border-white/20 space-y-6 relative shadow-2xl overflow-hidden"
             >
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10 pointer-events-none" />
+              
               <button
                 onClick={() => setComparisonResult(null)}
-                className="absolute top-4 right-4 p-1 hover:bg-white/10 rounded-full text-neutral-400 hover:text-white"
+                className="absolute top-6 right-6 p-2 bg-white/5 hover:bg-white/20 rounded-full border border-white/10 text-white transition-all backdrop-blur-md z-20"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
-              <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-base uppercase tracking-wider text-white">AURA Health Report Comparison</h3>
+              
+              <div className="relative z-10 flex items-center gap-3 border-b border-white/10 pb-4">
+                <Layers className="w-6 h-6 text-emerald-400" />
+                <h3 className="font-black text-2xl uppercase tracking-tighter text-white">Longitudinal Analysis</h3>
               </div>
 
               {/* Comparison list */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
                 {comparisonResult.comparisons?.map((c: any, idx: number) => (
-                  <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-2xl space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-white">{c.biomarker}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${c.status === 'Improved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                  <div key={idx} className="p-5 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors flex flex-col justify-between gap-3">
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm font-black text-white uppercase tracking-tight">{c.biomarker}</span>
+                      <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${c.status === 'Improved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : c.status === 'Worsened' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-neutral-500/20 text-neutral-300 border-neutral-500/30'}`}>
                         {c.change} ({c.status})
                       </span>
                     </div>
-                    <p className="text-[10px] text-neutral-400 leading-normal">{c.details}</p>
+                    <p className="text-xs text-neutral-400 leading-relaxed font-medium">{c.details}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="p-4 bg-white/5 border border-white/20/15 rounded-2xl">
-                <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-1">Comparative Insights</h4>
-                <p className="text-xs text-neutral-200 leading-relaxed">{comparisonResult.summary}</p>
+              <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-2xl relative z-10">
+                <h4 className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                   <Info className="w-4 h-4" /> AI Comparative Insights
+                </h4>
+                <p className="text-sm text-white leading-relaxed font-medium">{comparisonResult.summary}</p>
               </div>
             </motion.div>
           )}
@@ -621,26 +628,26 @@ export default function VaultPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-6 mt-6">
+                  <div className="space-y-8 mt-6">
 
                     {/* Top Panel: Wellness Score Indicator and Trend Chart */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {/* Wellness Score Card */}
-                      <div className="p-4 bg-white/5 border border-white/5 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-brand/5 to-transparent pointer-events-none" />
-                        <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest mb-3">Overall Report Score</span>
-                        <div className="relative w-24 h-24 flex items-center justify-center">
-                          <svg className="w-full h-full transform -rotate-95" viewBox="0 0 36 36">
+                      <div className="p-6 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-xl hover:bg-white/10 transition-colors">
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent pointer-events-none" />
+                        <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-widest mb-4">Overall Score</span>
+                        <div className="relative w-32 h-32 flex items-center justify-center">
+                          <svg className="w-full h-full transform -rotate-95 drop-shadow-2xl" viewBox="0 0 36 36">
                             <path
-                              className="text-neutral-800"
-                              strokeWidth="2.5"
+                              className="text-white/10"
+                              strokeWidth="3"
                               stroke="currentColor"
                               fill="none"
                               d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                             />
                             <path
-                              className="text-white"
-                              strokeWidth="2.5"
+                              className="text-emerald-400"
+                              strokeWidth="3"
                               strokeDasharray={`${activeDoc.analysis?.overallHealthScore || 70}, 100`}
                               strokeLinecap="round"
                               stroke="currentColor"
@@ -648,34 +655,37 @@ export default function VaultPage() {
                               d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                             />
                           </svg>
-                          <div className="absolute text-center">
-                            <span className="text-2xl font-black text-white">{activeDoc.analysis?.overallHealthScore || 70}</span>
-                            <span className="text-[10px] text-neutral-400 block -mt-1">/100</span>
+                          <div className="absolute text-center flex flex-col items-center">
+                            <span className="text-4xl font-black text-white tracking-tighter leading-none">{activeDoc.analysis?.overallHealthScore || 70}</span>
+                            <span className="text-[10px] text-neutral-500 font-bold uppercase block mt-1">Health</span>
                           </div>
                         </div>
-                        <span className="text-[10px] font-medium text-neutral-300 mt-2 uppercase tracking-wide">
-                          Risk Level: {activeDoc.analysis?.riskLevel || 'LOW'}
-                        </span>
+                        <div className="mt-4 px-3 py-1 bg-white/10 rounded-full border border-white/10">
+                          <span className="text-[9px] font-black text-white uppercase tracking-widest">
+                            Risk Level: <span className={activeDoc.analysis?.riskLevel === 'HIGH' ? 'text-red-400' : 'text-emerald-400'}>{activeDoc.analysis?.riskLevel || 'LOW'}</span>
+                          </span>
+                        </div>
                       </div>
 
                       {/* Micro-Trend Chart */}
-                      <div className="p-4 bg-white/5 border border-white/5 rounded-2xl md:col-span-2">
-                        <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Historical Biomarker Trends</span>
-                        <div className="w-full h-28">
+                      <div className="p-6 bg-white/5 border border-white/10 rounded-3xl md:col-span-2 shadow-xl flex flex-col relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-transparent pointer-events-none" />
+                        <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-widest mb-4">Historical Trajectory</span>
+                        <div className="flex-1 w-full min-h-[140px]">
                           {chartData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                               <LineChart data={chartData}>
-                                <XAxis dataKey="date" stroke="#666" fontSize={8} tickLine={false} />
+                                <XAxis dataKey="date" stroke="#666" fontSize={9} tickLine={false} axisLine={false} />
                                 <Tooltip
-                                  contentStyle={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                                  labelStyle={{ color: '#fff', fontSize: '10px' }}
+                                  contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', backdropFilter: 'blur(10px)' }}
+                                  labelStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold' }}
                                 />
-                                <Line type="monotone" dataKey="Wellness Score" stroke="#00f0ff" strokeWidth={2} dot={{ r: 3 }} />
+                                <Line type="monotone" dataKey="Wellness Score" stroke="#34d399" strokeWidth={3} dot={{ r: 4, fill: '#000', stroke: '#34d399', strokeWidth: 2 }} activeDot={{ r: 6, fill: '#34d399' }} />
                               </LineChart>
                             </ResponsiveContainer>
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] text-neutral-500">
-                              Upload more reports to populate historic comparison graph.
+                            <div className="w-full h-full flex items-center justify-center text-[10px] text-neutral-500 font-bold uppercase tracking-widest text-center border-2 border-dashed border-white/10 rounded-2xl">
+                              Upload more reports to unlock<br/>trajectory predictions.
                             </div>
                           )}
                         </div>
@@ -683,12 +693,12 @@ export default function VaultPage() {
                     </div>
 
                     {/* Tab Navigation */}
-                    <div className="flex border-b border-white/5">
+                    <div className="flex gap-2 border-b border-white/10 pb-4">
                       {(['summary', 'biomarkers', 'nutrition', 'exercise'] as const).map((tab) => (
                         <button
                           key={tab}
                           onClick={() => setActiveTab(tab)}
-                          className={`flex-1 pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${activeTab === tab ? 'border-white/20 text-white' : 'border-transparent text-neutral-400 hover:text-white'}`}
+                          className={`px-4 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-all cursor-pointer ${activeTab === tab ? 'bg-white text-black shadow-lg scale-105' : 'bg-white/5 border border-white/5 text-neutral-400 hover:bg-white/10 hover:text-white'}`}
                         >
                           {tab}
                         </button>
@@ -696,71 +706,69 @@ export default function VaultPage() {
                     </div>
 
                     {/* Tab Content */}
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       {activeTab === 'summary' && (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {/* Educational Disclaimer */}
-                          <div className="p-3.5 bg-white/5 border border-white/10 rounded-2xl flex items-start gap-2.5 text-neutral-300">
-                            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                          <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-start gap-3 text-neutral-300">
+                            <Info className="w-5 h-5 shrink-0 mt-0.5 text-neutral-400" />
                             <div className="text-[10px] leading-relaxed">
-                              <span className="font-extrabold uppercase block tracking-wider mb-0.5">Educational Insights Only</span>
-                              These values are analyzed by medical AI models for educational coaching purposes only. They do not constitute official clinical medical diagnoses. Please consult a qualified health professional.
+                              <span className="font-extrabold uppercase block tracking-wider mb-1 text-white">Educational Intelligence Only</span>
+                              Values are analyzed by medical AI models for educational coaching purposes only. They do not constitute official clinical medical diagnoses. Please consult a qualified health professional.
                             </div>
                           </div>
 
                           {/* AI Summary Text */}
-                          <div className="space-y-2">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">Executive Medical Summary</h3>
-                            <p className="text-xs text-neutral-200 leading-relaxed bg-white/5 p-4 border border-white/5 rounded-2xl">
+                          <div className="p-6 bg-white/5 border border-white/10 rounded-3xl relative overflow-hidden">
+                            <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-400 mb-3">Executive Protocol</h3>
+                            <p className="text-sm font-medium text-white leading-relaxed">
                               {activeDoc.analysis?.summary}
                             </p>
                           </div>
 
                           {/* Risk Predictions */}
-                          <div className="space-y-2">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">Health Risk Estimates</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              <div className="p-3 bg-white/5 border border-white/5 rounded-2xl flex justify-between items-center">
-                                <div className="space-y-0.5">
-                                  <span className="text-[10px] text-neutral-400 block">Cardiovascular Assessment</span>
-                                  <span className="text-xs font-bold text-white">Heart Health Risk</span>
-                                </div>
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${activeDoc.analysis?.riskLevel === 'HIGH' ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                  {activeDoc.analysis?.riskLevel || 'LOW'} RISK
-                                </span>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="p-5 bg-white/5 border border-white/10 rounded-2xl flex flex-col justify-between items-start gap-4">
+                              <div className="space-y-1">
+                                <span className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest block">Cardiovascular Assessment</span>
+                                <span className="text-sm font-black text-white uppercase block">Heart Risk Factor</span>
                               </div>
-                              <div className="p-3 bg-white/5 border border-white/5 rounded-2xl flex justify-between items-center">
-                                <div className="space-y-0.5">
-                                  <span className="text-[10px] text-neutral-400 block">Metabolic Assessment</span>
-                                  <span className="text-xs font-bold text-white">Insulin / Blood Sugar Risk</span>
-                                </div>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500">
-                                  LOW RISK
-                                </span>
+                              <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${activeDoc.analysis?.riskLevel === 'HIGH' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>
+                                {activeDoc.analysis?.riskLevel || 'LOW'} RISK
+                              </span>
+                            </div>
+                            <div className="p-5 bg-white/5 border border-white/10 rounded-2xl flex flex-col justify-between items-start gap-4">
+                              <div className="space-y-1">
+                                <span className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest block">Metabolic Assessment</span>
+                                <span className="text-sm font-black text-white uppercase block">Insulin / Sugar Risk</span>
                               </div>
+                              <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                LOW RISK
+                              </span>
                             </div>
                           </div>
                         </div>
                       )}
 
                       {activeTab === 'biomarkers' && (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {/* Critical and abnormal values */}
                           {activeDoc.analysis?.abnormalValues && activeDoc.analysis.abnormalValues.length > 0 && (
-                            <div className="space-y-2">
-                              <h3 className="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center gap-1.5">
-                                <ShieldAlert className="w-4 h-4" /> Attention Required (Abnormal Markers)
+                            <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-3xl relative overflow-hidden shadow-xl">
+                              <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent pointer-events-none" />
+                              <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-red-400 flex items-center gap-2 mb-4 relative z-10">
+                                <ShieldAlert className="w-4 h-4" /> Attention Required
                               </h3>
-                              <div className="space-y-2">
+                              <div className="space-y-3 relative z-10">
                                 {activeDoc.analysis.abnormalValues.map((v: any, idx: number) => (
-                                  <div key={idx} className="p-3.5 bg-red-500/5 border border-red-500/10 rounded-2xl flex justify-between items-start gap-4">
+                                  <div key={idx} className="p-4 bg-black/40 border border-red-500/20 rounded-2xl flex justify-between items-start gap-4 hover:bg-black/60 transition-colors">
                                     <div className="space-y-1">
-                                      <span className="text-xs font-bold text-white block">{v.marker}</span>
-                                      <p className="text-[10px] text-neutral-400 leading-normal">{v.explanation}</p>
+                                      <span className="text-sm font-black text-white block uppercase">{v.marker}</span>
+                                      <p className="text-[10px] text-neutral-400 leading-relaxed font-medium">{v.explanation}</p>
                                     </div>
-                                    <div className="text-right shrink-0">
-                                      <span className="text-xs font-black text-red-400 block">{v.value}</span>
-                                      <span className="text-[9px] text-neutral-500 block">Range: {v.range}</span>
+                                    <div className="text-right shrink-0 bg-red-500/10 px-3 py-2 rounded-xl border border-red-500/20">
+                                      <span className="text-sm font-black text-red-400 block">{v.value}</span>
+                                      <span className="text-[9px] text-neutral-500 font-bold block uppercase mt-0.5">Ref: {v.range}</span>
                                     </div>
                                   </div>
                                 ))}
@@ -770,18 +778,18 @@ export default function VaultPage() {
 
                           {/* Normal biomarkers */}
                           {activeDoc.analysis?.normalValues && activeDoc.analysis.normalValues.length > 0 && (
-                            <div className="space-y-2">
-                              <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                            <div className="p-6 bg-white/5 border border-white/10 rounded-3xl relative overflow-hidden shadow-xl">
+                              <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400 flex items-center gap-2 mb-4 relative z-10">
                                 <Check className="w-4 h-4" /> Healthy Biomarkers
                               </h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10">
                                 {activeDoc.analysis.normalValues.map((v: any, idx: number) => (
-                                  <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-2xl flex justify-between items-center">
+                                  <div key={idx} className="p-4 bg-black/40 border border-white/5 rounded-2xl flex justify-between items-center hover:bg-white/5 transition-colors">
                                     <div>
-                                      <span className="text-xs font-bold text-neutral-200 block">{v.marker}</span>
-                                      <span className="text-[9px] text-neutral-500">Ref Range: {v.range}</span>
+                                      <span className="text-xs font-black text-white block uppercase">{v.marker}</span>
+                                      <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider block mt-0.5">Ref: {v.range}</span>
                                     </div>
-                                    <span className="text-xs font-bold text-emerald-400">{v.value}</span>
+                                    <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">{v.value}</span>
                                   </div>
                                 ))}
                               </div>
@@ -791,65 +799,69 @@ export default function VaultPage() {
                       )}
 
                       {activeTab === 'nutrition' && (
-                        <div className="space-y-4">
-                          <div className="p-4 bg-white/5 border border-white/5 rounded-[24px] space-y-3">
-                            <div className="flex items-center gap-2 text-neutral-300">
-                              <Utensils className="w-4 h-4" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider">AURA Dietary Intervention</h4>
+                        <div className="space-y-6">
+                          <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-6 relative overflow-hidden shadow-xl">
+                            <div className="flex items-center gap-2 text-neutral-300 relative z-10">
+                              <Utensils className="w-4 h-4 text-emerald-400" />
+                              <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">Dietary Protocol</h4>
                             </div>
 
                             {/* Macro Targets */}
-                            <div className="grid grid-cols-5 gap-2 text-center py-2 border-y border-white/5">
+                            <div className="grid grid-cols-5 gap-2 text-center py-5 bg-black/40 border border-white/5 rounded-2xl relative z-10">
                               <div>
-                                <span className="text-[9px] text-neutral-400 block">Calories</span>
-                                <span className="text-xs font-bold text-white">{activeDoc.analysis?.dietPlan?.calories || 2000}</span>
+                                <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest block mb-1">Calories</span>
+                                <span className="text-lg font-black text-white">{activeDoc.analysis?.dietPlan?.calories || 2000}</span>
                               </div>
                               <div>
-                                <span className="text-[9px] text-neutral-400 block">Protein</span>
-                                <span className="text-xs font-bold text-white">{activeDoc.analysis?.dietPlan?.proteinG || 120}g</span>
+                                <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest block mb-1">Protein</span>
+                                <span className="text-lg font-black text-white">{activeDoc.analysis?.dietPlan?.proteinG || 120}<span className="text-[10px] text-neutral-500 ml-0.5">g</span></span>
                               </div>
                               <div>
-                                <span className="text-[9px] text-neutral-400 block">Carbs</span>
-                                <span className="text-xs font-bold text-white">{activeDoc.analysis?.dietPlan?.carbsG || 180}g</span>
+                                <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest block mb-1">Carbs</span>
+                                <span className="text-lg font-black text-white">{activeDoc.analysis?.dietPlan?.carbsG || 180}<span className="text-[10px] text-neutral-500 ml-0.5">g</span></span>
                               </div>
                               <div>
-                                <span className="text-[9px] text-neutral-400 block">Fat</span>
-                                <span className="text-xs font-bold text-white">{activeDoc.analysis?.dietPlan?.fatG || 65}g</span>
+                                <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest block mb-1">Fat</span>
+                                <span className="text-lg font-black text-white">{activeDoc.analysis?.dietPlan?.fatG || 65}<span className="text-[10px] text-neutral-500 ml-0.5">g</span></span>
                               </div>
                               <div>
-                                <span className="text-[9px] text-neutral-400 block">Fiber</span>
-                                <span className="text-xs font-bold text-white">{activeDoc.analysis?.dietPlan?.fiberG || 30}g</span>
+                                <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest block mb-1">Fiber</span>
+                                <span className="text-lg font-black text-white">{activeDoc.analysis?.dietPlan?.fiberG || 30}<span className="text-[10px] text-neutral-500 ml-0.5">g</span></span>
                               </div>
                             </div>
 
                             {/* Meal Plan */}
-                            <div className="space-y-2 mt-2">
-                              <div className="text-[10px] text-neutral-300">
-                                <span className="font-extrabold text-white block">Breakfast:</span> {activeDoc.analysis?.dietPlan?.breakfast}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 relative z-10">
+                              <div className="p-5 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-colors">
+                                <span className="text-[9px] font-extrabold text-neutral-400 uppercase tracking-widest block mb-2">Breakfast Protocol</span>
+                                <p className="text-xs text-white font-medium leading-relaxed">{activeDoc.analysis?.dietPlan?.breakfast}</p>
                               </div>
-                              <div className="text-[10px] text-neutral-300">
-                                <span className="font-extrabold text-white block">Lunch:</span> {activeDoc.analysis?.dietPlan?.lunch}
+                              <div className="p-5 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-colors">
+                                <span className="text-[9px] font-extrabold text-neutral-400 uppercase tracking-widest block mb-2">Lunch Protocol</span>
+                                <p className="text-xs text-white font-medium leading-relaxed">{activeDoc.analysis?.dietPlan?.lunch}</p>
                               </div>
-                              <div className="text-[10px] text-neutral-300">
-                                <span className="font-extrabold text-white block">Dinner:</span> {activeDoc.analysis?.dietPlan?.dinner}
+                              <div className="p-5 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-colors">
+                                <span className="text-[9px] font-extrabold text-neutral-400 uppercase tracking-widest block mb-2">Dinner Protocol</span>
+                                <p className="text-xs text-white font-medium leading-relaxed">{activeDoc.analysis?.dietPlan?.dinner}</p>
                               </div>
-                              <div className="text-[10px] text-neutral-300">
-                                <span className="font-extrabold text-white block">Snacks:</span> {activeDoc.analysis?.dietPlan?.snacks}
+                              <div className="p-5 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-colors">
+                                <span className="text-[9px] font-extrabold text-neutral-400 uppercase tracking-widest block mb-2">Snacks Protocol</span>
+                                <p className="text-xs text-white font-medium leading-relaxed">{activeDoc.analysis?.dietPlan?.snacks}</p>
                               </div>
                             </div>
 
                             {/* Avoid/Increase Lists */}
-                            <div className="grid grid-cols-2 gap-4 mt-2">
-                              <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-xl">
-                                <span className="text-[9px] font-bold text-red-400 uppercase tracking-widest block mb-1">Foods to Limit</span>
-                                <ul className="list-disc pl-3 text-[9px] text-neutral-300 space-y-0.5">
-                                  {activeDoc.analysis?.dietPlan?.foodsToAvoid?.map((f: string, i: number) => <li key={i}>{f}</li>)}
+                            <div className="grid grid-cols-2 gap-4 pt-6 mt-4 border-t border-white/10 relative z-10">
+                              <div className="p-5 bg-red-500/5 border border-red-500/20 rounded-2xl">
+                                <span className="text-[10px] font-black text-red-400 uppercase tracking-widest block mb-3">Eliminate</span>
+                                <ul className="list-none text-xs text-neutral-300 space-y-2 font-medium">
+                                  {activeDoc.analysis?.dietPlan?.foodsToAvoid?.map((f: string, i: number) => <li key={i} className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-500 rounded-full" />{f}</li>)}
                                 </ul>
                               </div>
-                              <div className="p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
-                                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block mb-1">Foods to Increase</span>
-                                <ul className="list-disc pl-3 text-[9px] text-neutral-300 space-y-0.5">
-                                  {activeDoc.analysis?.dietPlan?.foodsToIncrease?.map((f: string, i: number) => <li key={i}>{f}</li>)}
+                              <div className="p-5 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl">
+                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block mb-3">Prioritize</span>
+                                <ul className="list-none text-xs text-neutral-300 space-y-2 font-medium">
+                                  {activeDoc.analysis?.dietPlan?.foodsToIncrease?.map((f: string, i: number) => <li key={i} className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />{f}</li>)}
                                 </ul>
                               </div>
                             </div>
@@ -858,43 +870,63 @@ export default function VaultPage() {
                       )}
 
                       {activeTab === 'exercise' && (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Exercise Schedule */}
-                            <div className="p-4 bg-white/5 border border-white/5 rounded-[24px] space-y-2">
-                              <h4 className="text-xs font-bold text-white uppercase tracking-widest">Movement & Habits</h4>
-                              <ul className="list-disc pl-4 text-xs text-neutral-300 space-y-1">
-                                {activeDoc.analysis?.exercisePlan?.workoutSuggestions?.map((ex: string, i: number) => <li key={i}>{ex}</li>)}
-                                <li>Daily Walking Target: {activeDoc.analysis?.exercisePlan?.walkingGoalSteps || 10000} steps</li>
+                            <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4 relative overflow-hidden shadow-xl hover:bg-white/10 transition-colors">
+                              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent pointer-events-none" />
+                              <h4 className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest relative z-10">Movement & Habits</h4>
+                              <ul className="space-y-3 relative z-10">
+                                {activeDoc.analysis?.exercisePlan?.workoutSuggestions?.map((ex: string, i: number) => (
+                                  <li key={i} className="flex items-start gap-3 p-3 bg-black/40 border border-white/5 rounded-2xl">
+                                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 shrink-0" />
+                                    <span className="text-xs text-white font-medium leading-relaxed">{ex}</span>
+                                  </li>
+                                ))}
+                                <li className="flex items-start gap-3 p-3 bg-black/40 border border-white/5 rounded-2xl">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 shrink-0" />
+                                  <span className="text-xs text-white font-medium leading-relaxed">Daily Walking Target: <span className="font-black text-emerald-400">{activeDoc.analysis?.exercisePlan?.walkingGoalSteps || 10000}</span> steps</span>
+                                </li>
                               </ul>
                             </div>
 
                             {/* Doctor Questions & Reminders */}
-                            <div className="p-4 bg-white/5 border border-white/5 rounded-[24px] space-y-2">
-                              <h4 className="text-xs font-bold text-white uppercase tracking-widest">Reminders & Follow-Ups</h4>
-                              <ul className="list-disc pl-4 text-xs text-neutral-300 space-y-1">
+                            <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4 relative overflow-hidden shadow-xl hover:bg-white/10 transition-colors">
+                              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
+                              <h4 className="text-[10px] font-extrabold text-purple-400 uppercase tracking-widest relative z-10">Reminders & Follow-Ups</h4>
+                              <ul className="space-y-3 relative z-10">
                                 {activeDoc.analysis?.followUpActions?.map((f: any, i: number) => (
-                                  <li key={i}>
-                                    Scheduled {f.testName} in {f.intervalDays} days ({f.status})
+                                  <li key={i} className="flex items-start gap-3 p-3 bg-black/40 border border-white/5 rounded-2xl">
+                                    <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${f.status === 'Completed' ? 'bg-emerald-500' : 'bg-purple-500'}`} />
+                                    <div className="flex flex-col">
+                                      <span className="text-xs text-white font-black uppercase tracking-wide">{f.testName}</span>
+                                      <span className="text-[10px] text-neutral-400 font-medium">In {f.intervalDays} days • {f.status}</span>
+                                    </div>
                                   </li>
                                 ))}
+                                {(!activeDoc.analysis?.followUpActions || activeDoc.analysis.followUpActions.length === 0) && (
+                                  <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest text-center py-4">No pending follow-ups</div>
+                                )}
                               </ul>
                             </div>
                           </div>
 
                           {/* Questions to ask Doctor */}
-                          <div className="p-4 bg-white/5 border border-white/5 rounded-[24px] space-y-2">
-                            <h4 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-1.5">
-                              <BookOpen className="w-4 h-4" /> Doctor Consultation Prep
+                          <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4 relative overflow-hidden shadow-xl">
+                            <h4 className="text-[10px] font-extrabold text-white uppercase tracking-widest flex items-center gap-2 relative z-10">
+                              <BookOpen className="w-4 h-4 text-emerald-400" /> Physician Consultation Prep
                             </h4>
-                            <p className="text-[10px] text-neutral-400 mb-2">Ask your physician these questions regarding this report:</p>
-                            <div className="space-y-2">
+                            <p className="text-[10px] text-neutral-400 mb-2 relative z-10 font-medium">Ask your physician these questions regarding this report:</p>
+                            <div className="space-y-3 relative z-10">
                               {activeDoc.analysis?.doctorQuestions?.map((q: string, idx: number) => (
-                                <div key={idx} className="p-2.5 bg-white/5 rounded-xl text-xs text-neutral-300 flex items-start gap-2">
-                                  <span className="text-white font-extrabold">Q.</span>
-                                  <span>{q}</span>
+                                <div key={idx} className="p-4 bg-black/40 border border-white/5 rounded-2xl text-xs text-white flex items-start gap-3 hover:bg-white/5 transition-colors">
+                                  <span className="text-emerald-400 font-black text-sm uppercase">Q.</span>
+                                  <span className="font-medium leading-relaxed">{q}</span>
                                 </div>
                               ))}
+                              {(!activeDoc.analysis?.doctorQuestions || activeDoc.analysis.doctorQuestions.length === 0) && (
+                                <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest text-center py-4">No specific questions generated.</div>
+                              )}
                             </div>
                           </div>
                         </div>
