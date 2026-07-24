@@ -96,6 +96,16 @@ model UserProfile {
   dietaryRestrictions  DietaryRestriction[]
   mealFeedbacks        MealFeedback[]
   mealStreaks          MealStreak[]
+
+  // New Workout Studio Relations
+  exerciseHistory           ExerciseHistory[]
+  cameraSessions            CameraSession[]
+  personalRecords           PersonalRecord[]
+  muscleRecovery            MuscleRecovery[]
+  calorieLogs               CalorieLog[]
+  nutritionRecommendations  NutritionRecommendation[]
+  injuryPredictions         InjuryPrediction[]
+  auraWorkoutMemory         AuraWorkoutMemory?
 }
 
 model Settings {
@@ -202,6 +212,9 @@ model WorkoutSession {
   jointAngleLogs   Json           // High/Low angle ranges per joint
   recordedAt       DateTime       @default(now())
   profile          UserProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  sets             WorkoutSet[]
+  repsLogs         RepAnalysis[]
 }
 
 model SleepLog {
@@ -1350,4 +1363,189 @@ model MealStreak {
   lastStreakAt DateTime   @default(now())
   profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   @@index([profileId])
+}
+
+// --- WORKOUT STUDIO HEALTH OS MODELS ---
+
+model WorkoutSet {
+  id             String         @id @default(uuid())
+  sessionId      String
+  setNumber      Int
+  weightKg       Float
+  reps           Int
+  completedReps  Int            @default(0)
+  avgAccuracy    Float          @default(0.0)
+  createdAt      DateTime       @default(now())
+
+  workoutSession WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model ExerciseLibrary {
+  id                 String             @id @default(uuid())
+  slug               String             @unique // e.g. "dumbbell-goblet-squat"
+  name               String
+  category           String             // STRENGTH, CARDIO, MOBILITY, REHAB
+  difficulty         String             // BEGINNER, INTERMEDIATE, ADVANCED
+  equipment          String[]
+  primaryMuscles     String[]
+  secondaryMuscles   String[]
+  benefits           String[]
+  commonMistakes     String[]
+  alternatives       String[]
+  imageUrl           String
+  caloriesFormula    String             // stringified JS formula or metadata
+  progression        String?
+  regression         String?
+  mobilityRequirement String             // Low, Medium, High
+  createdAt          DateTime           @default(now())
+
+  steps              ExerciseStep[]
+  history            ExerciseHistory[]
+}
+
+model ExerciseStep {
+  id                String          @id @default(uuid())
+  exerciseLibraryId String
+  stepIndex         Int
+  instructionText   String          @db.Text
+  coachingNote      String?         @db.Text
+  
+  exercise          ExerciseLibrary @relation(fields: [exerciseLibraryId], references: [id], onDelete: Cascade)
+}
+
+model ExerciseHistory {
+  id                String          @id @default(uuid())
+  profileId         String
+  exerciseLibraryId String
+  maxWeight         Float           @default(0)
+  maxReps           Int             @default(0)
+  completedCount    Int             @default(0)
+  lastPerformedAt   DateTime        @default(now())
+
+  profile           UserProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  exercise          ExerciseLibrary @relation(fields: [exerciseLibraryId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, exerciseLibraryId])
+}
+
+model RepAnalysis {
+  id             String         @id @default(uuid())
+  sessionId      String
+  repIndex       Int
+  accuracy       Float
+  symmetryIndex  Float
+  stabilityIndex Float
+  balanceIndex   Float
+  jointAngleLogs Json           // High/Low/Tempo details for this rep
+  feedbackMsg    String?
+  createdAt      DateTime       @default(now())
+
+  workoutSession WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model CameraSession {
+  id             String         @id @default(uuid())
+  profileId      String
+  streamDuration Int            // seconds
+  poseConfidence Float
+  cameraSettings Json           // { resolution, fps, devices }
+  createdAt      DateTime       @default(now())
+
+  profile        UserProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model PersonalRecord {
+  id             String         @id @default(uuid())
+  profileId      String
+  exerciseName   String
+  metricType     String         // MAX_WEIGHT, MAX_REPS, MAX_VOLUME, MAX_DURATION, MAX_CALORIES, BEST_FORM_SCORE
+  value          Float
+  recordedAt     DateTime       @default(now())
+
+  profile        UserProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model MuscleRecovery {
+  id                  String         @id @default(uuid())
+  profileId           String
+  muscleGroup         String         // Glutes, Quads, Chest, etc.
+  fatigueLevel        Float          // 0.0 to 1.0 (100% fatigued)
+  recoveryRatePercent Float          // 0.0 to 100.0
+  lastWorkedAt        DateTime       @default(now())
+  estimatedReadyAt    DateTime
+
+  profile             UserProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, muscleGroup])
+}
+
+model CalorieLog {
+  id             String         @id @default(uuid())
+  profileId      String
+  type           String         // BURNED, CONSUMED
+  amount         Int            // kcal
+  source         String         // e.g. "Workout", "Meal"
+  loggedAt       DateTime       @default(now())
+
+  profile        UserProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model Achievement {
+  id          String            @id @default(uuid())
+  slug        String            @unique // e.g. "first-workout", "10k-calories"
+  title       String
+  description String
+  badgeUrl    String?
+  points      Int               @default(10)
+}
+
+model NutritionRecommendation {
+  id          String            @id @default(uuid())
+  profileId   String
+  proteinGrams Float
+  carbsGrams  Float
+  fatGrams    Float
+  waterMl     Int
+  mealSuggestions Json          // Array of meal plans
+  recoveryFoods   String[]
+  shoppingList    String[]
+  generatedAt DateTime          @default(now())
+
+  profile     UserProfile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model InjuryPrediction {
+  id            String          @id @default(uuid())
+  profileId     String
+  riskLevel     String          // LOW, MEDIUM, HIGH
+  jointStressScore Float
+  loadImbalanceRatio Float
+  predictedRisk String          // e.g. "Overtraining/Patellar Tendinitis"
+  alternatives  String[]
+  createdAt     DateTime        @default(now())
+
+  profile       UserProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model AuraWorkoutMemory {
+  id                 String     @id @default(uuid())
+  profileId          String     @unique
+  preferredExercises String[]
+  strengthProgression Json      // { exercise: weightHistory }
+  weakMuscles        String[]
+  goals              String[]
+  recoveryNotes      String[]
+  injuryNotes        String[]
+  trainingFrequency  Float      // sessions per week
+  updatedAt          DateTime   @updatedAt
+
+  profile            UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }

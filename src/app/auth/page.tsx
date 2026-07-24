@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
@@ -94,6 +95,63 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
     } catch (err: any) {
       toast.error(err.message || 'Failed to resend code');
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sign in with Google');
+      setIsLoading(false);
+    }
+  };
+
+  const handleFacebookLogin = async () => {
+    try {
+      setIsLoading(true);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sign in with Facebook');
+      setIsLoading(false);
+    }
+  };
+
+  const handleOutlookLogin = async () => {
+    try {
+      setIsLoading(true);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'azure',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sign in with Outlook');
       setIsLoading(false);
     }
   };
@@ -609,39 +667,71 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
             <div className="mt-8 text-center">
               <div className="flex items-center justify-center gap-3 max-w-[320px] mx-auto">
                 <button
-                  onClick={() => toast.success('Google login selected')}
-                  className="w-12 h-11 bg-[black] hover:bg-[#111] border border-white/5 rounded-xl flex items-center justify-center transition-colors cursor-pointer"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading}
+                  className="w-12 h-11 bg-[black] hover:bg-[#111] border border-white/5 rounded-xl flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Sign in with Google"
                 >
                   {/* Google SVG */}
-                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.324 0-6.027-2.703-6.027-6.028s2.703-6.028 6.027-6.028c1.512 0 2.89.56 3.96 1.48l3.1-3.1C18.913 2.827 15.827 1.5 12.24 1.5c-5.79 0-10.5 4.71-10.5 10.5s4.71 10.5 10.5 10.5c5.36 0 9.8-3.84 9.8-10.5 0-.64-.08-1.24-.2-1.715H12.24z" />
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58v2.24h3.94c2.3-2.12 3.67-5.02 3.67-8.64z"/>
+                    <path fill="#34A853" d="M12 24c3.27 0 6.02-1.08 8.02-2.92l-3.94-2.24c-1.08.72-2.46 1.15-4.08 1.15-3.13 0-5.78-2.12-6.73-4.96H1.27v2.3C3.26 21.6 7.23 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.27 15.03c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28v-2.3H1.27C.46 9.4 0 10.66 0 12s.46 2.6 1.27 3.55l4-2.52z"/>
+                    <path fill="#EA4335" d="M12 4.8c1.74 0 3.3.6 4.52 1.77l3.39-3.39C17.65 1.13 15.15 0 12 0 7.23 0 3.26 2.4 1.27 6.35l4 2.52c.95-2.84 3.6-4.96 6.73-4.96z"/>
                   </svg>
                 </button>
                 <button
-                  onClick={() => toast.success('Facebook login selected')}
-                  className="w-12 h-11 bg-[black] hover:bg-[#111] border border-white/5 rounded-xl flex items-center justify-center transition-colors cursor-pointer"
+                  onClick={handleFacebookLogin}
+                  disabled={isLoading}
+                  className="w-12 h-11 bg-[black] hover:bg-[#111] border border-white/5 rounded-xl flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Sign in with Facebook"
                 >
                   {/* Facebook SVG */}
-                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z" />
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="11" fill="#ffffff" />
+                    <path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                   </svg>
                 </button>
                 <button
-                  onClick={() => toast.success('Steam login selected')}
-                  className="w-12 h-11 bg-[black] hover:bg-[#111] border border-white/5 rounded-xl flex items-center justify-center transition-colors cursor-pointer"
+                  onClick={handleOutlookLogin}
+                  disabled={isLoading}
+                  className="w-12 h-11 bg-[black] hover:bg-[#111] border border-white/5 rounded-xl flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Sign in with Outlook"
                 >
-                  {/* Steam SVG Icon */}
-                  <svg className="w-5 h-5 text-white/70" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.018-.01.036-.02.05-.035l4.312-5.18c.677.24 1.41.375 2.183.375 3.313 0 6-2.69 6-6s-2.687-6-6-6-6 2.69-6 6c0 .762.138 1.488.375 2.158l-5.19 4.316a11.9 11.9 0 0 1-.935-4.814c0-5.91 4.793-10.7 10.7-10.7s10.7 4.79 10.7 10.7-4.79 10.7-10.7 10.7c-.504 0-1.002-.037-1.492-.108l.006-.002zm1.25 15.453c-1.795 0-3.25-1.455-3.25-3.25s1.455-3.25 3.25-3.25 3.25 1.455 3.25 3.25-1.455 3.25-3.25 3.25zm0-5c-.966 0-1.75.784-1.75 1.75s.784 1.75 1.75 1.75 1.75-.784 1.75-1.75-.784-1.75-1.75-1.75z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => toast.success('Apple login selected')}
-                  className="w-12 h-11 bg-[black] hover:bg-[#111] border border-white/5 rounded-xl flex items-center justify-center transition-colors cursor-pointer"
-                >
-                  {/* Apple SVG */}
-                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-.96.04-2.13.64-2.82 1.45-.6.69-1.12 1.83-.98 2.94 1.07.08 2.15-.52 2.81-1.33z" />
+                  {/* Outlook SVG */}
+                  <svg className="w-5 h-5" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="outlook_grad1" gradientUnits="userSpaceOnUse" x1="315.53" y1="-877.43" x2="315.53" y2="-651.19" gradientTransform="translate(0, 1145.33)">
+                        <stop offset="0" stopColor="#35B8F1"/>
+                        <stop offset="1" stopColor="#28A8EA"/>
+                      </linearGradient>
+                      <linearGradient id="outlook_grad2" gradientUnits="userSpaceOnUse" x1="45.51" y1="-1037.36" x2="216.45" y2="-741.3" gradientTransform="translate(0, 1145.33)">
+                        <stop offset="0" stopColor="#1784D9"/>
+                        <stop offset="0.5" stopColor="#107AD5"/>
+                        <stop offset="1" stopColor="#0A63C9"/>
+                      </linearGradient>
+                    </defs>
+                    <path fill="#0A2767" d="M512,267.91c0.03-4-2.04-7.73-5.45-9.82h-0.06l-0.21-0.12L328.86,152.95c-0.77-0.52-1.56-0.99-2.38-1.42c-6.85-3.53-14.99-3.53-21.84,0c-0.82,0.43-1.62,0.9-2.38,1.42L124.84,257.96l-0.21,0.12c-5.42,3.37-7.08,10.5-3.71,15.92c0.99,1.6,2.36,2.93,3.99,3.88L302.32,382.9c0.77,0.51,1.56,0.99,2.38,1.42c6.85,3.53,14.99,3.53,21.84,0c0.82-0.43,1.61-0.9,2.38-1.42l177.41-105.02C509.88,275.82,512.04,272.01,512,267.91z"/>
+                    <path fill="#0364B8" d="M145.53,197.79h116.43v106.72H145.53V197.79z M488.19,89.3V40.48c0.28-12.21-9.38-22.33-21.59-22.62H164.47c-12.21,0.29-21.87,10.42-21.59,22.62V89.3l178.6,47.63L488.19,89.3z"/>
+                    <path fill="#0078D4" d="M142.88,89.3h119.07v107.16H142.88V89.3z"/>
+                    <path fill="#28A8EA" d="M381.02,89.3H261.95v107.16l119.07,107.16h107.16V196.47L381.02,89.3z"/>
+                    <path fill="#0078D4" d="M261.95,196.47h119.07v107.16H261.95V196.47z"/>
+                    <path fill="#0364B8" d="M261.95,303.63h119.07v107.16H261.95V303.63z"/>
+                    <path fill="#14447D" d="M145.53,304.51h116.43v97.02H145.53V304.51z"/>
+                    <path fill="#0078D4" d="M381.02,303.63h107.16v107.16H381.02V303.63z"/>
+                    <path fill="url(#outlook_grad1)" d="M506.55,277.23l-0.23,0.12l-177.41,99.78c-0.77,0.48-1.56,0.93-2.38,1.33c-3.01,1.43-6.29,2.25-9.62,2.38l-9.69-5.67c-0.82-0.41-1.61-0.87-2.38-1.37l-179.8-102.61h-0.08l-5.88-3.29V469.9c0.09,13.48,11.09,24.33,24.56,24.24h344.18c0.2,0,0.38-0.1,0.6-0.1c2.85-0.18,5.65-0.77,8.33-1.74c1.16-0.49,2.28-1.07,3.35-1.74c0.8-0.45,2.17-1.44,2.17-1.44c6.1-4.51,9.71-11.64,9.74-19.23V267.91C512,271.77,509.91,275.33,506.55,277.23z"/>
+                    <path fill="#0A2767" opacity="0.5" d="M502.47,267.11v12.38L316.96,407.22L124.9,271.28c0-0.07-0.05-0.12-0.12-0.12l0,0l-17.62-10.6v-8.93l7.26-0.12l15.36,8.81l0.36,0.12l1.31,0.83c0,0,180.51,103,180.99,103.23l6.91,4.05c0.6-0.24,1.19-0.48,1.91-0.71c0.36-0.24,179.2-100.85,179.2-100.85L502.47,267.11z"/>
+                    <path fill="#1490DF" d="M506.55,277.23l-0.23,0.13l-177.41,99.78c-0.77,0.48-1.56,0.93-2.38,1.33c-6.89,3.37-14.95,3.37-21.84,0c-0.82-0.4,1.61-0.85-2.38-1.33l-177.41-99.78l-0.21-0.13c-3.43-1.86-5.57-5.43-5.61-9.32V469.9c0.09,13.47,11.08,24.33,24.55,24.24c0,0,0,0,0,0h343.83c13.47,0.09,24.47-10.77,24.55-24.24c0,0,0,0,0,0V267.91C512,271.77,509.91,275.33,506.55,277.23z"/>
+                    <path fill="#000000" opacity="0.1" d="M331.49,375.67l-2.66,1.49c-0.77,0.49-1.56,0.94-2.38,1.35c-2.93,1.44-6.11,2.28-9.36,2.48l67.5,79.82l117.75,28.37c3.23-2.44,5.79-5.64,7.47-9.32L331.49,375.67z"/>
+                    <path fill="#000000" opacity="0.05" d="M343.52,368.9l-14.68,8.25c-0.77,0.49-1.56,0.94-2.38,1.35c-2.93,1.44-6.11,2.28-9.36,2.48l31.62,87.19l153.66,20.97c6.05-4.54,9.62-11.67,9.62-19.24v-2.61L343.52,368.9z"/>
+                    <path fill="#28A8EA" d="M143.96,494.14h343.46c5.29,0.03,10.44-1.64,14.7-4.76L307.2,375.2c-0.82-0.41-1.61-0.87-2.38-1.37l-179.8-102.61h-0.08l-5.87-3.31v201.3C119.06,482.96,130.2,494.13,143.96,494.14C143.96,494.14,143.96,494.14,143.96,494.14z"/>
+                    <path fill="#000000" opacity="0.1" d="M285.77,134.94v253.98c-0.02,8.9-5.44,16.91-13.69,20.24c-2.56,1.1-5.31,1.67-8.1,1.67H119.07v-285.8h23.81v-11.91h121.09C276.01,113.16,285.74,122.91,285.77,134.94z"/>
+                    <path fill="#000000" opacity="0.2" d="M273.86,146.85v253.98c0.03,2.88-0.58,5.72-1.79,8.33c-3.31,8.15-11.21,13.5-20,13.54h-133V125.02h133c3.45-0.03,6.86,0.83,9.88,2.5C269.25,131.2,273.86,138.68,273.86,146.85z"/>
+                    <path fill="#000000" opacity="0.2" d="M273.86,146.85v230.16c-0.06,12.02-9.77,21.77-21.79,21.87h-133V125.02h133c3.45-0.03,6.86,0.83,9.88,2.5C269.25,131.2,273.86,138.68,273.86,146.85z"/>
+                    <path fill="#000000" opacity="0.2" d="M261.95,146.85v230.16c-0.01,12.04-9.75,21.81-21.79,21.87H119.07V125.02h121.09c12.04,0.01,21.8,9.77,21.79,21.81C261.95,146.84,261.95,146.84,261.95,146.85z"/>
+                    <path fill="url(#outlook_grad2)" d="M21.83,125.02h218.3c12.05,0,21.83,9.77,21.83,21.83v218.3c0,12.05-9.77,21.83-21.83,21.83H21.83C9.77,386.98,0,377.2,0,365.15v-218.3C0,134.8,9.77,125.02,21.83,125.02z"/>
+                    <path fill="#FFFFFF" d="M68.22,216.56c5.38-11.46,14.06-21.05,24.93-27.54c12.04-6.89,25.75-10.33,39.61-9.93c12.85-0.28,25.53,2.98,36.66,9.42c10.46,6.24,18.89,15.38,24.25,26.31c5.85,12.05,8.76,25.31,8.5,38.7c0.28,13.99-2.71,27.86-8.75,40.48c-5.49,11.33-14.19,20.79-25,27.23c-11.56,6.64-24.71,9.98-38.03,9.67c-13.13,0.32-26.09-2.98-37.47-9.53c-10.55-6.25-19.08-15.4-24.58-26.36c-5.88-11.87-8.83-24.99-8.6-38.23C59.5,242.91,62.4,229.16,68.22,216.56z M94.79,281.22c2.87,7.25,7.73,13.53,14.03,18.12c6.41,4.48,14.09,6.79,21.91,6.6c8.33,0.33,16.54-2.06,23.39-6.81c6.22-4.58,10.95-10.88,13.62-18.12c2.99-8.09,4.46-16.66,4.35-25.28c0.09-8.7-1.29-17.36-4.1-25.6c-2.48-7.44-7.06-14-13.19-18.88c-6.68-4.97-14.86-7.5-23.18-7.14c-7.99-0.21-15.84,2.12-22.42,6.66c-6.4,4.61-11.36,10.95-14.29,18.28c-6.5,16.79-6.54,35.4-0.1,52.21L94.79,281.22z"/>
+                    <path fill="#50D9FF" d="M381.02,89.3h107.16v107.16H381.02V89.3z"/>
                   </svg>
                 </button>
               </div>
