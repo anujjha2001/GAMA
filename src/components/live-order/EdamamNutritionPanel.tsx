@@ -51,6 +51,7 @@ interface Recipe {
   url: string;
   yield: number;
   calories: number;
+  Carbs: number;
   totalTime: number;
   cuisineType: string[];
   mealType: string[];
@@ -91,7 +92,7 @@ export default function EdamamNutritionPanel() {
       const res = await fetch(`/api/nutrition?query=${encodeURIComponent(term)}&type=${mode}`);
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed');
-      
+
       if (mode === 'nutrition') {
         setNutrition(data.data);
         toast.success('Nutrition facts loaded!');
@@ -109,7 +110,7 @@ export default function EdamamNutritionPanel() {
 
   const getScoreColor = (score: number) =>
     score >= 75 ? 'text-emerald-400' : score >= 55 ? 'text-amber-400' : 'text-red-400';
-  
+
   const getScoreBg = (score: number) =>
     score >= 75 ? 'bg-emerald-500/10 border-emerald-500/20' : score >= 55 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20';
 

@@ -383,11 +383,11 @@ export function DashboardView() {
       <div className="relative w-full rounded-[40px] border border-white/5 overflow-hidden z-10 bg-[#09090b]/80 backdrop-blur-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
 
         {/* Dashboard Hero Background - HD Motion Vision (No blur) */}
-        <motion.div 
+        <motion.div
           initial={{ scale: 1 }}
           animate={{ scale: 1.05 }}
           transition={{ duration: 20, repeat: Infinity, repeatType: 'reverse', ease: "linear" }}
-          className="absolute inset-0 bg-cover bg-center opacity-85 pointer-events-none z-0" 
+          className="absolute inset-0 bg-cover bg-center opacity-75 pointer-events-none z-0"
           style={{ backgroundImage: 'url("/dashboard-hero-clean.jpg")' }}
         />
         <div className="absolute inset-0 bg-gradient-to-tr from-[#09090b] via-[#09090b]/85 to-transparent pointer-events-none z-0" />
