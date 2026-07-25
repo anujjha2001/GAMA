@@ -106,7 +106,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/api/auth/callback`,
         },
       });
       if (error) {
@@ -125,7 +125,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/api/auth/callback`,
         },
       });
       if (error) {
@@ -144,7 +144,7 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'azure',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/api/auth/callback`,
         },
       });
       if (error) {
