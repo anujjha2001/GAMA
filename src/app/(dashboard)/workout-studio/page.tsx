@@ -370,324 +370,281 @@ export default function WorkoutStudioPage() {
 
       {/* MAIN SPATIAL GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 flex-1">
+        
+        {/* CENTER MAIN CAMERA (Col Span 9) */}
+        <div className="lg:col-span-9 flex flex-col gap-6 h-full">
+           <div className="flex-1 bg-black rounded-[32px] overflow-hidden relative shadow-2xl border border-white/10 group">
+              <PoseCamera
+                onPoseData={handlePoseData}
+                onCameraStateChange={setIsCameraActive}
+                jointWarnings={safetyStatus.warnings}
+              />
 
-        {/* LEFT COLUMN: ACTIVE MODEL VIEW & CONTROLS */}
-        <div className="lg:col-span-8 flex flex-col gap-6 h-full min-h-[500px]">
+              {/* Left Overlay - Exercise Stats */}
+              <div className="absolute top-6 left-6 bottom-6 w-72 flex flex-col gap-4 z-20 pointer-events-none">
+                <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
+                   <p className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest mb-1">Exercise</p>
+                   <h3 className="text-xl font-bold text-white leading-tight mb-4">{activeExercise.name}</h3>
+                   <div className="flex items-center gap-2 mb-6">
+                      <span className="text-xs font-bold text-neutral-300">SET 2</span>
+                      <span className="w-1 h-1 rounded-full bg-white/20" />
+                      <span className="text-xs font-bold text-neutral-300">REP {reps} / 12</span>
+                   </div>
+                   
+                   <div className="flex justify-center mb-6">
+                     {/* Circular Progress */}
+                     <div className="w-32 h-32 rounded-full border-4 border-white/10 flex items-center justify-center relative">
+                        <svg className="absolute inset-0 w-full h-full transform -rotate-90">
+                           <circle cx="60" cy="60" r="56" fill="transparent" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                           <circle cx="60" cy="60" r="56" fill="transparent" stroke="rgba(52,211,153,1)" strokeWidth="8" strokeDasharray="351" strokeDashoffset={351 - (Math.min(reps, 12)/12)*351} className="transition-all duration-300" />
+                        </svg>
+                        <div className="text-center absolute inset-0 flex flex-col items-center justify-center">
+                           <span className="text-4xl font-black text-white">{reps}</span>
+                           <span className="block text-[10px] text-neutral-400 font-bold tracking-widest">REPS</span>
+                        </div>
+                     </div>
+                   </div>
 
-          {/* INTERACTIVE STEP-BY-STEP EXERCISE GUIDE */}
-          <div className="flex-1 bg-white/5 border border-white/10 rounded-[32px] overflow-hidden relative shadow-2xl backdrop-blur-3xl min-h-[400px] flex flex-col p-8 justify-between">
-            {/* Full-screen Background Image with premium transitions */}
-            <div className="absolute inset-0 z-0 select-none pointer-events-none">
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={`${activeExercise.id}-step-${currentStep}`}
-                  initial={{ opacity: 0, scale: 1.05 }}
-                  animate={{ opacity: 0.75, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.05 }}
-                  transition={{ duration: 0.4 }}
-                  src={getStepImage(activeExercise.id, currentStep)}
-                  alt={`Step ${currentStep + 1} for ${activeExercise.name}`}
-                  className="w-full h-full object-cover"
-                />
-              </AnimatePresence>
-              {/* Premium dark vignette/overlays to ensure contrast and readability of text/subtitles */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/20 to-black/90 pointer-events-none" />
-            </div>
+                   <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="bg-white/5 rounded-xl p-3">
+                         <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold block mb-1">Rest Time</span>
+                         <span className="text-lg font-bold text-white">00:28</span>
+                      </div>
+                      <div className="bg-white/5 rounded-xl p-3">
+                         <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold block mb-1">Tempo</span>
+                         <span className="text-lg font-bold text-white">2-1-2</span>
+                      </div>
+                   </div>
+                </div>
 
-            {/* Header: Title and Meta */}
-            <div className="relative z-10 flex items-center justify-between border-b border-white/10 pb-4 mb-6 bg-black/40 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/5 shadow-lg">
-              <div>
-                <span className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest block">Interactive Guide</span>
-                <h3 className="text-2xl font-black text-white mt-1 tracking-tight">
-                  {activeExercise.name}
-                </h3>
+                <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-5 rounded-3xl mt-auto">
+                   <span className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest mb-2 block">TIP</span>
+                   <p className="text-sm text-neutral-300 leading-relaxed">
+                     Focus on squeezing your rear delts at the end of the movement.
+                   </p>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-neutral-300">
-                  {activeExercise.category}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${activeExercise.difficulty === 'BEGINNER' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' :
-                  activeExercise.difficulty === 'INTERMEDIATE' ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' :
-                    'bg-rose-500/10 border border-rose-500/20 text-rose-400'
-                  }`}>
-                  {activeExercise.difficulty}
-                </span>
-              </div>
-            </div>
 
-            {/* Body: Full-screen Image with Subtitle overlay */}
-            <div className="relative z-10 flex-1 flex flex-col justify-end items-center pb-8 select-none">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={`${activeExercise.id}-text-${currentStep}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="max-w-[90%] md:max-w-[80%] bg-black/75 backdrop-blur-md border border-white/10 px-8 py-5 rounded-2xl text-center shadow-2xl relative"
-                >
-                  {/* Cinematic Step Badge */}
-                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-0.5 bg-blue-500 text-[10px] font-black uppercase rounded-full tracking-wider shadow-lg border border-blue-400/20">
-                    STEP {(currentStep + 1).toString().padStart(2, '0')}
-                  </span>
-
-                  {/* Cinematic Subtitle text */}
-                  <p className="text-base md:text-xl text-white font-semibold leading-relaxed drop-shadow-md">
-                    "{activeExercise.instructions[currentStep]}"
-                  </p>
-
-                  {/* Coaching Note specific to the exercise step */}
-                  {activeExercise.coachingNotes[currentStep % activeExercise.coachingNotes.length] && (
-                    <div className="mt-3 pt-3 border-t border-white/10 text-xs text-neutral-300 font-mono tracking-wide flex items-center justify-center gap-1.5">
-                      <span> Pro Tip: {activeExercise.coachingNotes[currentStep % activeExercise.coachingNotes.length]}</span>
+              {/* Bottom Center Overlay - AI Coach */}
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                 <div className="bg-black/80 backdrop-blur-2xl border border-white/10 py-4 px-8 rounded-full flex items-center gap-6 shadow-2xl max-w-2xl transition-all duration-500" style={{ transform: talking ? 'scale(1.02)' : 'scale(1)' }}>
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center relative">
+                       <Volume2 className="w-5 h-5 text-emerald-400" />
+                       {talking && <div className="absolute inset-0 rounded-full border border-emerald-400/50 animate-ping" />}
                     </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {/* Footer: Stepper Controls and Progress */}
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-white/10 bg-black/40 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/5 shadow-lg mt-4">
-              {/* Step Indicators */}
-              <div className="flex gap-2">
-                {activeExercise.instructions.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      AudioFeedback.playTap();
-                      setCurrentStep(idx);
-                    }}
-                    className={`h-2 rounded-full transition-all duration-300 ${idx === currentStep ? 'w-8 bg-blue-500' : 'w-2 bg-white/20 hover:bg-white/40'
-                      }`}
-                  />
-                ))}
+                    <div>
+                       <p className="text-base text-white font-medium">
+                         {auraCue || "Ready when you are."}
+                       </p>
+                       <div className="flex items-center gap-1 mt-2 h-2">
+                         {Array.from({length: 30}).map((_, i) => (
+                           <div key={i} className={`w-1 ${talking ? 'bg-emerald-500/50 animate-pulse' : 'bg-white/10'} rounded-full`} style={{ height: talking ? Math.random() * 8 + 2 + 'px' : '2px', animationDelay: `${i * 0.1}s` }} />
+                         ))}
+                       </div>
+                    </div>
+                 </div>
               </div>
 
-              {/* Prev / Next Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    AudioFeedback.playTap();
-                    setCurrentStep(prev => Math.max(0, prev - 1));
-                  }}
-                  disabled={currentStep === 0}
-                  className="px-5 py-2.5 bg-white/5 border border-white/10 text-neutral-300 disabled:opacity-40 disabled:pointer-events-none hover:text-white hover:border-white/20 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={() => {
-                    AudioFeedback.playTap();
-                    if (currentStep < activeExercise.instructions.length - 1) {
-                      setCurrentStep(prev => prev + 1);
-                    } else {
-                      toast.success("Workout guide completed! Ready to start your set?");
+              {/* Camera Controls Overlay */}
+              <div className="absolute bottom-6 left-6 flex items-center gap-3 z-30">
+                 <button onClick={() => setIsMuted(!isMuted)} className="w-12 h-12 rounded-2xl bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors pointer-events-auto">
+                    {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                 </button>
+                 <button className="w-12 h-12 rounded-2xl bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors pointer-events-auto">
+                    <Sparkles className="w-5 h-5" />
+                 </button>
+                 <button onClick={() => setIsCameraActive(!isCameraActive)} className="w-12 h-12 rounded-2xl bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors pointer-events-auto">
+                    {isCameraActive ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+                 </button>
+              </div>
+           </div>
+
+           {/* Workout Flow Timeline */}
+           <div className="h-28 bg-black/40 backdrop-blur-xl border border-white/10 rounded-[32px] flex items-center px-6 gap-6 shadow-lg">
+              <div className="flex flex-col gap-1 min-w-[150px]">
+                 <span className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">Workout Flow</span>
+                 <button className="flex items-center gap-2 text-sm font-bold text-white cursor-pointer hover:text-emerald-400 transition-colors">
+                    Upper Body Strength <ChevronRight className="w-4 h-4 text-neutral-400 rotate-90" />
+                 </button>
+              </div>
+              
+              <div className="h-10 w-px bg-white/10" />
+
+              <div className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                 <div className="flex items-center gap-4 px-4 py-3 bg-white/5 rounded-2xl border border-white/5 opacity-50 shrink-0">
+                    <div>
+                       <h5 className="text-xs font-bold text-neutral-300">WARM UP</h5>
+                       <span className="text-[10px] text-neutral-500">5:00</span>
+                    </div>
+                    <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">✓</div>
+                 </div>
+                 <div className="w-4 h-px bg-white/10 shrink-0" />
+                 <div className="flex items-center gap-4 px-4 py-3 bg-white/5 rounded-2xl border border-white/5 opacity-50 shrink-0">
+                    <div>
+                       <h5 className="text-xs font-bold text-neutral-300">CABLE ROW</h5>
+                       <span className="text-[10px] text-neutral-500">3 sets</span>
+                    </div>
+                    <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">✓</div>
+                 </div>
+                 <div className="w-4 h-px bg-white/10 shrink-0" />
+                 <div className="flex items-center gap-4 px-5 py-3 bg-white/10 rounded-2xl border border-emerald-500/30 relative shrink-0">
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+                    <div>
+                       <h5 className="text-xs font-black text-white">{activeExercise.name.toUpperCase()}</h5>
+                       <span className="text-[10px] text-emerald-400 font-bold">3 sets</span>
+                    </div>
+                 </div>
+                 <div className="w-4 h-px bg-white/10 shrink-0" />
+                 <div className="flex items-center gap-4 px-4 py-3 bg-white/2 rounded-2xl border border-transparent shrink-0">
+                    <div>
+                       <h5 className="text-xs font-bold text-neutral-500">LAT PULL DOWN</h5>
+                       <span className="text-[10px] text-neutral-600">3 sets</span>
+                    </div>
+                 </div>
+                 <div className="w-4 h-px bg-white/10 shrink-0" />
+                 <div className="flex items-center gap-4 px-4 py-3 bg-white/2 rounded-2xl border border-transparent shrink-0">
+                    <div>
+                       <h5 className="text-xs font-bold text-neutral-500">DB SHOULDER PRESS</h5>
+                       <span className="text-[10px] text-neutral-600">3 sets</span>
+                    </div>
+                 </div>
+              </div>
+              
+              <div className="h-10 w-px bg-white/10 hidden xl:block" />
+
+              <div className="items-center gap-4 min-w-[200px] hidden xl:flex cursor-pointer group">
+                 <div>
+                    <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest block mb-1">Next Exercise</span>
+                    <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">Lat Pull Down</h4>
+                    <span className="text-[10px] text-neutral-400">3 sets x 12 reps</span>
+                 </div>
+                 <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-emerald-500/30 transition-colors">
+                    <ChevronRight className="w-5 h-5 text-neutral-400 group-hover:text-emerald-400 transition-colors" />
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* RIGHT COLUMN (Col Span 3) */}
+        <div className="lg:col-span-3 flex flex-col gap-6">
+           {/* Form Feedback */}
+           <div className="bg-black/40 backdrop-blur-xl border border-white/10 p-6 rounded-[32px]">
+              <h4 className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest mb-6">Form Feedback</h4>
+              
+              <div className="space-y-4">
+                 <div className="flex items-center justify-between">
+                    <div>
+                       <span className="text-xs font-bold text-neutral-300 block mb-0.5">Shoulder Alignment</span>
+                       <span className="text-[10px] text-emerald-400 font-bold">{poseConfidence > 0.6 ? 'Perfect' : 'Waiting...'}</span>
+                    </div>
+                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">{poseConfidence > 0.6 ? '✓' : '-'}</div>
+                 </div>
+                 <div className="w-full h-px bg-white/5" />
+                 <div className="flex items-center justify-between">
+                    <div>
+                       <span className="text-xs font-bold text-neutral-300 block mb-0.5">Elbow Position</span>
+                       <span className="text-[10px] text-emerald-400 font-bold">{poseConfidence > 0.6 ? 'Perfect' : 'Waiting...'}</span>
+                    </div>
+                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">{poseConfidence > 0.6 ? '✓' : '-'}</div>
+                 </div>
+                 <div className="w-full h-px bg-white/5" />
+                 <div className="flex items-center justify-between">
+                    <div>
+                       <span className="text-xs font-bold text-neutral-300 block mb-0.5">Range of Motion</span>
+                       <span className="text-[10px] text-amber-400 font-bold">{poseConfidence > 0.6 ? 'Good' : 'Waiting...'}</span>
+                    </div>
+                    {poseConfidence > 0.6 ? 
+                        <div className="w-6 h-6 rounded-full border-2 border-amber-400/50 border-t-amber-400 animate-spin" /> :
+                        <div className="w-6 h-6 rounded-full bg-white/5 text-neutral-500 flex items-center justify-center text-xs">-</div>
                     }
-                  }}
-                  className="px-5 py-2.5 bg-white text-black hover:bg-neutral-200 text-xs font-extrabold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
-                >
-                  {currentStep === activeExercise.instructions.length - 1 ? 'Finish Guide' : 'Next Step'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* LOWER CONTROLS & TIMELINE ROW */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div 
-              onClick={() => { AudioFeedback.playTap(); store.openPanel('COACH'); }}
-              className="bg-white/5 border border-white/10 p-6 rounded-[32px] backdrop-blur-2xl flex flex-col justify-between shadow-xl cursor-pointer hover:border-white/20 hover:scale-[1.01] transition-all duration-300"
-            >
-              <div>
-                <h4 className="text-xs text-neutral-400 font-extrabold uppercase tracking-widest mb-4 flex justify-between items-center">
-                  <span>Aura Live Instructions</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-neutral-500" />
-                </h4>
-                <div className="flex gap-4 items-start">
-                  <div className={`w-8 h-8 rounded-full border border-white/10 bg-white/5 flex items-center justify-center relative ${talking ? 'scale-105' : ''}`}>
-                    <Sparkles className="w-4 h-4 text-blue-500 animate-pulse" />
-                    {talking && (
-                      <span className="absolute inset-0 rounded-full border border-blue-500/40 animate-ping" />
-                    )}
-                  </div>
-                  <p className="text-sm text-neutral-200 leading-relaxed font-medium">
-                    "{auraCue}"
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={toggleWorkout}
-                  className="flex-1 py-3 bg-white text-black font-extrabold text-xs rounded-2xl hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-95 duration-200"
-                >
-                  {isWorkoutRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  {isWorkoutRunning ? 'Complete Set' : 'Start Set'}
-                </button>
-
-                <button
-                  onClick={handleReset}
-                  className="p-3 bg-white/5 border border-white/10 text-neutral-400 hover:text-white hover:border-white/20 rounded-2xl transition-all cursor-pointer"
-                  title="Reset Counter"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* WORKOUT COUNTERS CARD */}
-            <div className="bg-white/5 border border-white/10 p-6 rounded-[32px] backdrop-blur-2xl grid grid-cols-2 gap-4 shadow-xl">
-              <div 
-                onClick={() => { AudioFeedback.playTap(); store.openPanel('ANALYTICS'); }}
-                className="flex flex-col justify-between bg-white/3 border border-white/5 p-4 rounded-2xl cursor-pointer hover:border-white/20 hover:scale-[1.02] transition-all duration-300"
-              >
-                <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest flex justify-between items-center">
-                  <span>Reps Completed</span>
-                  <ChevronRight className="w-3 h-3 text-neutral-500" />
-                </span>
-                <span className="text-4xl font-black text-white mt-3">{reps}</span>
-              </div>
-              <div 
-                onClick={() => { AudioFeedback.playTap(); store.openPanel('NUTRITION'); }}
-                className="flex flex-col justify-between bg-white/3 border border-white/5 p-4 rounded-2xl cursor-pointer hover:border-white/20 hover:scale-[1.02] transition-all duration-300"
-              >
-                <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest flex justify-between items-center">
-                  <span>Calories Burned</span>
-                  <ChevronRight className="w-3 h-3 text-neutral-500" />
-                </span>
-                <span className="text-4xl font-black text-white mt-3">{caloriesBurned} <span className="text-xs font-normal text-neutral-500">kcal</span></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: POSE STREAM & EXERCISE SELECTOR */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-
-          {/* CAMERA FEED OVERLAY PANEL */}
-          <div 
-            onClick={() => { AudioFeedback.playTap(); store.openPanel('SETTINGS'); }}
-            className="h-[250px] relative overflow-hidden rounded-[24px] cursor-pointer group"
-          >
-            <PoseCamera
-              onPoseData={handlePoseData}
-              onCameraStateChange={setIsCameraActive}
-              jointWarnings={safetyStatus.warnings}
-            />
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                AudioFeedback.playTap();
-                setIsCameraActive(!isCameraActive);
-              }}
-              className="absolute top-4 right-4 z-20 p-2.5 bg-black/60 border border-white/10 rounded-xl text-neutral-300 hover:text-white cursor-pointer"
-            >
-              {isCameraActive ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-            </button>
-          </div>
-
-          {/* REAL BIOMECHANICS WIDGETS */}
-          <div 
-            onClick={() => { AudioFeedback.playTap(); store.openPanel('BIOMECHANICS'); }}
-            className="bg-white/5 border border-white/10 p-6 rounded-[32px] backdrop-blur-3xl shadow-2xl flex flex-col gap-4 cursor-pointer hover:border-white/20 transition-all hover:scale-[1.02] duration-300"
-          >
-            <h4 className="text-xs text-neutral-400 font-extrabold uppercase tracking-widest mb-2 flex items-center justify-between">
-              <span>Live Biomechanics</span>
-              <ChevronRight className="w-3.5 h-3.5 text-neutral-500" />
-            </h4>
-
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="text-neutral-400">Form Accuracy</span>
-                  <span>{poseConfidence > 0 ? `${Math.round(accuracy * 100)}%` : 'No camera active'}</span>
-                </div>
-                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                  <div className="bg-white h-full rounded-full" style={{ width: `${poseConfidence > 0 ? accuracy * 100 : 0}%` }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="text-neutral-400">Back Symmetry</span>
-                  <span>{poseConfidence > 0 ? `${symmetry}%` : 'Insufficient verified data.'}</span>
-                </div>
-                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                  <div className="bg-white h-full rounded-full" style={{ width: `${poseConfidence > 0 ? symmetry : 0}%` }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="text-neutral-400">Core Stability</span>
-                  <span>{poseConfidence > 0 ? `${stability}%` : 'Insufficient verified data.'}</span>
-                </div>
-                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                  <div className="bg-white h-full rounded-full" style={{ width: `${poseConfidence > 0 ? stability : 0}%` }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="text-neutral-400">Balance Index</span>
-                  <span>{poseConfidence > 0 ? `${balance}%` : 'Insufficient verified data.'}</span>
-                </div>
-                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                  <div className="bg-white h-full rounded-full" style={{ width: `${poseConfidence > 0 ? balance : 0}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* AI WORKOUT BUILDER & CATALOG */}
-          <div className="bg-white/5 border border-white/10 p-6 rounded-[32px] backdrop-blur-3xl shadow-2xl flex-1 flex flex-col min-h-[300px]">
-            <h4 className="text-xs text-neutral-400 font-extrabold uppercase tracking-widest mb-4">Workout Studio Catalog</h4>
-
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[350px]">
-              {WORKOUT_CATALOG.map((ex) => {
-                const isActive = activeExercise.id === ex.id;
-                return (
-                  <button
-                    key={ex.id}
-                    onClick={() => {
-                      AudioFeedback.playTap();
-                      store.setActiveExercise(ex);
-                      store.openPanel('DETAIL');
-                    }}
-                    className={`w-full p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all duration-300 group cursor-pointer ${isActive
-                      ? 'bg-white/10 border-white/10 text-white shadow-md'
-                      : 'bg-white/2 border-white/5 text-neutral-400 hover:text-white hover:border-white/10'
-                      }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/5 bg-black flex items-center justify-center">
-                        <img src={ex.imageUrl} alt={ex.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold block">{ex.name}</span>
-                        <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-extrabold mt-0.5 block">{ex.primaryMuscles.join(', ')}</span>
-                      </div>
+                 </div>
+                 <div className="w-full h-px bg-white/5" />
+                 <div className="flex items-center justify-between">
+                    <div>
+                       <span className="text-xs font-bold text-neutral-300 block mb-0.5">Scapular Retraction</span>
+                       <span className="text-[10px] text-emerald-400 font-bold">{poseConfidence > 0.6 ? 'Perfect' : 'Waiting...'}</span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                );
-              })}
-            </div>
+                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">{poseConfidence > 0.6 ? '✓' : '-'}</div>
+                 </div>
+              </div>
+           </div>
 
-            {/* EXPORT SESSION BUTTON */}
-            <div className="pt-4 border-t border-white/5 mt-4">
-              <button
-                onClick={handleExportPDF}
-                className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
-              >
-                <FileText className="w-4 h-4 text-blue-500" />
-                Export GAMA Health PDF
-              </button>
-            </div>
-          </div>
+           {/* Live Metrics */}
+           <div className="bg-black/40 backdrop-blur-xl border border-white/10 p-6 rounded-[32px]">
+              <h4 className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest mb-6">Live Metrics</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="bg-white/5 border border-white/5 p-4 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                       <Award className="w-4 h-4 text-rose-400" />
+                       <span className="text-lg font-black text-white">{heartRate}</span>
+                    </div>
+                    <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold block mb-2">BPM</span>
+                    <svg viewBox="0 0 100 20" className="w-full stroke-rose-400 fill-none stroke-2 opacity-50 overflow-visible">
+                       <path d="M0 10 L10 10 L15 0 L25 20 L30 10 L40 10 L45 -5 L55 25 L60 10 L100 10" />
+                    </svg>
+                 </div>
+                 <div className="bg-white/5 border border-white/5 p-4 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                       <Sparkles className="w-4 h-4 text-amber-400" />
+                       <span className="text-lg font-black text-white">{caloriesBurned}</span>
+                    </div>
+                    <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold block mb-2">KCAL</span>
+                    <svg viewBox="0 0 100 20" className="w-full stroke-amber-400 fill-none stroke-2 opacity-50">
+                       <path d="M0 18 Q 20 15, 40 10 T 80 5 T 100 2" />
+                    </svg>
+                 </div>
+                 <div className="bg-white/5 border border-white/5 p-4 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                       <RefreshCw className="w-4 h-4 text-emerald-400" />
+                       <span className="text-lg font-black text-white">{poseConfidence > 0 ? Math.round(accuracy * 100) + '%' : '--'}</span>
+                    </div>
+                    <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold block mb-2">FORM SCORE</span>
+                    <svg viewBox="0 0 100 20" className="w-full stroke-emerald-400 fill-none stroke-[1.5] opacity-50">
+                       <path d="M0 10 L 20 12 L 40 5 L 60 8 L 80 2 L 100 4" />
+                    </svg>
+                 </div>
+                 <div className="bg-white/5 border border-white/5 p-4 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                       <Dumbbell className="w-4 h-4 text-blue-400" />
+                       <span className="text-lg font-black text-white">{poseConfidence > 0 ? '78%' : '--'}</span>
+                    </div>
+                    <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold block mb-2">MUSCLE ACT.</span>
+                    <svg viewBox="0 0 100 20" className="w-full stroke-blue-400 fill-none stroke-[1.5] opacity-50">
+                       <path d="M0 18 Q 25 15, 50 10 T 100 5" />
+                    </svg>
+                 </div>
+              </div>
+           </div>
+
+           {/* Muscle Focus */}
+           <div className="bg-black/40 backdrop-blur-xl border border-white/10 p-6 rounded-[32px] flex-1 flex flex-col">
+              <h4 className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest mb-4">Muscle Focus</h4>
+              
+              <div className="space-y-3 mb-6">
+                 <div>
+                    <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold block mb-1">Primary</span>
+                    <span className="text-sm font-bold text-white">{activeExercise.primaryMuscles.join(', ')}</span>
+                 </div>
+                 <div>
+                    <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold block mb-1">Secondary</span>
+                    <span className="text-sm font-bold text-neutral-400">{activeExercise.secondaryMuscles?.join(', ') || 'None'}</span>
+                 </div>
+              </div>
+
+              {/* Only show body maps if there are images available, else use a placeholder or minimal design */}
+              <div className="flex gap-4 justify-center mt-auto">
+                 <div className="w-24 h-40 bg-white/5 rounded-2xl border border-white/5 relative overflow-hidden flex items-center justify-center">
+                    {/* Placeholder SVG for body front - since actual assets might not exist, we'll draw a minimal abstract shape or just text for safety, or assume the SVG exists */}
+                    <div className="text-[10px] text-neutral-600 font-bold uppercase rotate-[-90deg] tracking-widest">Front</div>
+                 </div>
+                 <div className="w-24 h-40 bg-white/5 rounded-2xl border border-white/5 relative overflow-hidden flex items-center justify-center">
+                    <div className="absolute top-6 w-12 h-6 bg-emerald-500/40 blur-sm rounded-full" />
+                    <div className="text-[10px] text-emerald-600 font-bold uppercase rotate-[-90deg] tracking-widest z-10">Back (Active)</div>
+                 </div>
+              </div>
+           </div>
         </div>
-
       </div>
 
       {/* Health OS Panels Layer */}

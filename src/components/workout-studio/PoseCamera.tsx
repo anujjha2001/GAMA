@@ -5,7 +5,7 @@ import { Landmark3D } from '../../lib/workout-studio/BiomechanicsEngine';
 import { useCamera } from '../../lib/camera/useCamera';
 import { usePose } from '../../lib/pose/usePose';
 import { PoseRenderer } from '../../lib/pose/pose-renderer';
-import { DebugPanel } from './DebugPanel';
+// Debug Panel removed per requirements
 
 interface PoseCameraProps {
   onPoseData: (landmarks: Landmark3D[], confidence: number) => void;
@@ -67,26 +67,43 @@ export default function PoseCamera({ onPoseData, onCameraStateChange, jointWarni
   return (
     <div className="relative w-full h-full rounded-[24px] overflow-hidden border border-white/10 bg-black/40 backdrop-blur-3xl shadow-xl flex items-center justify-center">
       
-      {/* Dev Debug Panel */}
-      <DebugPanel 
-        cameraState={cameraState} 
-        poseState={poseState} 
-        videoRef={videoRef}
-        landmarksCount={landmarks.length}
-      />
-
-      {/* Loading Overlay */}
+      {/* Premium Loading Overlay */}
       {loading && !hasError && (
-        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 gap-4">
-          <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-emerald-500 animate-spin" />
-          <div className="text-center">
-             <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-1">
-               {cameraState === 'requesting_permission' ? 'Waiting for Permission...' : 
-                cameraState === 'starting' ? 'Starting Camera...' :
-                'Loading AI Model...'}
-             </h4>
-             <p className="text-xs text-neutral-400">Please wait while the vision engine initializes.</p>
+        <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-30 overflow-hidden">
+          {/* Glass Shimmer Effects */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-transparent to-emerald-500/10 animate-pulse" />
+          <div className="absolute inset-0 backdrop-blur-3xl" />
+          
+          <div className="relative z-10 flex flex-col items-center gap-6">
+             {/* Holographic scanning element */}
+             <div className="w-24 h-32 border border-white/20 rounded-xl relative overflow-hidden flex items-center justify-center bg-white/5 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                <div className="absolute top-0 left-0 w-full h-1 bg-blue-400/80 shadow-[0_0_15px_rgba(59,130,246,0.8)] animate-[scan_2s_ease-in-out_infinite]" />
+                <div className="w-8 h-8 opacity-40">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-white">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+             </div>
+
+             <div className="text-center space-y-2">
+               <h4 className="text-xs font-black text-white/90 uppercase tracking-[0.2em] animate-pulse">
+                 {cameraState === 'requesting_permission' ? 'Requesting Access' : 
+                  cameraState === 'starting' ? 'Preparing Camera' :
+                  poseState === 'loading' ? 'Calibrating Body' :
+                  'Almost Ready'}
+               </h4>
+               <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-semibold">
+                 GAMA Vision Intelligence
+               </p>
+             </div>
           </div>
+          
+          <style dangerouslySetInnerHTML={{__html: `
+            @keyframes scan {
+              0%, 100% { transform: translateY(0); opacity: 0; }
+              50% { transform: translateY(128px); opacity: 1; }
+            }
+          `}} />
         </div>
       )}
 
@@ -127,13 +144,7 @@ export default function PoseCamera({ onPoseData, onCameraStateChange, jointWarni
         style={{ transform: 'scaleX(-1)' }}
       />
 
-      {/* Mini HUD overlay */}
-      <div className="absolute bottom-4 left-4 z-20 px-3 py-1.5 bg-black/75 backdrop-blur-md rounded-xl border border-white/5 flex items-center gap-2">
-        <span className={`w-1.5 h-1.5 rounded-full ${confidence > 0.65 ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-        <span className="text-[10px] text-neutral-400 uppercase tracking-widest font-extrabold">
-          {poseState === 'ready' && isStreaming ? (confidence > 0.65 ? `AI Active • ${Math.round(confidence * 100)}% Conf` : 'Scanning...') : 'Connecting...'}
-        </span>
-      </div>
+      {/* No mini HUD - zero confidence/debug spam */}
     </div>
   );
 }

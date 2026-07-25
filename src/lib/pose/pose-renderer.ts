@@ -31,7 +31,8 @@ export class PoseRenderer {
       [23, 25], [24, 26], [25, 27], [26, 28] // Lower body
     ];
 
-    this.ctx.lineWidth = 3;
+    this.ctx.shadowBlur = 0;
+    this.ctx.lineWidth = 2.5; // Thinner lines
 
     // Draw Connection lines
     connections.forEach(([i1, i2]) => {
@@ -42,11 +43,15 @@ export class PoseRenderer {
         this.ctx.moveTo(p1.x * this.width, p1.y * this.height);
         this.ctx.lineTo(p2.x * this.width, p2.y * this.height);
         
-        // Color code based on active form warnings
         if (hasWarnings) {
-          this.ctx.strokeStyle = '#ff453a'; // Alert Red
+          // Warning state: Amber/Red glow
+          this.ctx.strokeStyle = 'rgba(255, 69, 58, 0.8)'; 
+          this.ctx.shadowColor = 'rgba(255, 69, 58, 0.5)';
+          this.ctx.shadowBlur = 8;
         } else {
-          this.ctx.strokeStyle = '#30d158'; // Safe Green
+          // Default state: Clean white semi-transparent
+          this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+          this.ctx.shadowBlur = 0;
         }
         this.ctx.stroke();
       }
@@ -56,14 +61,19 @@ export class PoseRenderer {
     landmarks.forEach((p) => {
       if (p.visibility! > 0.5) {
         this.ctx.beginPath();
-        this.ctx.arc(p.x * this.width, p.y * this.height, 5, 0, 2 * Math.PI);
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fill();
+        this.ctx.arc(p.x * this.width, p.y * this.height, 4, 0, 2 * Math.PI);
         
-        this.ctx.beginPath();
-        this.ctx.arc(p.x * this.width, p.y * this.height, 7, 0, 2 * Math.PI);
-        this.ctx.strokeStyle = '#0a84ff'; // Tech glow outline
-        this.ctx.stroke();
+        if (hasWarnings) {
+           this.ctx.fillStyle = 'rgba(255, 69, 58, 0.9)';
+           this.ctx.shadowColor = 'rgba(255, 69, 58, 0.8)';
+           this.ctx.shadowBlur = 10;
+        } else {
+           this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+           this.ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+           this.ctx.shadowBlur = 6;
+        }
+        
+        this.ctx.fill();
       }
     });
     this.ctx.restore();
