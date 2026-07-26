@@ -1,6 +1,7 @@
 import { Client } from 'pg';
 import * as dotenv from 'dotenv';
 dotenv.config();
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
 
@@ -23,6 +24,10 @@ async function run() {
     ADD COLUMN IF NOT EXISTS "apiSource" TEXT,
     ADD COLUMN IF NOT EXISTS "confidence" DOUBLE PRECISION,
     ADD COLUMN IF NOT EXISTS "cachedAt" TIMESTAMP WITH TIME ZONE;
+
+    ALTER TABLE "public"."FoodAnalysis"
+    ADD COLUMN IF NOT EXISTS "imageHash" TEXT,
+    ADD COLUMN IF NOT EXISTS "nutritionSource" TEXT;
   `;
   
   try {

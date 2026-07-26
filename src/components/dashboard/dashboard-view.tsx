@@ -54,6 +54,7 @@ export function DashboardView() {
   const [isScanning, setIsScanning] = React.useState(false);
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [detectedMeal, setDetectedMeal] = React.useState<{
+    macros: any;
     mealName: string;
     calories: number;
     protein: number;
@@ -280,7 +281,7 @@ export function DashboardView() {
   if (!mounted) return null;
 
   return (
-    <div className="w-full min-h-screen text-white font-sans pb-12 select-none relative">
+    <div className="w-full min-h-screen text-white font-sans pb-12 select-none relative flex flex-col">
 
       {/* Immersive layered background effects inspired by Dribbble Reference */}
       <div className="absolute inset-0 bg-[#070709] z-0 overflow-hidden pointer-events-none">
@@ -298,61 +299,39 @@ export function DashboardView() {
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand/15 to-transparent w-full h-[30%] animate-[bounce_2s_infinite]" />
             <RefreshCw className="w-16 h-16 text-white animate-spin" />
           </div>
-          <h3 className="mt-8 text-lg font-bold tracking-widest uppercase text-white">AURA Scanner Active</h3>
-          <p className="mt-2 text-xs text-neutral-300 uppercase tracking-wider animate-pulse">Deconstructive Meal Recognition in progress...</p>
+          <p className="mt-8 text-sm font-black uppercase tracking-widest text-neutral-400">AURA VISION ACTIVE</p>
+          <p className="text-xs text-neutral-500 mt-2">Analyzing scene composition...</p>
         </div>
       )}
 
-      {/* --- MULTIMODAL CONFIRMATION MODAL --- */}
+      {/* --- CONFIRMATION MODAL --- */}
       <AnimatePresence>
         {showConfirmModal && detectedMeal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-2xl z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-3xl z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md bg-[#0f0f13]/90 border border-white/10 rounded-[32px] p-6 shadow-2xl backdrop-blur-2xl"
+              className="bg-black/90 border border-white/10 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden"
             >
-              <div className="flex justify-between items-center pb-4 border-b border-white/5">
-                <h4 className="font-extrabold text-white text-sm tracking-wider uppercase">Verify Meal Scan</h4>
-                <button
-                  onClick={() => {
-                    setShowConfirmModal(false);
-                    setDetectedMeal(null);
-                  }}
-                  className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 to-emerald-400" />
+              <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-6 border border-white/10">
+                <span className="text-3xl">🎯</span>
               </div>
+              <h3 className="text-2xl font-black tracking-tight mb-2 uppercase text-white">Meal Detected</h3>
+              <p className="text-emerald-400 font-black text-xl tracking-widest uppercase mb-6">{detectedMeal.mealName}</p>
 
-              <div className="my-6 space-y-4">
-                <div className="h-44 w-full rounded-2xl overflow-hidden border border-white/10 relative">
-                  <img
-                    src={detectedMeal.imageUrl}
-                    alt={detectedMeal.mealName}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                  <span className="absolute bottom-4 left-4 text-sm font-semibold text-white tracking-wide">{detectedMeal.mealName}</span>
+              <div className="grid grid-cols-2 gap-4 mb-8 text-left">
+                <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                  <span className="block text-[10px] uppercase text-neutral-500 font-bold mb-1">Est. Calories</span>
+                  <span className="font-mono text-xl text-white font-bold">{detectedMeal.calories} kcal</span>
                 </div>
-
-                <div className="grid grid-cols-4 gap-2 text-center">
-                  <div className="bg-white/5 border border-white/5 p-2.5 rounded-xl">
-                    <span className="text-[8px] text-neutral-400 block uppercase font-bold">Calories</span>
-                    <span className="text-sm font-extrabold text-neutral-300">{detectedMeal.calories}</span>
-                  </div>
-                  <div className="bg-white/5 border border-white/5 p-2.5 rounded-xl">
-                    <span className="text-[8px] text-neutral-400 block uppercase font-bold">Protein</span>
-                    <span className="text-sm font-extrabold text-white">{detectedMeal.protein}g</span>
-                  </div>
-                  <div className="bg-white/5 border border-white/5 p-2.5 rounded-xl">
-                    <span className="text-[8px] text-neutral-400 block uppercase font-bold">Carbs</span>
-                    <span className="text-sm font-extrabold text-white">{detectedMeal.carbs}g</span>
-                  </div>
-                  <div className="bg-white/5 border border-white/5 p-2.5 rounded-xl">
-                    <span className="text-[8px] text-neutral-400 block uppercase font-bold">Fat</span>
-                    <span className="text-sm font-extrabold text-white">{detectedMeal.fat}g</span>
+                <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                  <span className="block text-[10px] uppercase text-neutral-500 font-bold mb-1">Macronutrients</span>
+                  <div className="flex gap-4 text-xs font-mono text-neutral-300">
+                    <span>P: {detectedMeal.protein ?? 0}g</span>
+                    <span>C: {detectedMeal.carbs ?? 0}g</span>
+                    <span>F: {detectedMeal.fat ?? 0}g</span>
                   </div>
                 </div>
               </div>
@@ -380,23 +359,18 @@ export function DashboardView() {
       </AnimatePresence>
 
       {/* Main Glassmorphic Panel Wrapper */}
-      <div className="relative w-full rounded-[40px] border border-white/5 overflow-hidden z-10 bg-[#09090b]/80 backdrop-blur-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
+      <div className="relative w-full flex-1 rounded-[40px] border border-white/5 overflow-hidden z-10 bg-[#09090b]/80 backdrop-blur-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
 
-        {/* Dashboard Hero Background - HD Motion Vision (No blur) */}
-        <motion.div
-          initial={{ scale: 1 }}
-          animate={{ scale: 1.05 }}
-          transition={{ duration: 20, repeat: Infinity, repeatType: 'reverse', ease: "linear" }}
-          className="absolute inset-0 bg-cover bg-center opacity-75 pointer-events-none z-0"
-          style={{ backgroundImage: 'url("/dashboard-hero-clean.jpg")' }}
+        {/* Dashboard Hero Background - HD Image */}
+        <img
+          src="/dashboard-hero.png"
+          alt="Dashboard Hero"
+          className="absolute inset-0 w-full h-full object-cover object-center z-0 opacity-100"
         />
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#09090b] via-[#09090b]/85 to-transparent pointer-events-none z-0" />
-
-        {/* Subtle Ambient Background */}
-        <div className="absolute inset-0 bg-[#09090b]/40 pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#09090b]/80 via-[#09090b]/40 to-transparent pointer-events-none z-0" />
 
         {/* Ambient Gradient Highlights */}
-        <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-0" />
+        <div className="absolute top-0 left-0 right-0 h-[300px] bg-gradient-to-b from-white/10 to-transparent pointer-events-none z-0" />
 
         {/* Content Container */}
         <div className="relative z-10 p-6 md:p-10 flex flex-col gap-8">

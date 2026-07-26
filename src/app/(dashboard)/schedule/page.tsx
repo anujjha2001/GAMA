@@ -173,11 +173,11 @@ export default function SchedulePage() {
         <div className="lg:col-span-7 flex flex-col gap-6">
 
           {/* PREMIUM WORKOUT HEADER CARD */}
-          <div className="relative h-60 rounded-[32px] overflow-hidden border border-white/10 group shadow-2xl flex flex-col justify-end p-8 bg-black/40">
+          <div className="relative h-96 rounded-[32px] overflow-hidden border border-white/10 group shadow-2xl flex flex-col justify-end p-8 bg-black/40">
             <img
-              src="https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=800&auto=format&fit=crop"
+              src="/running-man.jpg"
               alt="Workout"
-              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
+              className="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:scale-105 transition-transform duration-700 object-top"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
 
