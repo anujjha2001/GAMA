@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { swiggyDataset } from '@/app/(dashboard)/live-order/Dataset-swiggy';
 import { Restaurant, Meal } from '@/lib/ai/marketplace/food-provider';
 import { FoodIntelligenceService } from '@/lib/services/FoodIntelligenceService';
+import { verifyToken } from '@/lib/jwt';
+import { prisma } from '@/lib/prisma';
 
 // Fallback Unsplash image helper
 const getUnsplashFoodImage = (query: string): string => {
@@ -23,6 +25,19 @@ const getUnsplashFoodImage = (query: string): string => {
 
 export async function GET(req: NextRequest) {
   try {
+    const user = await verifyToken(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+    }
+
+    const profile = await prisma.userProfile.findUnique({
+      where: { id: user.id }
+    });
+
+    if (!profile || (profile.role !== 'PRO' && profile.role !== 'pro')) {
+      return NextResponse.json({ error: 'PRO subscription required.' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const query = (searchParams.get('query') || '').trim();
     const vegOnly = searchParams.get('vegOnly') === 'true';

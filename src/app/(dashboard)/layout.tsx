@@ -102,17 +102,18 @@ export default function DashboardLayout({
                   </Link>
                 );
               })}
+              {/* Log Out Option */}
+              <button
+                onClick={handleLogout}
+                title="Log Out"
+                className="w-10 h-10 md:w-12 md:h-12 mt-0 md:mt-2 rounded-2xl md:rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 text-neutral-400 hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 cursor-pointer"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Bottom/Right spacer or ambient element */}
             <div className="flex flex-row md:flex-col items-center gap-3 md:gap-5 shrink-0">
-              <button
-                onClick={handleLogout}
-                title="Log Out"
-                className="w-10 h-10 md:w-12 md:h-12 rounded-2xl md:rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 cursor-pointer"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
               <div className="hidden md:block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="System Online" />
             </div>
           </motion.aside>
