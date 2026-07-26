@@ -32,12 +32,71 @@ Expected JSON schema:
   }
 }`;
 
+async function deductToken(profileId: string) {
+  try {
+    await prisma.userProfile.update({
+      where: { id: profileId },
+      data: {
+        auraTokens: {
+          decrement: 1
+        }
+      }
+    });
+  } catch (err: any) {
+    console.error('[AURA DB Error - Deduct Token]:', err?.message || err);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await verifyToken(req);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized. Please log in to use AURA.' }, { status: 401 });
+    }
+
+    // --- AURA Rate Limiting & Token Check ---
+    let dbUser: any;
+    try {
+      dbUser = await prisma.userProfile.findUnique({
+        where: { id: user.id }
+      });
+    } catch (dbError: any) {
+      console.error('[AURA DB Connection Error]:', dbError?.message || dbError);
+      return NextResponse.json({ 
+        error: 'Database connection failed. Please try again shortly.' 
+      }, { status: 500 });
+    }
+
+    if (!dbUser) {
+      return NextResponse.json({ error: 'User profile not found.' }, { status: 404 });
+    }
+
+    const now = new Date();
+    let currentTokens = dbUser.auraTokens ?? 20;
+    let currentResetAt = dbUser.tokensResetAt ? new Date(dbUser.tokensResetAt) : new Date();
+
+    // Check if the rate-limit window of 4 hours has expired
+    if (now >= currentResetAt) {
+      currentTokens = 20;
+      currentResetAt = new Date(now.getTime() + 4 * 60 * 60 * 1000); // 4 hours from now
+      try {
+        await prisma.userProfile.update({
+          where: { id: user.id },
+          data: {
+            auraTokens: currentTokens,
+            tokensResetAt: currentResetAt
+          }
+        });
+      } catch (updateError: any) {
+        console.error('[AURA DB Reset Error]:', updateError?.message || updateError);
+      }
+    }
+
+    if (currentTokens <= 0) {
+      return NextResponse.json({ 
+        error: "Your tokens have been exhausted. Please come back after 4 hours when your tokens refresh." 
+      }, { status: 429 });
     }
 
     let body: any;
@@ -121,7 +180,7 @@ Respond ONLY with a valid JSON object matching this schema:
 }`;
 
         const completion = await groq.chat.completions.create({
-          model: 'llama-3.2-11b-vision-preview',
+          model: 'llama-3.2-11b-vision-instruct',
           messages: [
             {
               role: 'user',
@@ -138,6 +197,7 @@ Respond ONLY with a valid JSON object matching this schema:
         const responseText = completion.choices[0]?.message?.content || '{}';
         const parsed = JSON.parse(responseText);
 
+        await deductToken(user.id);
         return NextResponse.json({
           success: true,
           visionPayload: {
@@ -186,6 +246,7 @@ Respond ONLY with a valid JSON object matching this schema:
           },
           imageUrl: image
         };
+        await deductToken(user.id);
         return NextResponse.json({
           success: true,
           visionPayload: fallbackMeal
@@ -311,6 +372,7 @@ ${abnormalList}
       }
     }
 
+    await deductToken(user.id);
     // Return structured JSON directly
     return NextResponse.json({
       success: true,

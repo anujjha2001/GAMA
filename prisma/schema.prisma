@@ -21,6 +21,8 @@ model UserProfile {
   fullName  String?
   avatarUrl String?
   role      String   @default("user")
+  auraTokens Int     @default(20)
+  tokensResetAt DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -641,6 +643,9 @@ model FoodAnalysis {
   explanation     String
   status          ProcessingStatus @default(PENDING)
   analyzedAt      DateTime         @default(now())
+
+  imageHash       String?
+  nutritionSource String?
 
   // Model Metadata
   modelVersion     String?

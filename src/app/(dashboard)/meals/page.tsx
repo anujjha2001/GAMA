@@ -57,7 +57,17 @@ export default function MealGuidePage() {
   const [selectedMealImage, setSelectedMealImage] = React.useState<string | null>(null);
   const [mealScanResult, setMealScanResult] = React.useState<any | null>(null);
   const [isScanningMeal, setIsScanningMeal] = React.useState(false);
+  const [currentLoadingStage, setCurrentLoadingStage] = React.useState(0);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const LOADING_STAGES = [
+    "🔍 Detecting image...",
+    "🍽 Identifying food...",
+    "📏 Estimating portion...",
+    "🥗 Calculating nutrition...",
+    "🧠 Generating AI health insights...",
+    "✓ Complete"
+  ];
 
   // Trust-centric pipeline states
   const [scanConfirmed, setScanConfirmed] = React.useState(false);
@@ -77,6 +87,15 @@ export default function MealGuidePage() {
       setMealScanResult(null);
       setScanConfirmed(false);
       setIsScanningMeal(true);
+      setCurrentLoadingStage(0);
+
+      // Sequentially advance loading stages every 1.5 seconds up to stage 4
+      const interval = setInterval(() => {
+        setCurrentLoadingStage((prev) => {
+          if (prev < 4) return prev + 1;
+          return prev;
+        });
+      }, 1500);
 
       try {
         const res = await fetch('/api/food-scan', {
@@ -84,6 +103,9 @@ export default function MealGuidePage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image: base64String })
         });
+        
+        clearInterval(interval);
+
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.visionPayload) {
@@ -100,7 +122,17 @@ export default function MealGuidePage() {
               }
             } catch (e) { }
 
-            const finalPayload = { ...data.visionPayload, mealName: name };
+            // Set final stage briefly for visual feedback
+            setCurrentLoadingStage(5);
+            await new Promise((resolve) => setTimeout(resolve, 800));
+
+            const finalPayload = { 
+              ...data.visionPayload, 
+              mealName: name,
+              bestTimeToEat: data.bestTimeToEat,
+              whoShouldAvoid: data.whoShouldAvoid,
+              goalRecommendation: data.goalRecommendation
+            };
             setMealScanResult(finalPayload);
             setEditMealName(name);
             setEditServingSize(1.0);
@@ -108,12 +140,21 @@ export default function MealGuidePage() {
             setEditCookingStyle('Original');
             setScanConfirmed(false);
           } else {
-            throw new Error(data.error || 'Failed to analyze');
+            // Safety moderation, blur, or non-food validation failure
+            setCurrentLoadingStage(5);
+            await new Promise((resolve) => setTimeout(resolve, 800));
+            setMealScanResult({
+              isFood: false,
+              isValidFood: false,
+              classification: data.reason || 'Safety/Validation Block',
+              message: data.message || 'Image did not meet requirements or contains no recognizable food.'
+            });
           }
         } else {
           throw new Error('Server error');
         }
       } catch (err) {
+        clearInterval(interval);
         toast.error('Failed to analyze meal image.');
       } finally {
         setIsScanningMeal(false);
@@ -643,20 +684,49 @@ export default function MealGuidePage() {
                       </div>
 
                       {isScanningMeal && (
-                        <div className="bg-[#14100e] border border-[#2c1e15]/30 rounded-[32px] p-6 space-y-6 animate-pulse">
-                          <div className="flex justify-between items-center">
-                            <div className="space-y-2">
-                              <div className="h-4 w-32 bg-white/10 rounded-lg" />
-                              <div className="h-3 w-48 bg-white/5 rounded-lg" />
+                        <div className="bg-[#14100e] border border-[#2c1e15] rounded-[32px] p-6 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+                          <div className="flex flex-col items-center justify-center py-6 text-center space-y-4">
+                            {/* Premium Spinner */}
+                            <div className="relative flex items-center justify-center w-16 h-16">
+                              <div className="absolute w-16 h-16 border-4 border-emerald-500/10 rounded-full" />
+                              <div className="absolute w-16 h-16 border-4 border-t-emerald-500 rounded-full animate-spin" style={{ animationDuration: '0.8s' }} />
+                              <span className="text-xl font-bold text-emerald-400">A</span>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-extrabold tracking-wide uppercase text-white">AURA Scanning Engine</h4>
+                              <p className="text-[10px] text-neutral-400 font-medium">Processing multi-stage validation checks</p>
                             </div>
                           </div>
-                          <div className="h-12 bg-white/5 rounded-2xl" />
-                          <div className="grid grid-cols-5 gap-2">
-                            {[1, 2, 3, 4, 5].map((n) => (
-                              <div key={n} className="h-12 bg-white/5 rounded-xl" />
-                            ))}
+
+                          {/* Loading Stages Checklist */}
+                          <div className="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-3 font-mono text-[10px]">
+                            {LOADING_STAGES.map((stage, idx) => {
+                              const isCompleted = currentLoadingStage > idx;
+                              const isActive = currentLoadingStage === idx;
+                              return (
+                                <div key={idx} className="flex items-center justify-between transition-all duration-300">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black border ${
+                                      isCompleted 
+                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
+                                        : isActive 
+                                          ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse' 
+                                          : 'bg-white/5 text-neutral-500 border-white/10'
+                                    }`}>
+                                      {isCompleted ? "✓" : isActive ? "▶" : "○"}
+                                    </span>
+                                    <span className={isActive ? "text-amber-400 font-bold" : isCompleted ? "text-neutral-400" : "text-neutral-600"}>
+                                      {stage}
+                                    </span>
+                                  </div>
+                                  {isActive && (
+                                    <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping" />
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
-                          <div className="h-20 bg-white/5 rounded-2xl" />
                         </div>
                       )}
 
@@ -827,15 +897,35 @@ export default function MealGuidePage() {
                                             </div>
                                           </div>
 
-                                          <div className="space-y-1.5 text-[9px] border-t border-[#2c1e15] pt-2">
+                                          <div className="space-y-2.5 text-[9px] border-t border-[#2c1e15] pt-2">
+                                            {mealScanResult.goalRecommendation && (
+                                              <div>
+                                                <span className="text-amber-400 font-extrabold block">🎯 Goal Compatibility</span>
+                                                <p className="text-neutral-300 mt-0.5 font-medium leading-relaxed">{mealScanResult.goalRecommendation}</p>
+                                              </div>
+                                            )}
                                             <div>
                                               <span className="text-emerald-400 font-extrabold block">✓ Why Recommended</span>
-                                              <p className="text-neutral-400 mt-0.5">{mealScanResult.whyRecommended}</p>
+                                              <p className="text-neutral-400 mt-0.5 leading-relaxed">{mealScanResult.whyRecommended}</p>
                                             </div>
+                                            {mealScanResult.bestTimeToEat && (
+                                              <div className="grid grid-cols-2 gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
+                                                <div>
+                                                  <span className="text-neutral-500 block">Best Time to Eat</span>
+                                                  <span className="font-extrabold text-white">{mealScanResult.bestTimeToEat}</span>
+                                                </div>
+                                                {mealScanResult.whoShouldAvoid && (
+                                                  <div>
+                                                    <span className="text-rose-400 block font-bold">Who Should Avoid</span>
+                                                    <span className="font-extrabold text-neutral-300">{mealScanResult.whoShouldAvoid}</span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            )}
                                             {mealScanResult.whyNotRecommended && (
                                               <div>
                                                 <span className="text-rose-400 font-extrabold block">⚠ Caution</span>
-                                                <p className="text-neutral-400 mt-0.5">{mealScanResult.whyNotRecommended}</p>
+                                                <p className="text-neutral-400 mt-0.5 leading-relaxed">{mealScanResult.whyNotRecommended}</p>
                                               </div>
                                             )}
                                             {mealScanResult.healthierAlternative && (

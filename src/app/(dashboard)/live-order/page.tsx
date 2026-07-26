@@ -26,6 +26,9 @@ if (typeof window !== 'undefined') {
 export default function LiveOrderPage() {
   const { sleepHours, stressLevel, hrv, heartRate, steps } = useHealthStore();
   const [mounted, setMounted] = React.useState(false);
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+  const [checkingRole, setCheckingRole] = React.useState(true);
+  const [showVideoModal, setShowVideoModal] = React.useState(false);
   const provider = React.useMemo(() => FoodProviderManager.getProvider(), []);
 
   // UI Modes & States
@@ -128,6 +131,18 @@ export default function LiveOrderPage() {
     );
     loadCatalog();
     generateWeeklyPlan();
+
+    // Fetch user details for Gating Check
+    setCheckingRole(true);
+    fetch('/api/auth')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.user) {
+          setUserRole(data.user.role || 'USER');
+        }
+      })
+      .catch(err => console.error('Error fetching role:', err))
+      .finally(() => setCheckingRole(false));
   }, [provider]);
 
   // Load Catalog from Pluggable active provider with pagination
@@ -218,11 +233,166 @@ export default function LiveOrderPage() {
     generateWeeklyPlan();
   }, [plannerGoal]);
 
-  if (!mounted) return (
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleUpgradeClick = async () => {
+    setShowVideoModal(true);
+    
+    // Start loading Razorpay script in background
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded) {
+      toast.error("Failed to load payment gateway. Please check your internet connection.");
+      setShowVideoModal(false);
+      return;
+    }
+
+    // Play video for 4.5 seconds
+    setTimeout(async () => {
+      try {
+        const response = await fetch('/api/payment/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        
+        if (!data.success) {
+          toast.error(data.error || 'Failed to create payment order.');
+          setShowVideoModal(false);
+          return;
+        }
+
+        const options = {
+          key: data.keyId,
+          amount: data.amount,
+          currency: data.currency,
+          name: 'GAMA PRO Plan',
+          description: 'Sovereign Health Intelligence Core Access',
+          order_id: data.orderId,
+          handler: async function (response: any) {
+            setShowVideoModal(false);
+            const verifyRes = await fetch('/api/payment/verify-signature', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              toast.success('GAMA PRO subscription activated successfully!');
+              setUserRole('PRO');
+            } else {
+              toast.error(verifyData.error || 'Payment signature verification failed.');
+            }
+          },
+          prefill: {
+            name: 'User',
+            email: 'user@gama.fit'
+          },
+          theme: {
+            color: '#06b6d4'
+          },
+          modal: {
+            ondismiss: function () {
+              setShowVideoModal(false);
+            }
+          }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } catch (err: any) {
+        console.error('Payment initialization error:', err);
+        toast.error('An error occurred during payment checkout.');
+        setShowVideoModal(false);
+      }
+    }, 4500); // 4.5 seconds of video
+  };
+
+  if (!mounted || checkingRole) return (
     <div className="min-h-screen bg-[#070709] flex items-center justify-center">
       <div className="w-10 h-10 border-4 border-white/10 border-t-orange-500 rounded-full animate-spin" />
     </div>
   );
+
+  if (userRole !== 'PRO' && userRole !== 'pro') {
+    return (
+      <div className="min-h-[calc(100vh-100px)] flex flex-col items-center justify-center text-white px-6 py-12 relative overflow-hidden select-none bg-[#070709] w-full">
+        {/* Soft background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-cyan-500/10 blur-[120px] pointer-events-none" />
+        
+        {/* Pricing/Gating Container */}
+        <div className="relative z-10 w-full max-w-md bg-white/5 border border-white/10 backdrop-blur-3xl p-8 rounded-[36px] text-center shadow-2xl flex flex-col justify-between min-h-[500px]">
+          <div className="space-y-6 flex-1 flex flex-col justify-center">
+            <div className="w-20 h-20 bg-cyan-500/10 border border-cyan-500/20 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <ShoppingBag className="w-10 h-10 text-cyan-400" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-black uppercase text-cyan-400 tracking-widest bg-cyan-400/10 px-3 py-1 rounded-full border border-cyan-400/20">Pro Marketplace</span>
+              <h2 className="text-3xl font-black text-white tracking-tight uppercase mt-2">LIVE Order Gated</h2>
+              <p className="text-xs text-neutral-400 max-w-sm mx-auto leading-relaxed mt-2">
+                Order custom, personalized chronobiological meals synced live with Swiggy catalog. GAMA PRO unlocks biometric nutrition optimization.
+              </p>
+            </div>
+
+            <div className="border-t border-b border-white/5 py-5 my-2">
+              <div className="flex justify-between items-center px-4">
+                <span className="text-xs text-neutral-500 font-bold uppercase">Pro Core Subscription</span>
+                <span className="text-xl font-black text-white">999 INR <span className="text-[10px] font-bold text-neutral-500">/ month</span></span>
+              </div>
+            </div>
+
+            <ul className="text-left text-xs text-neutral-300 space-y-2.5 max-w-xs mx-auto py-2">
+              <li className="flex items-center gap-2">✓ Unlimited Personalized Calorie Ordering</li>
+              <li className="flex items-center gap-2">✓ Climate-Adapted Food Intelligence</li>
+              <li className="flex items-center gap-2">✓ Auto Macronutrient Tracking</li>
+              <li className="flex items-center gap-2">✓ Real-time Swiggy Catalog Integrations</li>
+            </ul>
+          </div>
+
+          <button
+            onClick={handleUpgradeClick}
+            className="w-full py-4 mt-6 bg-cyan-500 hover:bg-cyan-600 text-white font-extrabold rounded-2xl text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" /> Upgrade to PRO
+          </button>
+        </div>
+
+        {/* Video Pop-up Modal */}
+        {showVideoModal && (
+          <div className="fixed inset-0 bg-black/95 z-[999] flex items-center justify-center p-4">
+            <div className="relative w-full max-w-3xl aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black">
+              <video
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+                src="/subscrption_pop_up_video.mp4.mp4"
+              />
+              <div className="absolute bottom-6 right-6 px-4 py-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-xs font-bold text-neutral-300">
+                Preparing checkout portal...
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // Smart Geolocation triggers
   const requestGPSLocation = () => {
