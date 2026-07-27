@@ -754,9 +754,9 @@ export default function LiveOrderPage() {
           {/* Background image of dining friends */}
           <div className="absolute inset-0 z-0">
             <img
-              src="https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=1600&auto=format&fit=crop&q=80"
-              className="w-full h-full object-cover filter brightness-[0.4] contrast-[1.05]"
-              alt="Friends dining"
+              src="/live_order_vibe.png"
+              className="w-full h-full object-cover filter brightness-[0.5] contrast-[1.05]"
+              alt="Premium Salad"
             />
             {/* Ambient vignette */}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
