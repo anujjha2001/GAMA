@@ -46,7 +46,7 @@ export function DashboardView() {
   } = useHealthStore();
 
   // AURA Chat & Interface States
-  const { messages, setMessages: setChatHistory, input, setInput, handleSubmit, isLoading } = useAura();
+  const { messages, setMessages: setChatHistory, input, setInput, handleSubmit, isLoading, conversationId, loadConversation, startNewChat } = useAura();
   const [isChatOpen, setIsChatOpen] = React.useState(false);
   const [isListening, setIsListening] = React.useState(false);
 
@@ -257,7 +257,7 @@ export function DashboardView() {
           setDetectedMeal(data.visionPayload);
           setShowConfirmModal(true);
         } else {
-          toast.error("Scanning failed. AURA couldn't identify the image.");
+          toast.error(data.error || data.message || "Scanning failed. AURA couldn't identify the image.");
         }
       } catch (err) {
         setIsScanning(false);
@@ -486,6 +486,9 @@ export function DashboardView() {
             setInput={setInput}
             handleSubmit={handleSubmit}
             isLoading={isLoading}
+            conversationId={conversationId}
+            onSelectConversation={loadConversation}
+            onNewChat={startNewChat}
           />
 
           {/* Health Alerts Warning Banner */}

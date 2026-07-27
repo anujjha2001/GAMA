@@ -10,7 +10,7 @@ import {
   ArrowRight, Globe, Check, Activity, Zap,
   Moon, Flame, Brain, BookOpen, Compass, Upload,
   Plus, CircleDot, Database, FileText, Smartphone, AlertCircle, Sliders,
-  Apple, Utensils, Droplets
+  Apple, Utensils, Droplets, Sparkles, ShoppingBag
 } from 'lucide-react';
 const HealthOrb3D = dynamic(() => import('@/components/shared/health-orb-3d'), {
   ssr: false,
@@ -24,6 +24,19 @@ const HealthOrb3D = dynamic(() => import('@/components/shared/health-orb-3d'), {
 
 export default function HomePage() {
   const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+  const [showVideoModal, setShowVideoModal] = React.useState(false);
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetch('/api/auth')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.user) {
+          setUserRole(data.user.role || 'USER');
+        }
+      })
+      .catch(err => console.error('Error checking user role:', err));
+  }, []);
 
   React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -74,6 +87,113 @@ export default function HomePage() {
       setScannedFood(foodType);
       toast.success(`Scanned ${foodType === 'salad' ? 'Salad' : 'Burger'} successfully!`);
     }, 1500);
+  };
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleUpgradeClick = async () => {
+    // Ensure the user has an active session (calling GET /api/auth initiates a default user session if none exists)
+    try {
+      const authRes = await fetch('/api/auth');
+      const authData = await authRes.json();
+      if (!authData.success) {
+        toast.error('Authentication failed. Please try again.');
+        return;
+      }
+    } catch (err) {
+      console.error('Bypass/Auth check failed:', err);
+      toast.error('Failed to establish session.');
+      return;
+    }
+
+    setShowVideoModal(true);
+
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded) {
+      toast.error('Failed to load payment gateway. Please check your connection.');
+      setShowVideoModal(false);
+      return;
+    }
+
+    // Play cinematic video for 4.5 seconds
+    setTimeout(async () => {
+      try {
+        const response = await fetch('/api/payment/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+          toast.error(data.error || 'Failed to create payment order.');
+          setShowVideoModal(false);
+          return;
+        }
+
+        const options = {
+          key: data.keyId,
+          amount: data.amount,
+          currency: data.currency,
+          name: 'GAMA PRO Plan',
+          description: 'Sovereign Health Intelligence Core Access',
+          order_id: data.orderId,
+          handler: async function (response: any) {
+            setShowVideoModal(false);
+            const verifyRes = await fetch('/api/payment/verify-signature', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              toast.success('GAMA PRO subscription activated successfully!');
+              setUserRole('PRO');
+              // Automatically redirect to the Live Order section
+              setTimeout(() => {
+                window.location.href = '/live-order';
+              }, 1500);
+            } else {
+              toast.error(verifyData.error || 'Payment signature verification failed.');
+            }
+          },
+          prefill: {
+            name: 'User',
+            email: 'user@gama.fit'
+          },
+          theme: {
+            color: '#0a84ff'
+          },
+          modal: {
+            ondismiss: function () {
+              setShowVideoModal(false);
+            }
+          }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } catch (err: any) {
+        console.error('Payment initialization error:', err);
+        toast.error('An error occurred during payment checkout.');
+        setShowVideoModal(false);
+      }
+    }, 4500);
   };
 
   const timelineData = {
@@ -730,7 +850,7 @@ export default function HomePage() {
           <span className="text-[10px] font-bold text-[#0a84ff] uppercase tracking-widest">Chronobiology</span>
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Health Timeline Optimization</h2>
           <p className="text-sm text-white/60">
-            Interactive timeline mapping daily chronobiological events paired with context-sensitive AI recommendations.
+            Interactive timeline mapping daily chronobiological events paired with context-sensitive Health recommendations.
           </p>
         </div>
 
@@ -1100,12 +1220,21 @@ export default function HomePage() {
                   <li className="flex items-center gap-2">✓ Dynamic Chronobiological Sync</li>
                 </ul>
               </div>
-              <Link
-                href="/login"
-                className="w-full py-3 bg-[#0a84ff] hover:bg-[#0071e3] text-white font-semibold rounded-xl text-center text-xs transition-all mt-8 shadow-lg shadow-[#0a84ff]/20"
-              >
-                Upgrade to Pro
-              </Link>
+              {userRole === 'PRO' || userRole === 'pro' ? (
+                <Link
+                  href="/live-order"
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-center text-xs transition-all mt-8 shadow-lg shadow-emerald-500/20"
+                >
+                  Access Live Order
+                </Link>
+              ) : (
+                <button
+                  onClick={handleUpgradeClick}
+                  className="w-full py-3 bg-[#0a84ff] hover:bg-[#0071e3] text-white font-semibold rounded-xl text-center text-xs transition-all mt-8 shadow-lg shadow-[#0a84ff]/20 cursor-pointer border-none font-bold"
+                >
+                  Upgrade to Pro
+                </button>
+              )}
             </div>
 
             {/* Enterprise Plan */}
@@ -1195,6 +1324,44 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Cinematic Subscription Video Pop-up Modal */}
+      <AnimatePresence>
+        {showVideoModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[999] flex items-center justify-center p-4 md:p-8"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="relative w-full max-w-4xl aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(255,255,255,0.15)] bg-black"
+            >
+              <video
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+                src="/subscrption_pop_up_video.mp4.mp4"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-6 left-6 right-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 z-10">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#0a84ff] animate-ping" />
+                  <span className="text-[10px] uppercase tracking-widest text-[#0a84ff] font-extrabold font-sans"></span>
+                </div>
+                <div className="px-4 py-2 bg-black/60 backdrop-blur-md rounded-full border border-white/5 text-[9px] font-black uppercase tracking-wider text-neutral-300 animate-pulse">
+                  Initializing Secure Checkout Portal...
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Marquee Animations */}
       <style jsx global>{`

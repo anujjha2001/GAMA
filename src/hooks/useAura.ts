@@ -14,6 +14,7 @@ export function useAura() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleSubmit = useCallback(async (e?: React.FormEvent<HTMLFormElement> | string) => {
@@ -37,7 +38,10 @@ export function useAura() {
       const response = await fetch('/api/aura', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages }),
+        body: JSON.stringify({ 
+          messages: apiMessages,
+          conversationId
+        }),
         signal: abortControllerRef.current.signal,
         credentials: 'include',
       });
@@ -50,6 +54,9 @@ export function useAura() {
       const contentType = response.headers.get('Content-Type') || '';
       if (contentType.includes('application/json')) {
         const data = await response.json();
+        if (data.conversationId) {
+          setConversationId(data.conversationId);
+        }
         setMessages((prev) => [
           ...prev,
           {
@@ -158,7 +165,7 @@ export function useAura() {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [input, messages, isLoading]);
+  }, [input, messages, isLoading, conversationId]);
 
   const stop = useCallback(() => {
     if (abortControllerRef.current) {
@@ -166,5 +173,48 @@ export function useAura() {
     }
   }, []);
 
-  return { messages, setMessages, input, setInput, handleSubmit, isLoading, stop };
+  const startNewChat = useCallback(() => {
+    setMessages([
+      { id: '1', role: 'assistant', content: 'Hi, How can I help you buddy?' }
+    ]);
+    setConversationId(null);
+  }, []);
+
+  const loadConversation = useCallback(async (id: string) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/aura/history?id=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.conversation) {
+          const loadedMessages = data.conversation.messages.map((m: any) => ({
+            id: m.id,
+            role: m.role as 'user' | 'assistant' | 'system',
+            content: m.content
+          }));
+          setMessages(loadedMessages.length > 0 ? loadedMessages : [
+            { id: '1', role: 'assistant', content: 'Hi, How can I help you buddy?' }
+          ]);
+          setConversationId(id);
+        }
+      }
+    } catch (err) {
+      console.error('[useAura] Failed to load conversation:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { 
+    messages, 
+    setMessages, 
+    input, 
+    setInput, 
+    handleSubmit, 
+    isLoading, 
+    stop, 
+    conversationId, 
+    loadConversation, 
+    startNewChat 
+  };
 }

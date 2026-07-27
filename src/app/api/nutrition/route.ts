@@ -100,7 +100,7 @@ Return a single nutrition object as raw JSON (no markdown, no code blocks):
         'X-Title': 'GAMA Health OS - Nutrition'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-001',
+        model: 'google/gemini-2.5-flash',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,
         max_tokens: 2000
