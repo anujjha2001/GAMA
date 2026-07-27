@@ -192,7 +192,10 @@ You must return a JSON object in this exact format:
     const validationResult = await VisionLayer.analyzeImage(base64Image, validationPrompt);
     const validationData = JSON.parse(validationResult.content);
 
-    if (!validationData.isFood || validationData.confidence < 0.90 || validationData.primaryObject !== 'food') {
+    const primaryObjectLower = (validationData.primaryObject || '').toLowerCase().trim();
+    const isFoodCategory = ['food', 'beverage', 'meal', 'fruit', 'vegetable', 'snack', 'drink'].some(cat => primaryObjectLower.includes(cat));
+
+    if (!validationData.isFood || validationData.confidence < 0.90 || !isFoodCategory) {
       return NextResponse.json({
         success: false,
         reason: 'No recognizable food detected.',

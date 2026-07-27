@@ -63,7 +63,7 @@ Make sure restaurants are geographically accurate to the coordinates. Vary the d
         'X-Title': 'GAMA Health OS - Places'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-001',
+        model: 'google/gemini-2.5-flash',
         messages: [
           {
             role: 'user',

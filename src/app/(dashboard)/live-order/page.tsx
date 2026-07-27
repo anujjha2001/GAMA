@@ -6,7 +6,7 @@ import {
   ShoppingBag, Search, Sparkles, Filter, Check, ArrowRight, Info,
   Flame, Droplets, Zap, ShieldAlert, Award, Star, Compass, Clock,
   Maximize2, Plus, Sliders, ChevronRight, X, Heart, ShieldCheck, Soup, Smile, Calendar, Trash2,
-  Camera, Volume2, CloudSun, MapPin, AlertTriangle, Brain, RefreshCw, BarChart3, TrendingUp, Landmark
+  Camera, Volume2, CloudSun, MapPin, AlertTriangle, Brain, RefreshCw, BarChart3, TrendingUp, Landmark, ChevronLeft, ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -32,7 +32,7 @@ export default function LiveOrderPage() {
   const provider = React.useMemo(() => FoodProviderManager.getProvider(), []);
 
   // UI Modes & States
-  const [activeTab, setActiveTab] = React.useState<'restaurant' | 'grocery' | 'planner' | 'insights' | 'nearby'>('restaurant');
+  const [activeTab, setActiveTab] = React.useState<'favorites' | 'nearby' | 'planner' | 'grocery' | 'insights'>('favorites');
   const [selectedRestaurant, setSelectedRestaurant] = React.useState<Restaurant | null>(null);
   const [checkoutMeal, setCheckoutMeal] = React.useState<Meal | null>(null);
 
@@ -58,7 +58,7 @@ export default function LiveOrderPage() {
 
   // Smart Location Engine States
   const [locationPermission, setLocationPermission] = React.useState<'granted' | 'denied' | 'prompt'>('prompt');
-  const [currentAddress, setCurrentAddress] = React.useState('Workspace, Block 4B (GPS)');
+  const [currentAddress, setCurrentAddress] = React.useState('Bengaluru Corporate Park, Block 4B');
   const [manualCity, setManualCity] = React.useState('Bengaluru');
   const [manualPIN, setManualPIN] = React.useState('560001');
   const [showLocationModal, setShowLocationModal] = React.useState(false);
@@ -111,15 +111,174 @@ export default function LiveOrderPage() {
 
   // Food Memory State (bloating, sleep recovery logs)
   const [foodMemory, setFoodMemory] = React.useState({
-    bloating: ['Paneer Tikka High Fiber Wrap', 'Double Cheese Burgers'],
-    recovery: ['Avocado Quinoa Greens Salad', 'Omega-3 Salmon Superfood Bowl'],
-    sleep: ['Warming Ginger Garlic Lentil Soup', 'Chamomile Tea']
+    bloating: ['Paneer Tikka Fiber Wrap', 'Double Cheese Burger'],
+    recovery: ['Avocado Quinoa Greens Bowl', 'Omega-3 Salmon Superbowl'],
+    sleep: ['Ginger Garlic Lentil Soup', 'Chamomile Tea']
   });
 
   // Loaded Catalog Data
   const [restaurants, setRestaurants] = React.useState<Restaurant[]>([]);
   const [meals, setMeals] = React.useState<Meal[]>([]);
   const [groceries, setGroceries] = React.useState<GroceryItem[]>([]);
+
+  // Testimonials Carousel Slide State
+  const [testimonialIndex, setTestimonialIndex] = React.useState(0);
+
+  const testimonials = [
+    {
+      quote: "GAMA has completely synchronized my eating with my fitness loops. Ordering calorie-optimized foods on Swiggy has never been this seamless!",
+      author: "Rohan Sharma",
+      role: "Marathon Runner",
+      rating: 5,
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=60"
+    },
+    {
+      quote: "The GPS scanning for healthy food options near my office is a lifesaver. Plus, custom macro adjustment actually recalculated everything for me.",
+      author: "Aditi Rao",
+      role: "Product Manager",
+      rating: 5,
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60"
+    },
+    {
+      quote: "I saved almost 400 calories on my favorite paneer wraps last week using the AI custom recommendations. Extremely premium layout!",
+      author: "Kabir Mehta",
+      role: "Software Architect",
+      rating: 5,
+      avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=60"
+    }
+  ];
+
+  // Default Healthy Favorites when search is empty
+  const defaultFavorites: Meal[] = [
+    {
+      id: "fav-1",
+      name: "Garden Fresh Chicken Salad",
+      restaurantId: "954281",
+      restaurantName: "Green Olive Deli",
+      platform: "Swiggy",
+      imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60",
+      price: 320,
+      category: "Salads",
+      auraScore: 94,
+      nutrients: {
+        calories: 320,
+        proteinG: 28,
+        carbsG: 18,
+        fatG: 14,
+        fiberG: 6,
+        sugarG: 4,
+        sodiumMg: 340,
+        glycemicLoad: 4,
+        processingLevel: "Minimally Processed",
+        vitamins: ["Vitamin A", "Vitamin C"],
+        minerals: ["Iron", "Calcium"]
+      },
+      scores: {
+        overall: 94, recovery: 92, protein: 90, digestion: 95, sleep: 90, workout: 92, hydration: 80, brain: 85, longevity: 90, gut: 94, inflammation: 90
+      },
+      whyRecommend: "High lean protein, rich in organic dietary fiber, and low glycemic index.",
+      whyAvoid: "Dressing contains sunflower oil. Ask for olive oil dressing on side.",
+      alternativeName: "Keto Greens Bowl",
+      alternativeId: "fav-alt-1",
+      expectedFeeling: "Energized"
+    },
+    {
+      id: "fav-2",
+      name: "Ube Coconut Cake Slice",
+      restaurantId: "969857",
+      restaurantName: "Sweet Cravings Pastry",
+      platform: "Zomato",
+      imageUrl: "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=500&auto=format&fit=crop&q=60",
+      price: 180,
+      category: "Desserts",
+      auraScore: 65,
+      nutrients: {
+        calories: 240,
+        proteinG: 4,
+        carbsG: 32,
+        fatG: 10,
+        fiberG: 2,
+        sugarG: 16,
+        sodiumMg: 120,
+        glycemicLoad: 18,
+        processingLevel: "Moderately Processed",
+        vitamins: ["Vitamin B"],
+        minerals: ["Potassium"]
+      },
+      scores: {
+        overall: 65, recovery: 50, protein: 40, digestion: 70, sleep: 65, workout: 50, hydration: 60, brain: 55, longevity: 50, gut: 60, inflammation: 45
+      },
+      whyRecommend: "Rich in antioxidants from wild purple yam, uses organic coconut sugar sugar base.",
+      whyAvoid: "Contains processed flour. Best consumed post-workout window.",
+      alternativeName: "Avocado Chocolate Chia Mousse",
+      alternativeId: "fav-alt-2",
+      expectedFeeling: "Heavy"
+    },
+    {
+      id: "fav-3",
+      name: "Protein Power Bowl",
+      restaurantId: "235825",
+      restaurantName: "The Healthy Kitchen",
+      platform: "Swiggy",
+      imageUrl: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500&auto=format&fit=crop&q=60",
+      price: 420,
+      category: "Main Dish",
+      auraScore: 97,
+      nutrients: {
+        calories: 520,
+        proteinG: 38,
+        carbsG: 45,
+        fatG: 16,
+        fiberG: 8,
+        sugarG: 2,
+        sodiumMg: 420,
+        glycemicLoad: 6,
+        processingLevel: "Unprocessed",
+        vitamins: ["Vitamin K", "B-Complex"],
+        minerals: ["Magnesium", "Zinc"]
+      },
+      scores: {
+        overall: 97, recovery: 98, protein: 99, digestion: 92, sleep: 85, workout: 98, hydration: 80, brain: 90, longevity: 95, gut: 92, inflammation: 95
+      },
+      whyRecommend: "Perfect macronutrient distribution for post-training cell repair. Contains quinoa, black beans, and grilled chicken breast.",
+      whyAvoid: "None. This is an AURA Gold standard meal.",
+      alternativeName: "Wild Salmon Bowl",
+      alternativeId: "fav-alt-3",
+      expectedFeeling: "Perfect Before Workout"
+    },
+    {
+      id: "fav-4",
+      name: "Iced Vanilla Latte",
+      restaurantId: "12345",
+      restaurantName: "Cafe Roasters",
+      platform: "Swiggy",
+      imageUrl: "https://images.unsplash.com/photo-1497534446932-c925b458314e?w=500&auto=format&fit=crop&q=60",
+      price: 190,
+      category: "Drinks",
+      auraScore: 78,
+      nutrients: {
+        calories: 120,
+        proteinG: 6,
+        carbsG: 14,
+        fatG: 4,
+        fiberG: 0,
+        sugarG: 10,
+        sodiumMg: 85,
+        glycemicLoad: 8,
+        processingLevel: "Minimally Processed",
+        vitamins: ["Vitamin D"],
+        minerals: ["Calcium"]
+      },
+      scores: {
+        overall: 78, recovery: 70, protein: 60, digestion: 80, sleep: 40, workout: 85, hydration: 75, brain: 85, longevity: 70, gut: 75, inflammation: 70
+      },
+      whyRecommend: "Steamed almond milk base. Great cognitive alert boost without blood sugar crash.",
+      whyAvoid: "Contains caffeine. Avoid taking after 2:00 PM to maintain sleep architecture.",
+      alternativeName: "Organic Matcha Oat Latte",
+      alternativeId: "fav-alt-4",
+      expectedFeeling: "Energized"
+    }
+  ];
 
   // Load Data
   React.useEffect(() => {
@@ -249,7 +408,7 @@ export default function LiveOrderPage() {
 
   const handleUpgradeClick = async () => {
     setShowVideoModal(true);
-    
+
     // Start loading Razorpay script in background
     const scriptLoaded = await loadRazorpayScript();
     if (!scriptLoaded) {
@@ -266,7 +425,7 @@ export default function LiveOrderPage() {
           headers: { 'Content-Type': 'application/json' }
         });
         const data = await response.json();
-        
+
         if (!data.success) {
           toast.error(data.error || 'Failed to create payment order.');
           setShowVideoModal(false);
@@ -325,39 +484,40 @@ export default function LiveOrderPage() {
 
   if (!mounted || checkingRole) return (
     <div className="min-h-screen bg-[#070709] flex items-center justify-center">
-      <div className="w-10 h-10 border-4 border-white/10 border-t-orange-500 rounded-full animate-spin" />
+      <div className="w-10 h-10 border-4 border-white/10 border-t-amber-500 rounded-full animate-spin" />
     </div>
   );
 
+  // Gated Access Screen for Non-PRO
   if (userRole !== 'PRO' && userRole !== 'pro') {
     return (
-      <div className="min-h-[calc(100vh-100px)] flex flex-col items-center justify-center text-white px-6 py-12 relative overflow-hidden select-none bg-[#070709] w-full">
+      <div className="min-h-screen flex flex-col items-center justify-center text-white px-6 py-12 relative overflow-hidden select-none bg-[#070709] w-full">
         {/* Soft background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-cyan-500/10 blur-[120px] pointer-events-none" />
-        
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-amber-500/10 blur-[120px] pointer-events-none" />
+
         {/* Pricing/Gating Container */}
         <div className="relative z-10 w-full max-w-md bg-white/5 border border-white/10 backdrop-blur-3xl p-8 rounded-[36px] text-center shadow-2xl flex flex-col justify-between min-h-[500px]">
           <div className="space-y-6 flex-1 flex flex-col justify-center">
-            <div className="w-20 h-20 bg-cyan-500/10 border border-cyan-500/20 rounded-full flex items-center justify-center mx-auto shadow-inner">
-              <ShoppingBag className="w-10 h-10 text-cyan-400" />
+            <div className="w-20 h-20 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <ShoppingBag className="w-10 h-10 text-amber-400" />
             </div>
 
             <div className="space-y-2">
-              <span className="text-[10px] font-black uppercase text-cyan-400 tracking-widest bg-cyan-400/10 px-3 py-1 rounded-full border border-cyan-400/20">Pro Marketplace</span>
-              <h2 className="text-3xl font-black text-white tracking-tight uppercase mt-2">LIVE Order Gated</h2>
-              <p className="text-xs text-neutral-400 max-w-sm mx-auto leading-relaxed mt-2">
+              <span className="text-[10px] font-black uppercase text-amber-400 tracking-widest bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20 font-display-jakarta">Pro Marketplace</span>
+              <h2 className="text-3xl font-black text-white tracking-tight uppercase mt-2 font-serif-retro">LIVE Order Gated</h2>
+              <p className="text-xs text-neutral-400 max-w-sm mx-auto leading-relaxed mt-2 font-sans">
                 Order custom, personalized chronobiological meals synced live with Swiggy catalog. GAMA PRO unlocks biometric nutrition optimization.
               </p>
             </div>
 
             <div className="border-t border-b border-white/5 py-5 my-2">
               <div className="flex justify-between items-center px-4">
-                <span className="text-xs text-neutral-500 font-bold uppercase">Pro Core Subscription</span>
-                <span className="text-xl font-black text-white">999 INR <span className="text-[10px] font-bold text-neutral-500">/ month</span></span>
+                <span className="text-xs text-neutral-500 font-bold uppercase font-display-jakarta">Pro Core Subscription</span>
+                <span className="text-xl font-black text-white font-serif-retro">999 INR <span className="text-[10px] font-bold text-neutral-500">/ month</span></span>
               </div>
             </div>
 
-            <ul className="text-left text-xs text-neutral-300 space-y-2.5 max-w-xs mx-auto py-2">
+            <ul className="text-left text-xs text-neutral-300 space-y-2.5 max-w-xs mx-auto py-2 font-sans">
               <li className="flex items-center gap-2">✓ Unlimited Personalized Calorie Ordering</li>
               <li className="flex items-center gap-2">✓ Climate-Adapted Food Intelligence</li>
               <li className="flex items-center gap-2">✓ Auto Macronutrient Tracking</li>
@@ -367,7 +527,7 @@ export default function LiveOrderPage() {
 
           <button
             onClick={handleUpgradeClick}
-            className="w-full py-4 mt-6 bg-cyan-500 hover:bg-cyan-600 text-white font-extrabold rounded-2xl text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2"
+            className="w-full py-4 mt-6 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-2xl text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
           >
             <Sparkles className="w-4 h-4" /> Upgrade to PRO
           </button>
@@ -394,18 +554,18 @@ export default function LiveOrderPage() {
     );
   }
 
-  // Smart Geolocation triggers
+  // Geolocation triggers
   const requestGPSLocation = () => {
     setLocationPermission('prompt');
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocationPermission('granted');
-        setCurrentAddress(`Workspace lat: ${pos.coords.latitude.toFixed(4)}, lng: ${pos.coords.longitude.toFixed(4)}`);
+        setCurrentAddress(`GPS: ${pos.coords.latitude.toFixed(4)}°N, ${pos.coords.longitude.toFixed(4)}°E`);
         toast.success('GPS coordinates retrieved successfully');
       },
       () => {
         setLocationPermission('denied');
-        toast.error('Location permission denied. Enter location details manually.');
+        toast.error('Location permission denied. Enter details manually.');
       }
     );
   };
@@ -468,34 +628,23 @@ export default function LiveOrderPage() {
   };
 
   const triggerOrderRedirection = (meal: Meal) => {
-    toast.success(`Opening ${meal.platform || 'Swiggy/Zomato'} deep-link to ${meal.restaurantName}...`);
+    toast.success(`Redirecting to Swiggy/Zomato search query for ${meal.restaurantName}...`);
 
-    // Deep Link Redirection with Fallback
     const platform = (meal.platform || 'Swiggy') as 'Swiggy' | 'Zomato';
     const encodedName = encodeURIComponent(meal.restaurantName);
-    const appUri = platform === 'Swiggy'
-      ? `swiggy://restaurant?name=${encodedName}`
-      : `zomato://restaurant?name=${encodedName}`;
     const webUri = platform === 'Swiggy'
       ? `https://www.swiggy.com/search?query=${encodedName}`
       : `https://www.zomato.com/search?q=${encodedName}`;
 
-    const start = Date.now();
-    window.location.href = appUri;
-    setTimeout(() => {
-      if (Date.now() - start < 2000) {
-        window.open(webUri, '_blank');
-      }
-    }, 1500);
+    window.open(webUri, '_blank');
 
-    // Start GAMA Active post-meal timeline
+    // Start post-meal digestion tracking timeline
     setActiveOrderTimeline('Preparing');
     setTimeout(() => setActiveOrderTimeline('Cooking'), 4000);
     setTimeout(() => setActiveOrderTimeline('Picked Up'), 8000);
     setTimeout(() => setActiveOrderTimeline('Delivered'), 12000);
     setTimeout(() => {
       setActiveOrderTimeline('Digesting');
-      // Start Digestion Interval
       const interval = setInterval(() => {
         setDigestionProgress(prev => {
           if (prev >= 100) {
@@ -509,7 +658,7 @@ export default function LiveOrderPage() {
     }, 15000);
   };
 
-  // Camera upload simulator
+  // Camera scanner simulator
   const handleSimulatedCameraScan = () => {
     setCameraScanning(true);
     setScannedResult(null);
@@ -522,355 +671,451 @@ export default function LiveOrderPage() {
         carbs: 45,
         fat: 26,
         score: 55,
-        healthyMatch: 'Double Chicken Protein Power Bowl'
+        healthyMatch: 'Protein Power Bowl'
       });
       toast.success('AI Scanner completed successfully!');
     }, 2000);
   };
 
-  // Voice command shortcut simulator
+  // Voice Command simulator
   const triggerVoiceCommand = () => {
     setIsListeningVoice(true);
     setTimeout(() => {
       setIsListeningVoice(false);
       setVoiceQueryInput('High protein breakfast under ₹350');
       setSearchQuery('Chicken');
-      setActiveTab('restaurant');
-      toast.success('Voice understood: Searching "High protein breakfast under ₹350"');
+      setActiveTab('favorites');
+      toast.success('Searching "High protein breakfast under ₹350"');
     }, 2500);
   };
 
+  // Scroll Helper
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Dynamic Meals mapping
+  const mealsListToRender = searchQuery.trim() === '' ? defaultFavorites : meals;
+
   return (
-    <div className="min-h-screen bg-[#0a0807] text-[#eae3dc] p-4 md:p-6 relative overflow-hidden flex flex-col font-sans">
+    <div className="min-h-screen bg-[#070709] text-[#eae3dc] relative overflow-x-hidden font-sans">
 
       {/* Background cinematic glowing layers */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-white/5 blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-amber-600/5 blur-[150px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-white/5 blur-[150px] pointer-events-none z-0" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-amber-600/5 blur-[150px] pointer-events-none z-0" />
+      <div className="absolute top-[40%] right-[-10%] w-[400px] h-[400px] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none z-0" />
 
-      {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 z-10">
-        <div>
-          <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 text-black font-semibold animate-pulse" /> GAMA Live Food Intelligence — Real Data
-          </span>
-          <h1 className="text-whitexl font-black text-white tracking-tight mt-1">AURA LIVE Order v3.0 — Google Places + Edamam</h1>
-          <p className="text-xs text-neutral-400 mt-1 max-w-xl">
-            Real-time nearby restaurants via GPS + Google Places AI. Nutrition analysis by Edamam. Deep-linked to Swiggy & Zomato.
-          </p>
+      {/* 1. NAVIGATION BAR */}
+      <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-black/60 backdrop-blur-xl px-4 md:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center">
+            <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
+          </div>
+          <span className="font-serif-retro italic font-black text-xl tracking-wider text-[#eae3dc]">GAMA</span>
         </div>
 
-        {/* Location display pill & Geolocation triggers */}
+        {/* Clean top header links */}
+        <nav className="flex items-center gap-4 md:gap-8 text-[11px] font-black uppercase tracking-wider text-neutral-400 font-display-jakarta">
+          <button onClick={() => toast.info('Career openings loading...')} className="hover:text-white transition-colors cursor-pointer bg-transparent border-none">Career</button>
+          <button onClick={() => scrollToSection('customer-favorites')} className="hover:text-white transition-colors cursor-pointer bg-transparent border-none">Menu</button>
+          <button onClick={() => scrollToSection('app-download')} className="hover:text-white transition-colors cursor-pointer bg-transparent border-none">The App</button>
+          <button onClick={() => toast.info('Franchise information inquiry sent')} className="hover:text-white transition-colors cursor-pointer bg-transparent border-none">Franchise</button>
+          <button onClick={() => setShowLocationModal(true)} className="hover:text-white transition-colors cursor-pointer flex items-center gap-1 bg-transparent border-none">📍 Delivery</button>
+          <button onClick={() => toast.info('View open positions')} className="hover:text-white transition-colors cursor-pointer bg-transparent border-none">Jobs</button>
+        </nav>
+
+        {/* Delivery & Budget action pills */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowLocationModal(true)}
-            className="flex items-center gap-2 bg-[#13100e] border border-white/10 px-3.5 py-2 rounded-2xl shadow-md text-xs hover:border-white/20/40 transition-colors"
+            className="flex items-center gap-1.5 bg-[#141110] border border-white/10 px-3 py-1.5 rounded-full text-[10px] hover:border-white/20 transition-colors"
           >
-            <MapPin className="w-4 h-4 text-white" />
-            <div className="text-left">
-              <span className="text-[9px] text-neutral-400 block uppercase font-bold">Delivery Location</span>
-              <span className="text-[10px] text-white font-extrabold">{currentAddress}</span>
-            </div>
+            <MapPin className="w-3.5 h-3.5 text-amber-500" />
+            <span className="text-white font-extrabold max-w-[120px] truncate">{currentAddress}</span>
           </button>
 
           <button
             onClick={() => setShowBudgetModal(true)}
-            className="flex items-center gap-2 bg-[#13100e] border border-[#2c1e15] px-3.5 py-2 rounded-2xl shadow-md text-xs hover:border-[#3c2a1e] transition-colors"
+            className="flex items-center gap-1.5 bg-[#141110] border border-[#2c2018] px-3 py-1.5 rounded-full text-[10px] hover:border-amber-500/20 transition-colors"
           >
-            <Landmark className="w-4 h-4 text-neutral-400" />
-            <div className="text-left">
-              <span className="text-[9px] text-neutral-400 block uppercase font-bold">Monthly Budget</span>
-              <span className="text-[10px] text-white font-extrabold">₹{spentThisMonth}/₹{monthlyLimit}</span>
-            </div>
+            <Landmark className="w-3.5 h-3.5 text-neutral-400" />
+            <span className="text-neutral-300 font-extrabold">₹{spentThisMonth}/₹{monthlyLimit}</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* CORE INTERACTIVE GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-1 z-10">
+      {/* 2. HERO SECTION ("A good BUNCH") */}
+      <section className="relative w-full py-16 px-4 md:px-8 max-w-7xl mx-auto z-10">
+        <div className="relative w-full aspect-16/10 md:aspect-21/9 rounded-[36px] overflow-hidden border border-white/10 shadow-2xl flex flex-col justify-end p-6 md:p-12">
 
-        {/* LEFT CONTROL RAIL */}
-        <div className="lg:col-span-3 space-y-4 flex flex-col justify-start">
-
-          {/* Weather & Mood Context Indicators */}
-          <div className="rounded-[32px] bg-[#14100e]/95 backdrop-blur-xl border border-[#2c1e15] p-5 shadow-lg space-y-4">
-            <span className="text-[10px] font-black tracking-widest text-neutral-400 uppercase block">Contextual Adaptors</span>
-
-            <div className="space-y-3">
-              <div>
-                <span className="text-[9px] text-neutral-400 font-bold block mb-1">Weather Adaptation</span>
-                <select
-                  id="live-order-weather-select"
-                  name="live-order-weather-select"
-                  value={currentWeather}
-                  onChange={(e) => setCurrentWeather(e.target.value as any)}
-                  className="w-full bg-[#1e1714] border border-[#2c1e15] rounded-xl text-xs text-white p-2"
-                >
-                  <option value="Hot & Humid">☀️ Hot & Humid (Cooling Foods)</option>
-                  <option value="Monsoon Rain">🌧️ Monsoon Rain (Warm Soups)</option>
-                  <option value="Cool Winter">❄️ Cool Winter (High Calorie Comfort)</option>
-                </select>
-              </div>
-
-              <div>
-                <span className="text-[9px] text-neutral-400 font-bold block mb-1">Mood & Stress Shift</span>
-                <select
-                  id="live-order-mood-select"
-                  name="live-order-mood-select"
-                  value={currentMood}
-                  onChange={(e) => setCurrentMood(e.target.value as any)}
-                  className="w-full bg-[#1e1714] border border-[#2c1e15] rounded-xl text-xs text-white p-2"
-                >
-                  <option value="Stressed"> Stressed (Lower Cortisol)</option>
-                  <option value="Low Energy">Low Energy (Complex Carbs)</option>
-                  <option value="High Recovery"> High Recovery (Cheat Meal Window)</option>
-                </select>
-              </div>
-            </div>
+          {/* Background image of dining friends */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src="https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=1600&auto=format&fit=crop&q=80"
+              className="w-full h-full object-cover filter brightness-[0.4] contrast-[1.05]"
+              alt="Friends dining"
+            />
+            {/* Ambient vignette */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
           </div>
 
-          {/* Connected Partner status cards */}
-          <div className="rounded-[32px] bg-[#14100e]/95 border border-[#2c1e15] p-5 shadow-lg space-y-4">
-            <span className="text-[10px] font-black tracking-widest text-neutral-400 uppercase block">Connected Partners</span>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center bg-[#1e1714] border border-[#2c1e15] p-3 rounded-2xl">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 shrink-0" viewBox="0 0 512 512" fill="#fc8019">
-                    <path d="M439.4 207.2c-5.7-18.7-27.1-27.1-42.3-15.6l-50.5 38c-8.4 6.3-20.1 6.3-28.5 0L193.3 133.5c-30.8-23.2-74-7.4-83.3 30.5L78.6 303.1c-13.4 54.3 22 108.6 76.5 117.2l87.5 13.8c11.7 1.8 23.6-2.9 31-12.4l154.5-197.6c11.1-14.1 6.3-35.3-8.7-42.9z" />
-                  </svg>
-                  <span className="text-xs font-bold text-white">Swiggy</span>
-                </div>
-                <button
-                  onClick={() => { setSwiggyConnected(!swiggyConnected); toast.info(swiggyConnected ? 'Swiggy integration unlinked' : 'Swiggy integration synced'); }}
-                  className={`px-3 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-colors ${swiggyConnected ? 'bg-white/5 text-neutral-300' : 'bg-white/5 text-neutral-400'}`}
-                >
-                  {swiggyConnected ? 'Active' : 'Configure'}
-                </button>
-              </div>
-              <div className="flex justify-between items-center bg-[#1e1714] border border-[#2c1e15] p-3 rounded-2xl">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="#e23744">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                  <span className="text-xs font-bold text-white font-sans tracking-wide">Zomato</span>
-                </div>
-                <button
-                  onClick={() => { setZomatoConnected(!zomatoConnected); toast.info(zomatoConnected ? 'Zomato integration unlinked' : 'Zomato integration synced'); }}
-                  className={`px-3 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-colors ${zomatoConnected ? 'bg-rose-500/10 text-rose-400' : 'bg-white/5 text-neutral-400'}`}
-                >
-                  {zomatoConnected ? 'Active' : 'Configure'}
-                </button>
-              </div>
+          <div className="relative z-10 max-w-xl space-y-4 md:space-y-6">
+            <div className="space-y-1">
+              <span className="text-[10px] md:text-xs font-black uppercase text-amber-400 tracking-widest bg-amber-500/10 border border-amber-500/25 px-3.5 py-1 rounded-full font-display-jakarta inline-block">
+                Biometric Live Ordering
+              </span>
+              <h1 className="text-5xl md:text-7xl font-serif-retro italic text-white leading-none tracking-tight">
+                A good <br className="hidden sm:inline" /><span className="font-extrabold tracking-normal">BUNCH</span>
+              </h1>
             </div>
-          </div>
 
-          {/* Food Memory logs */}
-          <div className="rounded-[32px] bg-[#14100e]/95 border border-[#2c1e15] p-5 shadow-lg space-y-3">
-            <span className="text-[10px] font-black tracking-widest text-neutral-400 uppercase block">Food Memory Nodes</span>
-            <div className="space-y-2 text-[10px]">
-              <div>
-                <span className="text-rose-400 font-bold block">🚨 Causes Bloating (Avoid)</span>
-                <p className="text-neutral-400 mt-0.5">{foodMemory.bloating.join(', ')}</p>
-              </div>
-              <div className="pt-2 border-t border-[#2c1e15]">
-                <span className="text-emerald-400 font-bold block">✓ Speeds Recovery</span>
-                <p className="text-neutral-400 mt-0.5">{foodMemory.recovery.join(', ')}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Voice Command Panel */}
-          <div className="rounded-[32px] bg-neutral-900/95 border border-white/10 p-5 shadow-lg space-y-3">
-            <span className="text-[10px] font-black tracking-widest text-neutral-300 uppercase block">AI Voice Assistant Shortcuts</span>
-            <p className="text-[9px] text-neutral-400 leading-relaxed">
-              Quickly trigger search queries using AURA's local voice-routing logic.
+            <p className="text-sm md:text-base italic text-neutral-300 font-serif-retro">
+              "For the best experience, eat at 'full volume'"
             </p>
+
             <button
-              onClick={triggerVoiceCommand}
-              className={`w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider transition-all ${isListeningVoice ? 'bg-brand animate-pulse text-white' : 'bg-white text-black font-semibold text-black hover:bg-neutral-200'}`}
+              onClick={() => scrollToSection('customer-favorites')}
+              className="group inline-flex items-center gap-3 bg-white text-black hover:bg-neutral-200 px-6 py-3.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg shadow-white/10 cursor-pointer"
             >
-              <Volume2 className="w-4 h-4" /> {isListeningVoice ? 'AURA Listening...' : 'Trigger Voice Command'}
+              See the menu
+              <div className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
             </button>
           </div>
-
         </div>
+      </section>
 
-        {/* CENTER FEED & BROWSE */}
-        <div className="lg:col-span-6 space-y-6 flex flex-col justify-start">
+      {/* 3. CATEGORIES / COMFORT SECTION */}
+      <section className="py-12 px-4 md:px-8 max-w-7xl mx-auto z-10">
+        <div className="w-full bg-[#eae3dc]/95 text-[#0d2e27] border border-white/10 rounded-[48px] p-8 md:p-12 shadow-2xl relative overflow-hidden">
 
-          {/* NAVIGATION BAR & SEARCH */}
-          <div className="bg-[#14100e]/95 border border-[#2c1e15] rounded-[32px] p-4 shadow-lg flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="text-center max-w-md mx-auto space-y-2 mb-10">
+            <h2 className="text-3xl md:text-4xl font-serif-retro italic font-extrabold tracking-tight">
+              Mediterranean Food.<br />Universal Comfort.
+            </h2>
+            <div className="h-[2px] w-12 bg-[#0d2e27]/30 mx-auto" />
+          </div>
 
-            {/* Tabs */}
-            <div className="flex flex-wrap bg-[#1e1714] p-1 rounded-full border border-[#2c1e15] gap-1">
-              {(['restaurant', 'grocery', 'planner', 'insights'] as const).map((tab) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            {/* Category 1 */}
+            <div className="group rounded-[32px] overflow-hidden bg-white/40 border border-[#0d2e27]/10 p-3 flex flex-col justify-between aspect-3/4 hover:shadow-xl transition-all duration-300">
+              <div className="w-full aspect-square rounded-[24px] overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&auto=format&fit=crop&q=60"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  alt="Main Dish"
+                />
+              </div>
+              <div className="pt-4 pb-2 px-2 flex justify-between items-center">
+                <span className="font-serif-retro italic font-extrabold text-[#0d2e27] text-lg">Main Dish</span>
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${activeTab === tab ? 'bg-white text-black font-semibold text-black shadow-md' : 'text-neutral-400 hover:text-white'}`}
+                  onClick={() => { setSearchQuery('Healthy Bowl'); scrollToSection('customer-favorites'); }}
+                  className="px-4 py-1.5 bg-[#0d2e27] text-[#eae3dc] rounded-full text-[10px] font-bold uppercase tracking-wider hover:opacity-90 cursor-pointer border-none"
                 >
-                  {tab}
+                  Explore
                 </button>
-              ))}
-              <button
-                onClick={() => setActiveTab('nearby')}
-                className={`px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${activeTab === 'nearby' ? 'bg-emerald-500 text-white shadow-md' : 'text-emerald-400 hover:text-white border border-emerald-500/30'}`}
-              >
-                📍 Nearby
-              </button>
+              </div>
             </div>
 
-            {/* Global Search Input */}
-            <div className="flex-1 max-w-md relative flex items-center bg-[#1e1714] border border-[#2c1e15] rounded-full px-4.5 py-1.5">
-              <Search className="w-4 h-4 text-neutral-500 mr-2" />
-              <input
-                type="text"
-                id="live-order-global-search"
-                name="live-order-global-search"
-                placeholder="Search food, recipes, macros, ingredients..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent text-xs text-white placeholder-neutral-500 border-0 focus:outline-hidden"
-              />
-              <button
-                onClick={() => setShowCameraModal(true)}
-                className="p-1 hover:bg-[#2c1e15] rounded-lg text-neutral-300 transition-colors"
-                title="Scan Plate"
-              >
-                <Camera className="w-4 h-4" />
-              </button>
+            {/* Category 2 */}
+            <div className="group rounded-[32px] overflow-hidden bg-white/40 border border-[#0d2e27]/10 p-3 flex flex-col justify-between aspect-3/4 hover:shadow-xl transition-all duration-300">
+              <div className="w-full aspect-square rounded-[24px] overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1587314168485-3236d6710814?w=500&auto=format&fit=crop&q=60"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  alt="Dessert"
+                />
+              </div>
+              <div className="pt-4 pb-2 px-2 flex justify-between items-center">
+                <span className="font-serif-retro italic font-extrabold text-[#0d2e27] text-lg">Dessert</span>
+                <button
+                  onClick={() => { setSearchQuery('Cake'); scrollToSection('customer-favorites'); }}
+                  className="px-4 py-1.5 bg-[#0d2e27] text-[#eae3dc] rounded-full text-[10px] font-bold uppercase tracking-wider hover:opacity-90 cursor-pointer border-none"
+                >
+                  Explore
+                </button>
+              </div>
+            </div>
+
+            {/* Category 3 */}
+            <div className="group rounded-[32px] overflow-hidden bg-white/40 border border-[#0d2e27]/10 p-3 flex flex-col justify-between aspect-3/4 hover:shadow-xl transition-all duration-300">
+              <div className="w-full aspect-square rounded-[24px] overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1497534446932-c925b458314e?w=500&auto=format&fit=crop&q=60"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  alt="Drinks"
+                />
+              </div>
+              <div className="pt-4 pb-2 px-2 flex justify-between items-center">
+                <span className="font-serif-retro italic font-extrabold text-[#0d2e27] text-lg">Drinks</span>
+                <button
+                  onClick={() => { setSearchQuery('Latte'); scrollToSection('customer-favorites'); }}
+                  className="px-4 py-1.5 bg-[#0d2e27] text-[#eae3dc] rounded-full text-[10px] font-bold uppercase tracking-wider hover:opacity-90 cursor-pointer border-none"
+                >
+                  Explore
+                </button>
+              </div>
             </div>
 
           </div>
 
-          {/* ACTIVE TAB RENDER */}
-          {activeTab === 'restaurant' && (
-            <>
-              {/* Filter chips bar */}
+          {/* Bottom styling border */}
+          <div className="absolute bottom-0 inset-x-0 h-4 bg-[#0d2e27]" />
+        </div>
+      </section>
+
+      {/* 4. PROMOTIONAL GREEN BANNER */}
+      <section className="py-6 px-4 md:px-8 max-w-7xl mx-auto z-10">
+        <div className="w-full bg-[#0d2e27] border border-white/5 rounded-[36px] px-6 py-12 md:py-16 text-center relative overflow-hidden flex items-center justify-center shadow-xl">
+          {/* Subtle wave overlays */}
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,1)_0%,rgba(0,0,0,0)_80%)] pointer-events-none" />
+
+          <div className="max-w-2xl relative z-10 space-y-4">
+            <p className="text-2xl md:text-4xl font-serif-retro italic text-[#eae3dc] leading-relaxed font-light tracking-wide px-4">
+              "To make your mouth water, put a smile on your lips <span className="text-yellow-400 not-italic"></span> and brighten up your lunch breaks"
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. CUSTOMER FAVORITES (LIVE HEALTHY COUNTER) */}
+      <section id="customer-favorites" className="py-12 px-4 md:px-8 max-w-7xl mx-auto z-10 space-y-8 scroll-mt-24">
+
+        {/* Title */}
+        <div className="text-center max-w-lg mx-auto space-y-2">
+          <span className="text-[10px] font-black uppercase text-amber-500 tracking-widest font-display-jakarta block">Real-Time Healthy Counter</span>
+          <h2 className="text-4xl md:text-5xl font-serif-retro italic font-extrabold tracking-tight text-white">Customer Favorites</h2>
+          <p className="text-xs text-neutral-400 font-sans">
+            Personalized meal builder integrated with GPS search coordinates. Order from local outlets on Swiggy and Zomato.
+          </p>
+        </div>
+
+        {/* Dynamic Controls Grid */}
+        <div className="bg-[#141110] border border-white/5 rounded-[32px] p-6 shadow-2xl space-y-6">
+
+          {/* Geolocation Scan console & search */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+
+            {/* Tabs */}
+            <div className="flex flex-wrap bg-[#1a1614] p-1 rounded-full border border-white/5 gap-1 self-start">
+              <button
+                onClick={() => setActiveTab('favorites')}
+                className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border-none ${activeTab === 'favorites' ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:text-white'}`}
+              >
+                ★ Favorites
+              </button>
+              <button
+                onClick={() => setActiveTab('nearby')}
+                className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border-none flex items-center gap-1 ${activeTab === 'nearby' ? 'bg-emerald-500 text-white shadow-md' : 'text-emerald-400 hover:text-white border border-emerald-500/10'}`}
+              >
+                📍 Nearby spots
+              </button>
+              <button
+                onClick={() => setActiveTab('planner')}
+                className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border-none ${activeTab === 'planner' ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:text-white'}`}
+              >
+                📅 Weekly Planner
+              </button>
+              <button
+                onClick={() => setActiveTab('grocery')}
+                className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border-none ${activeTab === 'grocery' ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:text-white'}`}
+              >
+                🛒 Grocery List
+              </button>
+              <button
+                onClick={() => setActiveTab('insights')}
+                className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border-none ${activeTab === 'insights' ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:text-white'}`}
+              >
+                📊 Insights
+              </button>
+            </div>
+
+            {/* GPS & Search Panel */}
+            <div className="flex-1 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={requestGPSLocation}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600/10 to-orange-600/10 border border-amber-500/20 hover:border-amber-500/40 text-amber-400 font-bold px-4 py-3 rounded-full text-[10px] uppercase tracking-wider transition-all duration-300 cursor-pointer shrink-0"
+              >
+                <Compass className="w-4 h-4" /> Scan Nearby Areas
+              </button>
+
+              {/* Global Search Input */}
+              <div className="flex-1 relative flex items-center bg-[#1d1917] border border-white/5 rounded-full px-5 py-2.5">
+                <Search className="w-4 h-4 text-neutral-500 mr-2" />
+                <input
+                  type="text"
+                  placeholder="Search macro dishes, calories, cuisine..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent text-xs text-white placeholder-neutral-500 border-0 focus:outline-none"
+                />
+                <button
+                  onClick={() => setShowCameraModal(true)}
+                  className="p-1 hover:bg-[#2c2018] rounded-full text-neutral-400 hover:text-white transition-colors bg-transparent border-none"
+                  title="Scan Plate"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Context Adaptors sub-rail */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-[#1a1614] rounded-2xl border border-white/5">
+            <div>
+              <span className="text-[9px] text-neutral-500 font-bold block mb-1 uppercase font-display-jakarta">Weather Sync</span>
+              <select
+                value={currentWeather}
+                onChange={(e) => setCurrentWeather(e.target.value as any)}
+                className="w-full bg-[#141110] border border-white/5 rounded-xl text-xs text-white p-2 focus:ring-0 focus:outline-none"
+              >
+                <option value="Hot & Humid">☀️ Hot & Humid (Cooling Foods)</option>
+                <option value="Monsoon Rain">🌧️ Monsoon Rain (Warm Comfort)</option>
+                <option value="Cool Winter">❄️ Cool Winter (High Cal Comfort)</option>
+              </select>
+            </div>
+
+            <div>
+              <span className="text-[9px] text-neutral-500 font-bold block mb-1 uppercase font-display-jakarta">Biometric Stress Mode</span>
+              <select
+                value={currentMood}
+                onChange={(e) => setCurrentMood(e.target.value as any)}
+                className="w-full bg-[#141110] border border-white/5 rounded-xl text-xs text-white p-2 focus:ring-0 focus:outline-none"
+              >
+                <option value="">🧘 Normal State</option>
+                <option value="Stressed">😫 High Stress (Low Cortisol)</option>
+                <option value="Low Energy">🔋 Low Energy (Complex Carbs)</option>
+                <option value="High Recovery">🏋️ Heavy Workout Recovery</option>
+              </select>
+            </div>
+
+            <div>
+              <span className="text-[9px] text-neutral-500 font-bold block mb-1 uppercase font-display-jakarta">Weather Adaptation</span>
+              <div className="bg-[#141110] border border-white/5 rounded-xl text-xs text-neutral-300 p-2 text-center font-bold">
+                {currentWeather === 'Hot & Humid' ? '🍃 Alkaline meals suggested' : currentWeather === 'Monsoon Rain' ? '🍲 Warm thermogenic soups' : '🪵 Comfort protein meals'}
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[9px] text-neutral-500 font-bold block mb-1 uppercase font-display-jakarta">Partner Sync</span>
+              <div className="flex gap-2 justify-center py-1">
+                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${swiggyConnected ? 'bg-orange-500/10 text-orange-400 border border-orange-500/25' : 'bg-neutral-800 text-neutral-500'}`}>Swiggy</span>
+                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${zomatoConnected ? 'bg-rose-500/10 text-rose-400 border border-rose-500/25' : 'bg-neutral-800 text-neutral-500'}`}>Zomato</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ACTIVE TAB CONTENTS */}
+          {activeTab === 'favorites' && (
+            <div className="space-y-6">
+              {/* Filter chips */}
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setVegFilter(!vegFilter)}
-                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border cursor-pointer transition-all ${vegFilter ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-[#14100e] text-neutral-400 border-[#2c1e15]'}`}
+                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer ${vegFilter ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-[#1a1614] text-neutral-400 border-white/5'}`}
                 >
                   🥦 Veg Only
                 </button>
                 <button
                   onClick={() => setHighProteinFilter(!highProteinFilter)}
-                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border cursor-pointer transition-all ${highProteinFilter ? 'bg-white/10 text-neutral-300 border-white/10' : 'bg-[#14100e] text-neutral-400 border-[#2c1e15]'}`}
+                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer ${highProteinFilter ? 'bg-white/15 text-neutral-300 border-white/20' : 'bg-[#1a1614] text-neutral-400 border-white/5'}`}
                 >
                   🍗 High Protein (25g+)
                 </button>
               </div>
 
-              {/* Meals Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {meals.map((meal) => {
+              {/* Grid representation */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {mealsListToRender.map((meal) => {
                   const isCompared = compareList.find(c => c.id === meal.id);
                   return (
                     <motion.div
                       key={meal.id}
                       whileHover={{ y: -4 }}
-                      className="rounded-[32px] bg-[#14100e]/95 border border-[#2c1e15] overflow-hidden flex flex-col justify-between shadow-lg relative group"
+                      className="rounded-[28px] bg-[#1a1614] border border-white/5 overflow-hidden flex flex-col justify-between shadow-lg relative group transition-all"
                     >
                       {/* Aura Score badge */}
-                      <div className="absolute top-4 left-4 z-20 bg-[#0a0807]/90 border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-white text-black font-semibold" />
-                        <span className="text-[10px] text-neutral-300 font-black">{meal.auraScore}/100</span>
+                      <div className="absolute top-3 left-3 z-20 bg-black/80 border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        <span className="text-[9px] text-[#eae3dc] font-black font-display-jakarta">{meal.auraScore}/100</span>
                       </div>
 
                       {/* Compare toggle */}
                       <button
                         onClick={() => handleToggleCompare(meal)}
-                        className={`absolute top-4 right-4 z-20 p-2 rounded-full border transition-all cursor-pointer ${isCompared ? 'bg-white text-black font-semibold text-black border-white/20' : 'bg-[#0a0807]/80 text-neutral-400 border-white/5 hover:border-white/10'}`}
+                        className={`absolute top-3 right-3 z-20 p-2 rounded-full border transition-all cursor-pointer ${isCompared ? 'bg-white text-black border-white' : 'bg-black/60 text-neutral-400 border-white/5 hover:border-white/10'}`}
                       >
-                        <Sliders className="w-3.5 h-3.5" />
+                        <Sliders className="w-3 h-3" />
                       </button>
 
-                      {/* Header image representation */}
-                      <div
-                        className="h-32 w-full relative cursor-pointer"
-                        onClick={() => {
-                          const found = restaurants.find(r => r.id === meal.restaurantId || r.name === meal.restaurantName);
-                          if (found) setSelectedRestaurant(found);
-                        }}
-                      >
-                        <img src={meal.imageUrl} className="w-full h-full object-cover" alt={meal.name} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#14100e] via-transparent to-transparent" />
-                        <div className="absolute bottom-2 left-4">
-                          <span className="text-[8px] bg-black/40 text-neutral-300 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border border-white/5 hover:border-white/10 transition-colors">
+                      {/* Food image wrapper */}
+                      <div className="h-44 w-full relative overflow-hidden">
+                        <img src={meal.imageUrl} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500" alt={meal.name} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1614] via-transparent to-transparent" />
+                        <div className="absolute bottom-2 left-3">
+                          <span className="text-[8px] bg-black/60 text-neutral-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider border border-white/5">
                             {meal.restaurantName}
                           </span>
                         </div>
                       </div>
 
-                      {/* Content details */}
-                      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                      {/* Details block */}
+                      <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
                         <div>
-                          <h3 className="text-sm font-black text-white group-hover:text-neutral-300 transition-colors">{meal.name}</h3>
+                          <h3 className="text-sm font-serif-retro italic font-extrabold text-white group-hover:text-amber-300 transition-colors">{meal.name}</h3>
 
-                          {/* Dynamic Detailed Scoring preview */}
-                          <div className="flex gap-2.5 mt-2 flex-wrap">
-                            <span className="text-[8px] bg-sky-950/40 text-sky-400 border border-sky-900/30 px-1.5 py-0.5 rounded">
-                              Glycemic Load: {meal.nutrients.glycemicLoad}
-                            </span>
-                            <span className="text-[8px] bg-neutral-800/40 text-neutral-300 border border-neutral-700/30 px-1.5 py-0.5 rounded">
-                              Processing: {meal.nutrients.processingLevel}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-4 gap-2 text-center text-[9px] bg-neutral-900 border border-white/5 rounded-xl p-2 mt-3">
+                          {/* Nutrients preview bar */}
+                          <div className="grid grid-cols-4 gap-1 text-center text-[9px] bg-black/40 border border-white/5 rounded-xl p-2 mt-3 font-display-jakarta">
                             <div>
-                              <span className="text-neutral-500 block">Calories</span>
-                              <span className="font-bold text-white">{meal.nutrients.calories}</span>
+                              <span className="text-neutral-500 block text-[7px] uppercase">Cal</span>
+                              <span className="font-bold text-neutral-200">{meal.nutrients.calories}</span>
                             </div>
                             <div>
-                              <span className="text-neutral-500 block">Protein</span>
-                              <span className="font-bold text-white">{meal.nutrients.proteinG}g</span>
+                              <span className="text-neutral-500 block text-[7px] uppercase">Pro</span>
+                              <span className="font-bold text-neutral-200">{meal.nutrients.proteinG}g</span>
                             </div>
                             <div>
-                              <span className="text-neutral-500 block">Carbs</span>
-                              <span className="font-bold text-white">{meal.nutrients.carbsG}g</span>
+                              <span className="text-neutral-500 block text-[7px] uppercase">Carb</span>
+                              <span className="font-bold text-neutral-200">{meal.nutrients.carbsG}g</span>
                             </div>
                             <div>
-                              <span className="text-neutral-500 block">Fat</span>
-                              <span className="font-bold text-white">{meal.nutrients.fatG}g</span>
+                              <span className="text-neutral-500 block text-[7px] uppercase">Fat</span>
+                              <span className="font-bold text-neutral-200">{meal.nutrients.fatG}g</span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Recommendation Rationale */}
-                        <div className="text-[10px] text-neutral-400 leading-relaxed bg-[#1c1613]/40 border border-[#2c1e15]/40 p-3 rounded-2xl">
-                          <span className="font-black text-neutral-300 uppercase text-[8px] block mb-1">Why Recommended</span>
+                        {/* Rationale explanation box */}
+                        <div className="text-[10px] text-neutral-400 leading-relaxed bg-black/30 border border-white/5 p-3 rounded-xl font-sans">
+                          <span className="font-black text-amber-500/80 uppercase text-[8px] block mb-1 font-display-jakarta">AURA Sync suggestion</span>
                           {meal.whyRecommend}
                         </div>
 
-                        <div className="flex justify-between items-center gap-3 pt-2">
+                        {/* Action footer */}
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/5">
                           <div>
-                            <span className="text-[9px] text-neutral-500 block">Est. Cost</span>
+                            <span className="text-[8px] text-neutral-500 block uppercase font-display-jakarta">Est. Cost</span>
                             <span className="text-xs font-black text-white">₹{meal.price}</span>
                           </div>
 
-                          <div className="flex flex-wrap gap-1.5 justify-end">
-                            <button
-                              onClick={() => {
-                                const found = restaurants.find(r => r.id === meal.restaurantId || r.name === meal.restaurantName);
-                                if (found) setSelectedRestaurant(found);
-                                else toast.info('Restaurant details loading...');
-                              }}
-                              className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-[9px] font-black uppercase tracking-wider cursor-pointer text-neutral-300"
-                            >
-                              Menu
-                            </button>
+                          <div className="flex gap-1">
                             <button
                               onClick={() => setSelectedOptimizerMeal(meal)}
-                              className="px-2.5 py-1.5 bg-[#1c1613] hover:bg-[#2c1f19] border border-white/10 text-neutral-300 rounded-xl text-[9px] font-black uppercase tracking-wider cursor-pointer"
+                              className="px-2.5 py-1.5 bg-[#2c2018] hover:bg-[#3c2a1e] border border-white/5 text-amber-400 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
                             >
                               Optimize
                             </button>
                             <button
-                              onClick={() => setCheckoutMeal(meal)}
-                              className="px-3.5 py-1.5 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-black rounded-xl text-[9px] uppercase tracking-wider cursor-pointer shadow-md"
+                              onClick={() => triggerOrderRedirection(meal)}
+                              className="px-3 py-1.5 bg-white hover:bg-neutral-200 text-black font-semibold rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer border-none"
                             >
-                              Order Now
+                              Order
                             </button>
                           </div>
                         </div>
@@ -880,61 +1125,39 @@ export default function LiveOrderPage() {
                 })}
               </div>
 
-              {/* Loader Trigger for Infinite Scroll */}
-              {hasMore && (
-                <div ref={loaderRef} className="h-14 w-full flex items-center justify-center pt-2 pb-6">
-                  {isLoadingMore && (
-                    <div className="flex items-center gap-2 text-xs text-neutral-300 font-bold uppercase tracking-wider animate-pulse">
-                      <span className="w-2 h-2 rounded-full bg-white text-black font-semibold animate-ping" />
-                      Loading global marketplace feed...
-                    </div>
-                  )}
+              {searchQuery.trim() !== '' && hasMore && (
+                <div ref={loaderRef} className="h-10 w-full flex items-center justify-center pt-4">
+                  {isLoadingMore && <span className="text-xs text-neutral-500 font-bold uppercase animate-pulse">Loading verified dishes...</span>}
                 </div>
               )}
-            </>
-          )}
 
-          {activeTab === 'grocery' && (
-            <div className="space-y-4">
-              <span className="text-[10px] font-black text-white uppercase tracking-widest block">Healthy Grocery Mode</span>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {groceries.map((item) => (
-                  <div key={item.id} className="bg-[#14100e]/95 border border-[#2c1e15] p-5 rounded-[28px] space-y-4 flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] bg-white/5 text-neutral-300 px-2 py-0.5 rounded font-black uppercase">{item.category}</span>
-                        <span className="text-xs font-black text-white">{item.healthScore}/100</span>
-                      </div>
-                      <h4 className="text-sm font-bold text-white mt-1">{item.name}</h4>
-                      <p className="text-[10px] text-neutral-400 leading-relaxed mt-2">Suggested Meal/Recipe: <span className="text-neutral-300">{item.recipeSuggestion}</span></p>
-                      <p className="text-[10px] text-neutral-500 mt-1">Rich in: {item.nutrients}</p>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="text-xs font-black text-white">₹{item.price}</span>
-                      <button
-                        onClick={() => toast.success(`${item.name} added to future grocery basket`)}
-                        className="px-3.5 py-1.5 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-black rounded-xl text-[10px] uppercase tracking-wider"
-                      >
-                        Add Basket
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              {/* Bottom "See full menu" CTA trigger */}
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => { setSearchQuery('Healthy'); toast.info('Loading complete marketplace database...'); }}
+                  className="px-6 py-2.5 bg-neutral-900 border border-white/5 hover:border-white/10 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer text-neutral-300"
+                >
+                  See The Full Menu
+                </button>
               </div>
             </div>
           )}
 
+          {activeTab === 'nearby' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+              <NearbyRestaurantsPanel />
+              <EdamamNutritionPanel />
+            </div>
+          )}
+
           {activeTab === 'planner' && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black text-white uppercase tracking-widest block">7-Day Meal Planner</span>
+            <div className="space-y-4 pt-4">
+              <div className="flex justify-between items-center bg-[#1a1614] border border-white/5 p-4 rounded-2xl">
+                <span className="text-xs font-black uppercase tracking-wider text-neutral-300 font-display-jakarta">7-Day Biometric Meal Plan</span>
                 <select
-                  id="live-order-planner-goal-select"
-                  name="live-order-planner-goal-select"
                   value={plannerGoal}
                   onChange={(e) => setPlannerGoal(e.target.value as any)}
-                  className="bg-black/50 border border-white/10 rounded-lg text-[10px] font-bold text-white px-2 py-1 uppercase tracking-wider cursor-pointer"
+                  className="bg-black/60 border border-white/10 rounded-lg text-[10px] font-bold text-white px-2 py-1 uppercase tracking-wider focus:outline-none"
                 >
                   <option value="Muscle Gain">Muscle Gain</option>
                   <option value="Weight Loss">Weight Loss</option>
@@ -944,20 +1167,23 @@ export default function LiveOrderPage() {
                 </select>
               </div>
 
-              <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {plannerDays.map((d, i) => (
-                  <div key={i} className="flex justify-between items-center bg-[#1e1714] border border-[#2c1e15] p-4 rounded-3xl text-[10px]">
-                    <div>
-                      <span className="font-black text-neutral-300 uppercase text-[9px] block">{d.day}</span>
-                      <span className="font-bold text-white block mt-1">B: {d.breakfast}</span>
-                      <span className="text-neutral-400 block">L: {d.lunch} | D: {d.dinner}</span>
-                      <span className="text-neutral-500 mt-1 block">Cal: {d.calories} | Protein: {d.protein}g</span>
+                  <div key={i} className="bg-[#1a1614] border border-white/5 p-5 rounded-2xl text-[11px] space-y-3">
+                    <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                      <span className="font-serif-retro italic font-extrabold text-white text-sm">{d.day}</span>
+                      <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-black font-display-jakarta">{d.calories} kcal</span>
+                    </div>
+                    <div className="space-y-1.5 text-neutral-300">
+                      <p><span className="text-neutral-500 font-bold uppercase text-[9px] font-display-jakarta block">Breakfast</span> {d.breakfast}</p>
+                      <p><span className="text-neutral-500 font-bold uppercase text-[9px] font-display-jakarta block">Lunch</span> {d.lunch}</p>
+                      <p><span className="text-neutral-500 font-bold uppercase text-[9px] font-display-jakarta block">Dinner</span> {d.dinner}</p>
                     </div>
                     <button
-                      onClick={() => toast.success(`Ordered planner day meals: ${d.day}`)}
-                      className="bg-white text-black font-semibold hover:bg-neutral-200 text-black font-extrabold px-3 py-2 rounded-xl uppercase tracking-wider text-[9px]"
+                      onClick={() => toast.success(`Simulated order triggered for ${d.day}`)}
+                      className="w-full mt-2 bg-white hover:bg-neutral-200 text-black py-2 rounded-xl text-[9px] font-black uppercase tracking-wider cursor-pointer border-none"
                     >
-                      Order Day
+                      Order Day Meals (₹{d.cost})
                     </button>
                   </div>
                 ))}
@@ -965,169 +1191,319 @@ export default function LiveOrderPage() {
             </div>
           )}
 
-          {activeTab === 'insights' && (
-            <div className="rounded-[32px] bg-[#14100e]/95 border border-[#2c1e15] p-6 space-y-6">
-              <div>
-                <span className="text-[10px] font-black text-white uppercase tracking-widest block">LIVE Order Insights</span>
-                <h3 className="text-base font-bold text-white mt-1">Weekly Eating Behavior Summary</h3>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#1e1714] border border-[#2c1e15] p-4 rounded-2xl">
-                  <span className="text-[9px] text-neutral-500 block uppercase font-bold">Healthy Foods Consumed</span>
-                  <span className="text-xl font-black text-emerald-400 mt-1 block">85%</span>
-                </div>
-                <div className="bg-[#1e1714] border border-[#2c1e15] p-4 rounded-2xl">
-                  <span className="text-[9px] text-neutral-500 block uppercase font-bold">Avg. AURA Score</span>
-                  <span className="text-xl font-black text-neutral-300 mt-1 block">91/100</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── NEARBY TAB — Full GPS-powered content ── */}
-          {activeTab === 'nearby' && (
-            <div className="space-y-6">
-              <div className="p-5 rounded-[32px] bg-[#14100e]/95 border border-emerald-500/15 shadow-lg">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-black text-white uppercase tracking-widest">Real-Time Location Intelligence</span>
-                </div>
-                <p className="text-[11px] text-neutral-400 leading-relaxed">
-                  Enable GPS to discover verified healthy restaurants, cafes, and salad bars near your exact location.
-                  Results are powered by Google Places AI and displayed with real ratings, health scores, and direct ordering links.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <NearbyRestaurantsPanel />
-                <EdamamNutritionPanel />
-              </div>
-            </div>
-          )}
-
-        </div>
-
-        {/* RIGHT RAILS - TIMING, RESTAURANTS, TIMELINE */}
-        <div className="lg:col-span-3 space-y-6 flex flex-col justify-start">
-
-          {/* Active Meal Journey Timeline */}
-          {activeOrderTimeline && (
-            <div className="rounded-[32px] bg-[#14100e]/95 border border-white/10 p-5 shadow-lg space-y-4">
-              <span className="text-[10px] font-black text-neutral-300 uppercase tracking-widest flex items-center gap-1 animate-pulse">
-                <Clock className="w-4 h-4" /> Active Meal Timeline
-              </span>
-
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-400">Order Stage:</span>
-                  <span className="text-white font-extrabold">{activeOrderTimeline}</span>
-                </div>
-
-                <div className="w-full bg-[#1e1714] rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="bg-white text-black font-semibold h-1.5 transition-all duration-500"
-                    style={{ width: activeOrderTimeline === 'Preparing' ? '15%' : activeOrderTimeline === 'Cooking' ? '45%' : activeOrderTimeline === 'Picked Up' ? '70%' : activeOrderTimeline === 'Delivered' ? '90%' : '100%' }}
-                  />
-                </div>
-
-                {activeOrderTimeline === 'Digesting' && (
-                  <div className="bg-[#1e1714] p-3 rounded-2xl space-y-1.5">
-                    <span className="text-[9px] text-neutral-300 block font-bold">Digestion Timer (Active)</span>
-                    <div className="flex justify-between items-center text-[10px] text-neutral-400">
-                      <span>Metabolism Active</span>
-                      <span>{digestionProgress}%</span>
+          {activeTab === 'grocery' && (
+            <div className="space-y-4 pt-4">
+              <span className="text-xs font-black uppercase tracking-wider text-neutral-300 font-display-jakarta block">AI Healthy Grocery list items</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {groceries.length > 0 ? groceries.map((item) => (
+                  <div key={item.id} className="bg-[#1a1614] border border-white/5 p-5 rounded-2xl flex flex-col justify-between space-y-3">
+                    <div>
+                      <div className="flex justify-between items-center text-[9px] font-display-jakarta">
+                        <span className="bg-white/5 text-neutral-400 px-2 py-0.5 rounded uppercase font-bold">{item.category}</span>
+                        <span className="text-amber-400 font-black">Score: {item.healthScore}/100</span>
+                      </div>
+                      <h4 className="text-sm font-serif-retro italic font-extrabold text-white mt-2">{item.name}</h4>
+                      <p className="text-[10px] text-neutral-400 mt-2">Suggest Recipe: <span className="text-neutral-200">{item.recipeSuggestion}</span></p>
                     </div>
+                    <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                      <span className="text-xs font-bold text-white">₹{item.price}</span>
+                      <button
+                        onClick={() => toast.success(`${item.name} added to your grocery basket`)}
+                        className="px-3 py-1.5 bg-white text-black font-semibold rounded-lg text-[9px] uppercase tracking-wider cursor-pointer border-none"
+                      >
+                        Add Basket
+                      </button>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="col-span-3 text-center py-10 bg-[#1a1614] rounded-2xl border border-white/5">
+                    <p className="text-xs text-neutral-500 uppercase font-black font-display-jakarta">No query groceries. Search "fruit" or "protein" to load.</p>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* AI Meal Timing Prediction */}
-          <div className="rounded-[32px] bg-[#14100e]/95 border border-[#2c1e15] p-5 shadow-lg space-y-4">
-            <span className="text-[10px] font-black text-white uppercase tracking-widest block">AI Meal Timing</span>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center bg-[#1e1714] p-3 rounded-2xl text-[10px]">
-                <div>
-                  <span className="font-bold text-white block">Breakfast</span>
-                  <span className="text-neutral-400 block">High protein sync</span>
-                </div>
-                <span className="bg-[#2c1d18] text-neutral-300 font-black px-2 py-0.5 rounded text-[9px]">08:20 AM</span>
+          {activeTab === 'insights' && (
+            <div className="bg-[#1a1614] border border-white/5 rounded-2xl p-6 space-y-6 pt-4">
+              <div>
+                <span className="text-[9px] font-black uppercase text-amber-500 tracking-widest font-display-jakarta">Eating Behavior Analysis</span>
+                <h3 className="text-lg font-serif-retro italic font-extrabold text-white mt-1">GAMA Weekly Nutritional Insights</h3>
               </div>
-
-              <div className="flex justify-between items-center bg-[#1e1714] p-3 rounded-2xl text-[10px]">
-                <div>
-                  <span className="font-bold text-white block">Lunch</span>
-                  <span className="text-neutral-400 block">Low Glycemic Load</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
+                  <span className="text-[8px] text-neutral-500 block uppercase font-display-jakarta">Metabolism Index</span>
+                  <span className="text-2xl font-black text-[#eae3dc] font-serif-retro italic block mt-1">94% Optimal</span>
                 </div>
-                <span className="bg-[#2c1d18] text-neutral-300 font-black px-2 py-0.5 rounded text-[9px]">01:05 PM</span>
+                <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
+                  <span className="text-[8px] text-neutral-500 block uppercase font-display-jakarta">Sodium Overload risk</span>
+                  <span className="text-2xl font-black text-emerald-400 font-serif-retro italic block mt-1">Minimal (3%)</span>
+                </div>
+                <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
+                  <span className="text-[8px] text-neutral-500 block uppercase font-display-jakarta">Average AURA Rating</span>
+                  <span className="text-2xl font-black text-amber-400 font-serif-retro italic block mt-1">91 / 100</span>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Personalized Restaurant Ranking list */}
-          <div className="rounded-[32px] bg-[#14100e]/95 border border-[#2c1e15] p-5 shadow-lg space-y-4">
-            <span className="text-[10px] font-black text-neutral-400 uppercase block">Smart Restaurant Rankings</span>
-            <div className="space-y-3">
-              {restaurants.map((r) => (
-                <div
-                  key={r.id}
-                  className="bg-neutral-900 border border-white/5 p-3 rounded-2xl space-y-1 cursor-pointer hover:border-white/10 transition-all hover:scale-[1.01]"
-                  onClick={() => setSelectedRestaurant(r)}
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-white">{r.name}</span>
-                    <span className="text-[9px] text-neutral-300 font-black flex items-center gap-0.5">
-                      <Star className="w-3 h-3 fill-amber-400" /> {r.healthRating}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-[8px] text-neutral-400">
-                    <span>Menu Health: {r.healthyMenuPercent}%</span>
-                    <span>AURA Trust: {r.trustScore}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── GOOGLE PLACES — LIVE NEARBY RESTAURANTS ── */}
-          <NearbyRestaurantsPanel />
-
-          {/* ── EDAMAM — NUTRITION + RECIPES INTELLIGENCE ── */}
-          <EdamamNutritionPanel />
+          )}
 
         </div>
+      </section>
 
-      </div>
+      {/* 6. EAT MORE SAVE MORE COMBO BANNER */}
+      <section className="py-12 px-4 md:px-8 max-w-7xl mx-auto z-10">
+        <div className="w-full bg-[#e2843b] border border-white/10 rounded-[48px] p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
 
-      {/* COMPARE FLOATING BAR */}
+          {/* Wave background pattern overlays */}
+          <div className="absolute inset-0 opacity-[0.04] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,1)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
+
+          {/* Left panel */}
+          <div className="relative z-10 max-w-lg space-y-6">
+            <h2 className="text-4xl md:text-6xl font-serif-retro italic font-black text-white leading-none tracking-tight">
+              Eat More<br />Save More
+            </h2>
+
+            <div className="space-y-3 font-sans">
+              <div className="flex items-center gap-3 bg-white/10 border border-white/10 backdrop-blur-md px-5 py-3.5 rounded-2xl">
+                <span className="text-base font-bold text-white font-serif-retro">20% Off</span>
+                <span className="text-xs text-white/80 font-bold border-l border-white/20 pl-3">First App Order</span>
+              </div>
+              <div className="flex items-center gap-3 bg-white/10 border border-white/10 backdrop-blur-md px-5 py-3.5 rounded-2xl">
+                <span className="text-base font-bold text-white font-serif-retro">Happy Hour Drinks</span>
+                <span className="text-xs text-white/80 font-bold border-l border-white/20 pl-3">Daily between 5-7 PM</span>
+              </div>
+              <div className="flex items-center gap-3 bg-white/10 border border-white/10 backdrop-blur-md px-5 py-3.5 rounded-2xl">
+                <span className="text-base font-bold text-white font-serif-retro">Combo Deals</span>
+                <span className="text-xs text-white/80 font-bold border-l border-white/20 pl-3">Main + Drink + Dessert combos</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right panel child image and floating seal badge */}
+          <div className="relative w-full max-w-sm aspect-square md:aspect-4/3 rounded-3xl overflow-hidden bg-white/10 flex items-center justify-center">
+            <img
+              src="https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=600&auto=format&fit=crop&q=80"
+              className="w-full h-full object-cover filter brightness-[0.9]"
+              alt="Dining healthy"
+            />
+            {/* Spinning/glowing ORDER NOW seal */}
+            <button
+              onClick={() => scrollToSection('customer-favorites')}
+              className="absolute bottom-6 right-6 w-20 h-20 bg-amber-300 hover:bg-amber-400 border border-white rounded-full flex flex-col items-center justify-center text-center text-[#0d2e27] font-black uppercase text-[10px] leading-tight font-display-jakarta shadow-lg hover:scale-105 active:scale-95 transition-transform duration-300 cursor-pointer"
+            >
+              <span>ORDER</span>
+              <span>NOW</span>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 7. TESTIMONIALS & APP DOWNLOAD */}
+      <section id="app-download" className="py-12 px-4 md:px-8 max-w-7xl mx-auto z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 scroll-mt-24">
+
+        {/* Testimonials Carousel (Left) */}
+        <div className="lg:col-span-5 bg-[#141110] border border-white/5 rounded-[40px] p-8 flex flex-col justify-between shadow-2xl relative">
+
+          <div className="space-y-4">
+            <span className="text-[10px] font-black uppercase text-amber-500 tracking-widest font-display-jakarta block">Guest Testimonials</span>
+            <div className="flex gap-1">
+              {[...Array(testimonials[testimonialIndex].rating)].map((_, i) => (
+                <Star key={i} className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={testimonialIndex}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="text-lg md:text-xl font-serif-retro italic text-[#eae3dc] leading-relaxed pt-2"
+              >
+                "{testimonials[testimonialIndex].quote}"
+              </motion.p>
+            </AnimatePresence>
+          </div>
+
+          <div className="flex justify-between items-center pt-8 border-t border-white/5 mt-8">
+            <div className="flex items-center gap-3">
+              <img
+                src={testimonials[testimonialIndex].avatar}
+                className="w-10 h-10 rounded-full border border-white/10 object-cover"
+                alt="User Avatar"
+              />
+              <div>
+                <span className="text-xs font-black text-white block">{testimonials[testimonialIndex].author}</span>
+                <span className="text-[9px] text-neutral-500 block uppercase font-display-jakarta">{testimonials[testimonialIndex].role}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTestimonialIndex(prev => (prev === 0 ? testimonials.length - 1 : prev - 1))}
+                className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white hover:border-white/20 transition-colors cursor-pointer bg-transparent"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setTestimonialIndex(prev => (prev === testimonials.length - 1 ? 0 : prev + 1))}
+                className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white hover:border-white/20 transition-colors cursor-pointer bg-transparent"
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* App Download block (Right) */}
+        <div className="lg:col-span-7 bg-linear-to-b from-[#141110] to-black border border-white/5 rounded-[40px] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl overflow-hidden relative">
+
+          <div className="space-y-6 max-w-md relative z-10">
+            <span className="text-[10px] font-black uppercase text-amber-500 tracking-widest font-display-jakarta block">Mobile Integration</span>
+            <h2 className="text-3xl md:text-5xl font-serif-retro italic font-extrabold text-white leading-tight">
+              Order your healthy meals Anytime With Our Website
+            </h2>
+            <p className="text-xs text-neutral-400 font-sans leading-relaxed">
+              Scan calorie counts, track glycemic load, and check recovery schedules on the go. Available for Apple iOS and Android devices.
+            </p>
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                onClick={() => toast.success('Redirecting to Apple App Store...')}
+                className="bg-white hover:bg-neutral-200 text-black px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer border-none font-bold"
+              >
+                 App Store
+              </button>
+              <button
+                onClick={() => toast.success('Redirecting to Google Play Store...')}
+                className="bg-neutral-900 border border-white/10 hover:bg-[#1a1614] text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer font-bold"
+              >
+                ▶ Play Store
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Phone Graphics Mockup */}
+          <div className="relative w-48 h-80 rounded-[32px] border-4 border-neutral-800 bg-[#070709] p-3 flex flex-col justify-between shadow-2xl shrink-0 overflow-hidden">
+            {/* Camera notch */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-neutral-800 rounded-full z-20" />
+
+            {/* Screen layout */}
+            <div className="flex-1 flex flex-col justify-between pt-4 space-y-3 relative z-10 font-sans">
+              <div className="space-y-1">
+                <span className="text-[7px] text-amber-500 uppercase tracking-widest block font-bold">Biometrics</span>
+                <span className="text-[10px] text-white font-extrabold block">AURA Health OS</span>
+              </div>
+
+              {/* Heart rate graph animation representation */}
+              <div className="bg-white/5 border border-white/5 rounded-xl p-2 space-y-1">
+                <div className="flex justify-between text-[7px] text-neutral-400">
+                  <span>Heart Rate</span>
+                  <span className="text-red-500 font-bold">{heartRate || 72} BPM</span>
+                </div>
+                <div className="h-8 flex items-end gap-0.5">
+                  <div className="w-1.5 bg-red-500/30 h-3 rounded-sm" />
+                  <div className="w-1.5 bg-red-500/50 h-5 rounded-sm" />
+                  <div className="w-1.5 bg-red-500/20 h-2 rounded-sm" />
+                  <div className="w-1.5 bg-red-500/80 h-7 rounded-sm" />
+                  <div className="w-1.5 bg-red-500 h-6 rounded-sm" />
+                  <div className="w-1.5 bg-red-500/40 h-4 rounded-sm" />
+                </div>
+              </div>
+
+              {/* Steps Progress block */}
+              <div className="bg-white/5 border border-white/5 rounded-xl p-2 space-y-1.5">
+                <div className="flex justify-between text-[7px] text-neutral-400">
+                  <span>Daily Steps</span>
+                  <span className="text-white font-bold">{steps || 4200} / 10000</span>
+                </div>
+                <div className="w-full bg-neutral-800 rounded-full h-1">
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-1 rounded-full" style={{ width: '42%' }} />
+                </div>
+              </div>
+
+              {/* Calories consumed block */}
+              <div className="bg-white/5 border border-white/5 rounded-xl p-2 flex justify-between items-center text-[7px]">
+                <div>
+                  <span className="text-neutral-400 block">Today's Target</span>
+                  <span className="text-white font-bold">1,840 kcal remaining</span>
+                </div>
+                <div className="w-5 h-5 rounded-full border-2 border-amber-500 flex items-center justify-center text-[6px] font-bold text-amber-500">
+                  42%
+                </div>
+              </div>
+            </div>
+
+            {/* Ambient inner glow */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(245,158,11,0.05)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
+          </div>
+
+        </div>
+      </section>
+
+      {/* 8. ACTIVE ORDER FLOATING TIMELINE DRAWER */}
+      {activeOrderTimeline && (
+        <div className="fixed bottom-6 right-6 z-50 w-72 bg-[#141110] border border-white/10 p-5 rounded-3xl shadow-2xl space-y-3 font-sans">
+          <div className="flex justify-between items-center">
+            <span className="text-[9px] font-black uppercase text-amber-500 tracking-widest font-display-jakarta flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 animate-spin-slow" /> Active Order Journey
+            </span>
+            <button onClick={() => setActiveOrderTimeline(null)} className="text-neutral-500 hover:text-white bg-transparent border-none">✕</button>
+          </div>
+
+          <div className="text-[10px] space-y-2">
+            <div className="flex justify-between text-neutral-300">
+              <span>Status:</span>
+              <span className="font-extrabold text-white">{activeOrderTimeline}</span>
+            </div>
+
+            <div className="w-full bg-neutral-800 rounded-full h-1 overflow-hidden">
+              <div
+                className="bg-amber-500 h-1 transition-all duration-500"
+                style={{ width: activeOrderTimeline === 'Preparing' ? '15%' : activeOrderTimeline === 'Cooking' ? '45%' : activeOrderTimeline === 'Picked Up' ? '70%' : activeOrderTimeline === 'Delivered' ? '90%' : '100%' }}
+              />
+            </div>
+
+            {activeOrderTimeline === 'Digesting' && (
+              <div className="bg-black/30 p-2.5 rounded-xl text-[9px] space-y-1">
+                <span className="text-neutral-400 block">Metabolic absorption active:</span>
+                <div className="w-full bg-neutral-800 rounded-full h-1">
+                  <div className="bg-emerald-500 h-1" style={{ width: `${digestionProgress}%` }} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 9. COMPARE FLOATING BAR */}
       {compareList.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#14100e] border border-white/10 px-6 py-4 rounded-3xl flex items-center gap-6 shadow-2xl">
-          <div className="text-[10px]">
-            <span className="font-bold text-white block">AI Compare Mode</span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#141110] border border-white/10 px-6 py-4 rounded-full flex items-center gap-6 shadow-2xl">
+          <div className="text-[10px] font-display-jakarta">
+            <span className="font-bold text-white block uppercase font-bold">AI Compare</span>
             <span className="text-neutral-400">{compareList.length} of 2 selected</span>
           </div>
           <div className="flex items-center gap-3">
             {compareList.map(c => (
-              <div key={c.id} className="flex items-center gap-1.5 bg-[#1e1714] px-2.5 py-1 rounded-xl text-[10px] border border-[#2c1e15]">
+              <div key={c.id} className="flex items-center gap-1.5 bg-[#1d1917] px-2.5 py-1 rounded-full text-[10px] border border-white/5">
                 <span className="text-white font-bold">{c.name.substring(0, 14)}...</span>
-                <button onClick={() => handleToggleCompare(c)} className="text-neutral-500 hover:text-white">✕</button>
+                <button onClick={() => handleToggleCompare(c)} className="text-neutral-500 hover:text-white cursor-pointer bg-transparent border-none">✕</button>
               </div>
             ))}
           </div>
           {compareList.length === 2 && (
             <button
               onClick={() => setShowCompareModal(true)}
-              className="bg-white text-black font-semibold hover:bg-neutral-200 text-black text-[10px] font-black uppercase tracking-wider px-4 py-2 rounded-2xl shadow-md cursor-pointer"
+              className="bg-white hover:bg-neutral-200 text-black text-[9px] font-black uppercase tracking-wider px-4 py-2 rounded-full shadow-md cursor-pointer border-none font-bold"
             >
-              Compare Now
+              Compare
             </button>
           )}
         </div>
       )}
 
-      {/* COMPARISON MODAL */}
+      {/* 10. COMPARISON MODAL */}
       <AnimatePresence>
         {showCompareModal && compareList.length === 2 && (
           <>
@@ -1136,32 +1512,32 @@ export default function LiveOrderPage() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-3xl bg-[#0e0b0a] border border-[#2c1e15] rounded-[36px] p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-2xl bg-[#0f0c0b] border border-white/10 rounded-[36px] p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center mb-6">
-                <span className="text-[10px] font-black text-white uppercase tracking-widest">AURA Side-by-Side Comparison</span>
-                <button onClick={() => setShowCompareModal(false)} className="p-1 text-neutral-500 hover:text-white">✕</button>
+                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest font-display-jakarta">AURA Side-by-Side Analysis</span>
+                <button onClick={() => setShowCompareModal(false)} className="p-1 text-neutral-500 hover:text-white cursor-pointer bg-transparent border-none">✕</button>
               </div>
 
               <div className="grid grid-cols-2 gap-6 items-stretch">
                 {compareList.map((meal) => (
-                  <div key={meal.id} className="bg-[#14100e] border border-[#2c1e15] p-5 rounded-[28px] space-y-4 flex flex-col justify-between">
+                  <div key={meal.id} className="bg-[#141110] border border-white/5 p-5 rounded-[28px] space-y-4 flex flex-col justify-between">
                     <div>
                       <div className="flex justify-between items-center">
-                        <span className="text-[8px] bg-white/5 text-neutral-300 px-2 py-0.5 rounded font-black uppercase">{meal.restaurantName}</span>
-                        <span className="text-xs font-black text-neutral-300">{meal.auraScore}/100</span>
+                        <span className="text-[8px] bg-white/5 text-neutral-400 px-2 py-0.5 rounded font-black uppercase font-display-jakarta">{meal.restaurantName}</span>
+                        <span className="text-xs font-black text-amber-400 font-display-jakarta">{meal.auraScore}/100</span>
                       </div>
-                      <h4 className="text-sm font-black text-white mt-1">{meal.name}</h4>
+                      <h4 className="text-sm font-serif-retro italic font-extrabold text-white mt-2">{meal.name}</h4>
 
-                      {/* Animated comparisons bars representation */}
-                      <div className="mt-4 space-y-3 pt-3 border-t border-[#2c1e15]">
+                      {/* Nutrient comparisons */}
+                      <div className="mt-4 space-y-3 pt-3 border-t border-white/5 font-sans">
                         <div className="space-y-1">
                           <div className="flex justify-between text-[10px]">
                             <span className="text-neutral-400">Calories:</span>
                             <span className="font-bold text-white">{meal.nutrients.calories} kcal</span>
                           </div>
-                          <div className="w-full bg-[#1e1714] rounded-full h-1.5 overflow-hidden">
-                            <div className="bg-white text-black font-semibold h-1.5" style={{ width: `${(meal.nutrients.calories / 700) * 100}%` }} />
+                          <div className="w-full bg-neutral-800 rounded-full h-1 overflow-hidden">
+                            <div className="bg-white h-1" style={{ width: `${(meal.nutrients.calories / 700) * 100}%` }} />
                           </div>
                         </div>
 
@@ -1170,8 +1546,8 @@ export default function LiveOrderPage() {
                             <span className="text-neutral-400">Protein:</span>
                             <span className="font-bold text-white">{meal.nutrients.proteinG}g</span>
                           </div>
-                          <div className="w-full bg-[#1e1714] rounded-full h-1.5 overflow-hidden">
-                            <div className="bg-emerald-500 h-1.5" style={{ width: `${(meal.nutrients.proteinG / 55) * 100}%` }} />
+                          <div className="w-full bg-neutral-800 rounded-full h-1 overflow-hidden">
+                            <div className="bg-emerald-500 h-1" style={{ width: `${(meal.nutrients.proteinG / 55) * 100}%` }} />
                           </div>
                         </div>
                       </div>
@@ -1179,7 +1555,7 @@ export default function LiveOrderPage() {
 
                     <button
                       onClick={() => { setShowCompareModal(false); setSelectedOptimizerMeal(meal); }}
-                      className="w-full mt-4 py-3 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-black rounded-2xl text-[10px] uppercase tracking-wider cursor-pointer shadow-md"
+                      className="w-full mt-4 py-3 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-black rounded-xl text-[10px] uppercase tracking-wider cursor-pointer shadow-md border-none font-bold"
                     >
                       Choose & Optimize
                     </button>
@@ -1191,7 +1567,7 @@ export default function LiveOrderPage() {
         )}
       </AnimatePresence>
 
-      {/* OPTIMIZER & CHECKOUT SCREEN MODAL */}
+      {/* 11. OPTIMIZER & CHECKOUT SCREEN MODAL */}
       <AnimatePresence>
         {selectedOptimizerMeal && (
           <>
@@ -1200,110 +1576,110 @@ export default function LiveOrderPage() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-lg bg-[#0e0b0a] border border-[#2c1e15] rounded-[36px] p-6 shadow-2xl max-h-[85vh] overflow-y-auto"
+              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-lg bg-[#0f0c0b] border border-white/10 rounded-[36px] p-6 shadow-2xl max-h-[85vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center mb-4">
-                <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1">
-                  <Sliders className="w-3.5 h-3.5" /> AURA Upgrade Optimizer
+                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest font-display-jakarta flex items-center gap-1.5">
+                  <Sliders className="w-4 h-4 text-amber-400" /> AURA Upgrade Optimizer
                 </span>
-                <button onClick={() => setSelectedOptimizerMeal(null)} className="text-neutral-500 hover:text-white">✕</button>
+                <button onClick={() => setSelectedOptimizerMeal(null)} className="text-neutral-500 hover:text-white cursor-pointer bg-transparent border-none">✕</button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 font-sans text-xs">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-base font-black text-white">{selectedOptimizerMeal.name}</h3>
+                    <h3 className="text-sm font-serif-retro italic font-extrabold text-white">{selectedOptimizerMeal.name}</h3>
                     <p className="text-[10px] text-neutral-400 mt-0.5">By {selectedOptimizerMeal.restaurantName}</p>
                   </div>
-                  <span className="text-lg font-black text-neutral-300">{calculateOptimizedStats(selectedOptimizerMeal).auraScore}/100</span>
+                  <span className="text-lg font-black text-amber-400 font-display-jakarta">{calculateOptimizedStats(selectedOptimizerMeal).auraScore}/100</span>
                 </div>
 
-                {/* Optimizations Checklist */}
-                <div className="bg-[#14100e] border border-[#2c1e15] p-4 rounded-2xl space-y-3">
-                  <span className="text-[9px] font-black text-neutral-300 uppercase tracking-wider block">Custom Upgrades</span>
-                  <div className="space-y-2 text-[11px]">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                {/* Checklist options */}
+                <div className="bg-[#141110] border border-white/5 p-4 rounded-xl space-y-3">
+                  <span className="text-[9px] font-black text-neutral-400 uppercase tracking-wider block font-display-jakarta">Biometric adjustments</span>
+                  <div className="space-y-2 text-neutral-200">
+                    <label className="flex items-center gap-2.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={modifications.lessOil}
                         onChange={(e) => setModifications({ ...modifications, lessOil: e.target.checked })}
-                        className="rounded border-[#2c1e15] bg-[#1e1714] text-white focus:ring-0 focus:ring-offset-0"
+                        className="rounded border-white/10 bg-[#1d1917] text-amber-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
                       />
-                      <span>Less Oil (-120 kcal)</span>
+                      <span>Less Oil & Fats (-120 kcal)</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={modifications.brownRice}
                         onChange={(e) => setModifications({ ...modifications, brownRice: e.target.checked })}
-                        className="rounded border-[#2c1e15] bg-[#1e1714] text-white focus:ring-0 focus:ring-offset-0"
+                        className="rounded border-white/10 bg-[#1d1917] text-amber-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
                       />
-                      <span>Brown Rice Base (-40 kcal)</span>
+                      <span>Switch to Brown Rice Base (-40 kcal)</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={modifications.extraProtein}
                         onChange={(e) => setModifications({ ...modifications, extraProtein: e.target.checked })}
-                        className="rounded border-[#2c1e15] bg-[#1e1714] text-white focus:ring-0 focus:ring-offset-0"
+                        className="rounded border-white/10 bg-[#1d1917] text-amber-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
                       />
-                      <span>Extra Chicken / Paneer (+18g Protein, +₹90)</span>
+                      <span>Extra Protein booster (+18g Lean Protein, +₹90)</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={modifications.noCheese}
                         onChange={(e) => setModifications({ ...modifications, noCheese: e.target.checked })}
-                        className="rounded border-[#2c1e15] bg-[#1e1714] text-white focus:ring-0 focus:ring-offset-0"
+                        className="rounded border-white/10 bg-[#1d1917] text-amber-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
                       />
-                      <span>No Cheese (-150 kcal)</span>
+                      <span>Zero Cheese & Lactose (-150 kcal)</span>
                     </label>
                   </div>
                 </div>
 
-                {/* Recalculated dynamic macros */}
-                <div className="grid grid-cols-4 gap-2 text-center text-[10px] bg-[#14100e] border border-[#2c1e15] p-3 rounded-2xl">
+                {/* Updated statistics */}
+                <div className="grid grid-cols-4 gap-2 text-center text-[10px] bg-[#141110] border border-white/5 p-3 rounded-xl font-display-jakarta">
                   <div>
-                    <span className="text-neutral-500 block">Energy</span>
+                    <span className="text-neutral-500 block text-[8px] uppercase">Calories</span>
                     <span className="font-bold text-white">{calculateOptimizedStats(selectedOptimizerMeal).calories} kcal</span>
                   </div>
                   <div>
-                    <span className="text-neutral-500 block">Protein</span>
+                    <span className="text-neutral-500 block text-[8px] uppercase">Protein</span>
                     <span className="font-bold text-white">{calculateOptimizedStats(selectedOptimizerMeal).protein}g</span>
                   </div>
                   <div>
-                    <span className="text-neutral-500 block">Carbs</span>
+                    <span className="text-neutral-500 block text-[8px] uppercase">Carbs</span>
                     <span className="font-bold text-white">{calculateOptimizedStats(selectedOptimizerMeal).carbs}g</span>
                   </div>
                   <div>
-                    <span className="text-neutral-500 block">Fat</span>
+                    <span className="text-neutral-500 block text-[8px] uppercase">Fat</span>
                     <span className="font-bold text-white">{calculateOptimizedStats(selectedOptimizerMeal).fat}g</span>
                   </div>
                 </div>
 
-                {/* AI Before & After Physiology Simulator */}
-                <div className="bg-[#14100e] border border-white/20/10 p-4 rounded-2xl space-y-2">
-                  <span className="text-[9px] font-black text-neutral-300 uppercase tracking-wider block flex items-center gap-1">
-                    <Brain className="w-3.5 h-3.5" /> AI 2-Hour Physiology Simulation
+                {/* Physiology Simulation Panel */}
+                <div className="bg-[#141110] border border-white/5 p-4 rounded-xl space-y-2">
+                  <span className="text-[9px] font-black text-neutral-400 uppercase tracking-wider block font-display-jakarta flex items-center gap-1">
+                    <Brain className="w-3.5 h-3.5 text-amber-500" /> AI 2-Hour Metabolism Simulation
                   </span>
 
-                  <div className="grid grid-cols-2 gap-3 text-[10px] text-neutral-300">
-                    <div className="space-y-1.5">
-                      <span className="text-rose-400 font-bold block"> Raw Meal Profile</span>
-                      <p> High Glycemic spike in 30 mins</p>
-                      <p>💤 Drowsiness & energy crash in 2 hrs</p>
+                  <div className="grid grid-cols-2 gap-4 text-[10px] text-neutral-300">
+                    <div className="space-y-1">
+                      <span className="text-rose-400 font-bold block">🚨 Un-optimized Meal</span>
+                      <p>• Fast glycemic insulin spike</p>
+                      <p>• Post-meal fatigue & sleepiness</p>
                     </div>
-                    <div className="space-y-1.5 border-l border-[#2c1e15] pl-3">
-                      <span className="text-emerald-400 font-bold block">✓ Optimized Profile</span>
-                      <p> Stabilized blood sugar curve</p>
-                      <p> Sustained energy & Focus (+25%)</p>
+                    <div className="space-y-1 border-l border-white/5 pl-4">
+                      <span className="text-emerald-400 font-bold block">✓ GAMA Optimized Meal</span>
+                      <p>• Stable blood glucose curve</p>
+                      <p>• +24% sustained focus index</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-[10px] text-neutral-400 flex justify-between items-center font-black pt-1">
+                <div className="text-xs text-neutral-300 flex justify-between items-center font-bold pt-1">
                   <span>Price: ₹{calculateOptimizedStats(selectedOptimizerMeal).price}</span>
-                  <span className="text-neutral-300 font-bold">Saved: {calculateOptimizedStats(selectedOptimizerMeal).caloriesSaved} kcal</span>
+                  <span className="text-emerald-400">Saved: {calculateOptimizedStats(selectedOptimizerMeal).caloriesSaved} kcal</span>
                 </div>
 
                 <button
@@ -1311,7 +1687,7 @@ export default function LiveOrderPage() {
                     triggerOrderRedirection(selectedOptimizerMeal);
                     setSelectedOptimizerMeal(null);
                   }}
-                  className="w-full py-3.5 bg-white text-black font-semi-bold hover:bg-neutral-200 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_4px_15px_rgba(249,115,22,0.35)]"
+                  className="w-full py-4 bg-white hover:bg-neutral-200 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-white/5 border-none font-bold"
                 >
                   Order on {selectedOptimizerMeal.platform} →
                 </button>
@@ -1321,75 +1697,7 @@ export default function LiveOrderPage() {
         )}
       </AnimatePresence>
 
-      {/* DETAIL MODAL */}
-      <AnimatePresence>
-        {selectedMeal && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.7 }} exit={{ opacity: 0 }} onClick={() => setSelectedMeal(null)} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs" />
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-lg bg-[#0e0b0a] border border-[#2c1e15] rounded-[36px] p-6 shadow-2xl max-h-[85vh] overflow-y-auto"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-[10px] font-black text-white uppercase tracking-widest">AURA Dish Analysis</span>
-                <button onClick={() => setSelectedMeal(null)} className="text-neutral-500 hover:text-white">✕</button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-black text-white">{selectedMeal.name}</h3>
-                    <p className="text-[10px] text-neutral-400">{selectedMeal.restaurantName} | {selectedMeal.platform}</p>
-                  </div>
-                  <span className="text-2xl font-black text-neutral-300">{selectedMeal.auraScore}/100</span>
-                </div>
-
-                {/* Macro & Micro details */}
-                <div className="bg-[#14100e] border border-[#2c1e15] p-4.5 rounded-[24px] space-y-3">
-                  <div>
-                    <span className="text-[9px] text-neutral-300 font-black uppercase tracking-wider block">Expected Feeling After Eating</span>
-                    <span className="inline-block mt-1 px-3 py-1 rounded-xl bg-white/5 text-neutral-300 text-xs font-bold uppercase tracking-wider">{selectedMeal.expectedFeeling}</span>
-                  </div>
-
-                  <div>
-                    <span className="text-[9px] text-neutral-300 font-black uppercase tracking-wider block">Why Recommended</span>
-                    <p className="text-xs text-neutral-300 mt-1 leading-relaxed">{selectedMeal.whyRecommend}</p>
-                  </div>
-
-                  <div>
-                    <span className="text-[9px] text-neutral-300 font-black uppercase tracking-wider block">Why Avoid</span>
-                    <p className="text-xs text-neutral-400 mt-1 leading-relaxed">{selectedMeal.whyAvoid}</p>
-                  </div>
-                </div>
-
-                {/* Alternatives */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest block">AI Healthy Alternatives</span>
-                  <div className="bg-[#1e1714] border border-[#2c1e15] p-4 rounded-2xl text-[11px] flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-white block">Suggested Upgrade: {selectedMeal.alternativeName}</span>
-                      <span className="text-neutral-500 block">Saves extra fats and carbohydrates.</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={() => { setSelectedMeal(null); setSelectedOptimizerMeal(selectedMeal); }}
-                    className="flex-1 py-3.5 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    Proceed with Optimizer
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* SMART LOCATION MODAL */}
+      {/* 12. SMART LOCATION MODAL */}
       <AnimatePresence>
         {showLocationModal && (
           <>
@@ -1398,48 +1706,48 @@ export default function LiveOrderPage() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-md bg-[#0e0b0a] border border-[#2c1e15] rounded-[36px] p-6 shadow-2xl"
+              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-md bg-[#0f0c0b] border border-white/10 rounded-[36px] p-6 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-4">
-                <span className="text-[10px] font-black text-white uppercase tracking-widest block">Configure Delivery Location</span>
-                <button onClick={() => setShowLocationModal(false)} className="text-neutral-500 hover:text-white">✕</button>
+                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest font-display-jakarta block">Configure Delivery Location</span>
+                <button onClick={() => setShowLocationModal(false)} className="text-neutral-500 hover:text-white cursor-pointer bg-transparent border-none">✕</button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 font-sans text-xs">
                 <button
-                  onClick={requestGPSLocation}
-                  className="w-full py-3 bg-[#1e1714] border border-white/10 hover:border-white/20/40 text-neutral-300 font-bold rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2"
+                  onClick={() => { requestGPSLocation(); setShowLocationModal(false); }}
+                  className="w-full py-3 bg-[#1c1614] border border-white/5 hover:border-white/10 text-neutral-300 font-bold rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-colors border-none"
                 >
-                  <Compass className="w-4.5 h-4.5" /> Detect location using Browser GPS
+                  <Compass className="w-4 h-4 text-amber-500" /> Detect location using Browser GPS
                 </button>
 
-                <div className="space-y-2 pt-2 border-t border-[#2c1e15]">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Or Set Manually</span>
+                <div className="space-y-2 pt-2 border-t border-white/5">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest font-display-jakarta block">Or Set Manually</span>
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       type="text"
                       placeholder="City (e.g. Bengaluru)"
                       value={manualCity}
                       onChange={(e) => setManualCity(e.target.value)}
-                      className="bg-[#1e1714] border border-[#2c1e15] rounded-xl text-xs text-white p-2"
+                      className="bg-[#1c1614] border border-white/5 rounded-xl text-xs text-white p-2.5 focus:outline-none"
                     />
                     <input
                       type="text"
                       placeholder="PIN Code (e.g. 560001)"
                       value={manualPIN}
                       onChange={(e) => setManualPIN(e.target.value)}
-                      className="bg-[#1e1714] border border-[#2c1e15] rounded-xl text-xs text-white p-2"
+                      className="bg-[#1c1614] border border-white/5 rounded-xl text-xs text-white p-2.5 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <button
                   onClick={() => {
-                    setCurrentAddress(`${manualCity}, ${manualPIN} (Manual)`);
+                    setCurrentAddress(`${manualCity}, ${manualPIN}`);
                     setShowLocationModal(false);
                     toast.success(`Location set manually to ${manualCity}`);
                   }}
-                  className="w-full py-3 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider shadow-md"
+                  className="w-full py-3 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-extrabold rounded-2xl uppercase tracking-wider shadow-md cursor-pointer transition-all border-none font-bold"
                 >
                   Confirm Address
                 </button>
@@ -1449,7 +1757,7 @@ export default function LiveOrderPage() {
         )}
       </AnimatePresence>
 
-      {/* SMART BUDGET MODAL */}
+      {/* 13. BUDGET SETTING MODAL */}
       <AnimatePresence>
         {showBudgetModal && (
           <>
@@ -1458,27 +1766,27 @@ export default function LiveOrderPage() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-md bg-[#0e0b0a] border border-[#2c1e15] rounded-[36px] p-6 shadow-2xl"
+              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-md bg-[#0f0c0b] border border-white/10 rounded-[36px] p-6 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-4">
-                <span className="text-[10px] font-black text-white uppercase tracking-widest block">Configure Monthly Budget</span>
-                <button onClick={() => setShowBudgetModal(false)} className="text-neutral-500 hover:text-white">✕</button>
+                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest font-display-jakarta block">Configure Monthly Budget</span>
+                <button onClick={() => setShowBudgetModal(false)} className="text-neutral-500 hover:text-white cursor-pointer bg-transparent border-none">✕</button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 font-sans text-xs">
                 <div>
-                  <label className="text-[10px] text-neutral-400 font-bold block mb-1">Monthly Spending Limit (₹)</label>
+                  <label className="text-[10px] text-neutral-400 font-bold block mb-1 font-display-jakarta uppercase">Monthly Spending Limit (₹)</label>
                   <input
                     type="number"
                     value={monthlyLimit}
                     onChange={(e) => setMonthlyLimit(Number(e.target.value))}
-                    className="w-full bg-[#1e1714] border border-[#2c1e15] rounded-xl text-xs text-white p-2"
+                    className="w-full bg-[#1c1614] border border-white/5 rounded-xl text-xs text-white p-2.5 focus:outline-none"
                   />
                 </div>
 
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-neutral-400">Remaining Balance:</span>
-                  <span className="text-white font-black">₹{monthlyLimit - spentThisMonth}</span>
+                <div className="flex justify-between items-center font-bold">
+                  <span className="text-neutral-400 font-medium">Remaining Balance:</span>
+                  <span className="text-white">₹{monthlyLimit - spentThisMonth}</span>
                 </div>
 
                 <button
@@ -1486,7 +1794,7 @@ export default function LiveOrderPage() {
                     setShowBudgetModal(false);
                     toast.success('Budget settings updated');
                   }}
-                  className="w-full py-3 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider shadow-md"
+                  className="w-full py-3 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-extrabold rounded-2xl uppercase tracking-wider shadow-md cursor-pointer transition-all border-none font-bold"
                 >
                   Save Budget Settings
                 </button>
@@ -1496,7 +1804,7 @@ export default function LiveOrderPage() {
         )}
       </AnimatePresence>
 
-      {/* FOOD CAMERA SCANNER MODAL */}
+      {/* 14. FOOD CAMERA SCANNER MODAL */}
       <AnimatePresence>
         {showCameraModal && (
           <>
@@ -1505,61 +1813,61 @@ export default function LiveOrderPage() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-md bg-[#0e0b0a] border border-[#2c1e15] rounded-[36px] p-6 shadow-2xl"
+              className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full max-w-md bg-[#0f0c0b] border border-white/10 rounded-[36px] p-6 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-4">
-                <span className="text-[10px] font-black text-white uppercase tracking-widest block flex items-center gap-1.5">
+                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest font-display-jakarta block flex items-center gap-1.5">
                   <Camera className="w-4 h-4 text-white" /> GAMA Food Camera Scanner
                 </span>
-                <button onClick={() => setShowCameraModal(false)} className="text-neutral-500 hover:text-white">✕</button>
+                <button onClick={() => setShowCameraModal(false)} className="text-neutral-500 hover:text-white cursor-pointer bg-transparent border-none">✕</button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 font-sans text-xs">
                 {/* Simulated viewfinder */}
-                <div className="aspect-video bg-[#14100e] border border-[#2c1e15] rounded-2xl flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="aspect-video bg-black/40 border border-white/5 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden">
                   {cameraScanning ? (
                     <div className="text-center space-y-2">
-                      <div className="w-8 h-8 border-2 border-white/20 border-t-transparent rounded-full animate-spin mx-auto" />
-                      <span className="text-[10px] text-neutral-300 font-bold uppercase tracking-wider block">AI parsing plate...</span>
+                      <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                      <span className="text-[10px] text-neutral-300 font-bold uppercase tracking-wider block font-display-jakarta">AI parsing plate...</span>
                     </div>
                   ) : scannedResult ? (
                     <div className="p-4 text-center space-y-2">
-                      <h4 className="text-sm font-black text-white">{scannedResult.name}</h4>
+                      <h4 className="text-sm font-serif-retro italic font-extrabold text-white">{scannedResult.name}</h4>
                       <p className="text-[11px] text-neutral-400">Calories: {scannedResult.calories} kcal | Protein: {scannedResult.protein}g</p>
-                      <p className="text-[10px] text-rose-400">AURA Health Score: {scannedResult.score}/100</p>
+                      <p className="text-[10px] text-amber-400 font-bold font-display-jakarta">AURA Match Health Score: {scannedResult.score}/100</p>
                     </div>
                   ) : (
                     <div className="text-center space-y-2">
-                      <Camera className="w-8 h-8 text-neutral-500 mx-auto" />
-                      <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider block">Ready to Scan</span>
+                      <Camera className="w-8 h-8 text-neutral-600 mx-auto" />
+                      <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block font-display-jakarta">Camera Feed Ready</span>
                     </div>
                   )}
                 </div>
 
                 {scannedResult && (
-                  <div className="bg-[#1e1714] border border-[#2c1e15] p-3 rounded-2xl text-[11px] flex justify-between items-center">
+                  <div className="bg-[#1c1614] border border-white/5 p-3 rounded-2xl text-[11px] flex justify-between items-center">
                     <div>
-                      <span className="font-bold text-white block">Healthy local match:</span>
-                      <span className="text-neutral-500 block">{scannedResult.healthyMatch}</span>
+                      <span className="font-bold text-white block">Suggested Local Alternative:</span>
+                      <span className="text-neutral-400 block">{scannedResult.healthyMatch}</span>
                     </div>
                     <button
                       onClick={() => {
                         setShowCameraModal(false);
-                        const match = meals.find(m => m.name === scannedResult.healthyMatch);
+                        const match = defaultFavorites.find(m => m.name === scannedResult.healthyMatch);
                         if (match) setSelectedOptimizerMeal(match);
                       }}
-                      className="px-3 py-1.5 bg-white text-black font-semibold hover:bg-neutral-200 text-black font-black rounded-xl text-[9px] uppercase tracking-widest"
+                      className="px-3 py-1.5 bg-white text-black font-semibold rounded-lg text-[9px] uppercase tracking-wider font-black cursor-pointer border-none font-bold"
                     >
-                      Configure Match
+                      Optimize Match
                     </button>
                   </div>
                 )}
 
                 <button
                   onClick={handleSimulatedCameraScan}
-                  className="w-full py-3 bg-[#1e1714] border border-white/10 hover:border-white/20/40 text-neutral-300 font-bold rounded-2xl text-xs uppercase tracking-wider"
+                  className="w-full py-3 bg-[#1c1614] border border-white/5 hover:border-white/10 text-neutral-300 font-bold rounded-2xl uppercase tracking-wider cursor-pointer transition-colors text-[10px] border-none font-bold"
                 >
-                  Trigger Simulated Scan
+                  Trigger Simulated Camera Scan
                 </button>
               </div>
             </motion.div>
@@ -1567,54 +1875,24 @@ export default function LiveOrderPage() {
         )}
       </AnimatePresence>
 
-      {/* RESTAURANT PAGE MENU OVERLAY */}
+      {/* 15. RESTAURANT OVERLAY MODAL */}
       <AnimatePresence>
         {selectedRestaurant && (
           <RestaurantOverlay
             restaurant={selectedRestaurant}
-            meals={meals}
-            compareList={compareList}
-            onToggleCompare={handleToggleCompare}
+            onClose={() => setSelectedRestaurant(null)}
+            meals={Array.from(
+              new Map(
+                [...defaultFavorites, ...meals].map((m) => [m.id, m])
+              ).values()
+            ).filter((m) => m.restaurantId === selectedRestaurant.id)}
             onOptimize={(meal) => {
               setSelectedRestaurant(null);
               setSelectedOptimizerMeal(meal);
             }}
-            onOrderNow={(meal) => {
-              setSelectedRestaurant(null);
-              setCheckoutMeal(meal);
-            }}
-            onClose={() => setSelectedRestaurant(null)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* PRE-ORDER BIOMETRICS CHECKLIST */}
-      <AnimatePresence>
-        {checkoutMeal && (
-          <PreOrderChecklist
-            meal={checkoutMeal}
-            onClose={() => setCheckoutMeal(null)}
-            onConfirmRedirect={() => {
-              const platform = (checkoutMeal.platform || 'Swiggy') as 'Swiggy' | 'Zomato';
-              const encodedName = encodeURIComponent(checkoutMeal.restaurantName);
-              const appUri = platform === 'Swiggy'
-                ? `swiggy://restaurant?name=${encodedName}`
-                : `zomato://restaurant?name=${encodedName}`;
-              const webUri = platform === 'Swiggy'
-                ? `https://www.swiggy.com/search?query=${encodedName}`
-                : `https://www.zomato.com/search?q=${encodedName}`;
-
-              toast.success(`Redirecting to ${platform} deep-link for checkout...`);
-              setCheckoutMeal(null);
-
-              const start = Date.now();
-              window.location.href = appUri;
-              setTimeout(() => {
-                if (Date.now() - start < 2000) {
-                  window.open(webUri, '_blank');
-                }
-              }, 1500);
-            }}
+            onOrderNow={triggerOrderRedirection}
+            onToggleCompare={handleToggleCompare}
+            compareList={compareList}
           />
         )}
       </AnimatePresence>

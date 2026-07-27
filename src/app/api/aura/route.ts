@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
     }
 
-    const { messages, message, history, dashboardState, memoryTags, image } = body;    // --- CASE 1: Multimodal Vision (Image Upload) ---
+    const { messages, message, history, dashboardState, memoryTags, image, conversationId } = body;    // --- CASE 1: Multimodal Vision (Image Upload) ---
     if (image) {
       const apiKey = process.env.GROQ_API_KEY;
       if (!apiKey) {
@@ -197,6 +197,13 @@ Respond ONLY with a valid JSON object matching this schema:
         const responseText = completion.choices[0]?.message?.content || '{}';
         const parsed = JSON.parse(responseText);
 
+        if (!parsed.isFood || !parsed.isValidFood) {
+          return NextResponse.json({
+            success: false,
+            error: parsed.message || "This does not appear to be a food item. Please upload a clear image of food or a beverage."
+          });
+        }
+
         await deductToken(user.id);
         return NextResponse.json({
           success: true,
@@ -261,29 +268,66 @@ Respond ONLY with a valid JSON object matching this schema:
       return NextResponse.json({ error: 'AI service is not configured on the server.' }, { status: 503 });
     }
 
-    // Extract conversation history
-    const groqMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    // Extract conversation history & map to DB state
+    let conversation;
+    let dbMessages: any[] = [];
     
-    // Process messages array if present, otherwise fallback to message/history
-    if (messages && Array.isArray(messages)) {
-      for (const m of messages) {
-        if (!m || (m.role !== 'user' && m.role !== 'assistant')) continue;
-        const content = String(m.content || '').trim();
-        if (!content) continue;
-        groqMessages.push({ role: m.role as 'user' | 'assistant', content });
-      }
-    } else if (message) {
-      if (history && Array.isArray(history)) {
-        for (const h of history) {
-          groqMessages.push({ role: h.role, content: h.content });
+    if (conversationId) {
+      conversation = await prisma.aIConversation.findUnique({
+        where: { id: conversationId },
+        include: {
+          messages: {
+            orderBy: { createdAt: 'asc' }
+          }
         }
+      });
+      if (conversation && conversation.profileId === user.id) {
+        dbMessages = conversation.messages;
       }
-      groqMessages.push({ role: 'user', content: message });
     }
 
-    if (groqMessages.length === 0) {
+    let incomingUserMessage = '';
+    if (messages && Array.isArray(messages) && messages.length > 0) {
+      incomingUserMessage = String(messages[messages.length - 1].content || '').trim();
+    } else if (message) {
+      incomingUserMessage = String(message).trim();
+    }
+
+    if (!incomingUserMessage) {
       return NextResponse.json({ error: 'No valid message content found.' }, { status: 400 });
     }
+
+    if (!conversation) {
+      const title = incomingUserMessage.length > 30 ? incomingUserMessage.slice(0, 30) + '...' : incomingUserMessage;
+      conversation = await prisma.aIConversation.create({
+        data: {
+          profileId: user.id,
+          agentType: 'AURA',
+          title: title
+        }
+      });
+    }
+
+    // Save user message to database
+    await prisma.aIMessage.create({
+      data: {
+        conversationId: conversation.id,
+        role: 'user',
+        content: incomingUserMessage
+      }
+    });
+
+    // Fetch all chronological messages (including the one we just saved)
+    const allMessages = await prisma.aIMessage.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    // Format for Groq
+    const groqMessages = allMessages.map(m => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content
+    }));
 
     // Fetch user's latest medical context to support report queries
     const latestDoc = await prisma.medicalDocument.findFirst({
@@ -372,12 +416,22 @@ ${abnormalList}
       }
     }
 
+    // Save AI response to database
+    await prisma.aIMessage.create({
+      data: {
+        conversationId: conversation.id,
+        role: 'assistant',
+        content: result.message || 'I processed your request.'
+      }
+    });
+
     await deductToken(user.id);
     // Return structured JSON directly
     return NextResponse.json({
       success: true,
       message: result.message || 'I processed your request.',
-      visual: result.visual || { enabled: false }
+      visual: result.visual || { enabled: false },
+      conversationId: conversation.id
     });
 
   } catch (error: any) {
