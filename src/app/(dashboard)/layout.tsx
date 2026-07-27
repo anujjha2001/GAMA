@@ -16,17 +16,12 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   React.useEffect(() => {
-    // Set cookie so proxy.ts always permits access to /twin and dashboard routes
-    try {
-      document.cookie = "gama_session=true; path=/; max-age=86400; SameSite=Lax";
-    } catch (e) { }
-
-    // Fetch logged in user profile data to sync with database
+    // Fetch logged in user profile data to sync display name
     fetch('/api/auth')
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.user) {
-          localStorage.setItem('gama_user_name', data.user.fullName);
+          try { localStorage.setItem('gama_user_name', data.user.fullName); } catch { }
         }
       })
       .catch((err) => console.error('Failed to sync user session:', err));
@@ -34,11 +29,12 @@ export default function DashboardLayout({
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth', { method: 'DELETE' });
+      await fetch('/api/auth/logout', { method: 'POST' });
     } catch (e) { }
     try {
       localStorage.removeItem('gama_session');
-    } catch (e) { }
+      localStorage.removeItem('gama_user_name');
+    } catch { }
     window.location.href = '/login';
   };
 

@@ -163,111 +163,66 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
     setIsLoading(true);
 
     if (authMode === 'register') {
-      if (!showOtpScreen) {
-        if (!firstName || !lastName || !username || !email || !password || !dob || !height || !weight) {
-          toast.error('Please fill in all required fields');
-          setIsLoading(false);
-          return;
+      if (!firstName || !lastName || !username || !email || !password || !dob || !height || !weight) {
+        toast.error('Please fill in all required fields');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!acceptTerms) {
+        toast.error('You must accept the Terms and Conditions');
+        setIsLoading(false);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        toast.error('Passwords do not match');
+        setIsLoading(false);
+        return;
+      }
+
+      if (password.length < 12) {
+        toast.error('Password must be at least 12 characters.');
+        setIsLoading(false);
+        return;
+      }
+
+      const computedFullName = `${firstName} ${lastName}`;
+
+      try {
+        const registerRes = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password,
+            confirmPassword,
+            firstName,
+            lastName,
+            username,
+            dob,
+            gender,
+            height,
+            weight,
+            primaryGoal,
+          }),
+        });
+
+        const data = await registerRes.json();
+        if (!data.success) {
+          throw new Error(data.error || 'Registration failed');
         }
 
-        if (!acceptTerms) {
-          toast.error('You must accept the Terms and Conditions');
-          setIsLoading(false);
-          return;
+        toast.success('Registration successful! Verification email sent.');
+        if (data.devOtp) {
+          console.log('[DEV MODE] OTP Code:', data.devOtp);
+          toast.info(`[Dev Mode] Verification OTP: ${data.devOtp}`, { duration: 10000 });
         }
-
-        if (password !== confirmPassword) {
-          toast.error('Passwords do not match');
-          setIsLoading(false);
-          return;
-        }
-
-        const computedFullName = `${firstName} ${lastName}`;
-
-        try {
-          // Pre-verify that the email/username isn't already taken before sending OTP
-          const checkRes = await fetch('/api/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'register',
-              email,
-              password,
-              fullName: computedFullName,
-              firstName,
-              lastName,
-              username,
-              dob,
-              gender,
-              height,
-              weight,
-              primaryGoal
-            }),
-          });
-          const checkData = await checkRes.json();
-          if (!checkData.success) {
-            throw new Error(checkData.error || 'Registration pre-check failed');
-          }
-
-          // Trigger OTP send
-          const res = await fetch('/api/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-          });
-          const data = await res.json();
-          if (!data.success) {
-            throw new Error(data.error || 'Failed to send verification code');
-          }
-
-          toast.success('Verification code sent to your email!');
-          setShowOtpScreen(true);
-        } catch (err: any) {
-          toast.error(err.message || 'Failed to register');
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        const computedFullName = `${firstName} ${lastName}`;
-        // Verification step
-        try {
-          const res = await fetch('/api/verify-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email,
-              code: otpCode,
-              fullName: computedFullName,
-              password,
-              firstName,
-              lastName,
-              username,
-              dob,
-              gender,
-              height,
-              weight,
-              primaryGoal
-            }),
-          });
-          const data = await res.json();
-          if (!data.success) {
-            throw new Error(data.error || 'Verification failed');
-          }
-
-          try {
-            if (data.user && data.user.fullName) {
-              localStorage.setItem('gama_user_name', data.user.fullName);
-            }
-            localStorage.setItem('gama_session', 'true');
-          } catch (e) { }
-
-          toast.success('Account created successfully! Welcome to GAMA.');
-          window.location.href = '/dashboard';
-        } catch (err: any) {
-          toast.error(err.message || 'Verification failed');
-        } finally {
-          setIsLoading(false);
-        }
+        router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to register');
+      } finally {
+        setIsLoading(false);
       }
       return;
     }
@@ -292,6 +247,10 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
           }
 
           toast.success('Password reset code sent to your email!');
+          if (data.devOtp) {
+            console.log('[DEV MODE] Recovery OTP Code:', data.devOtp);
+            toast.info(`[Dev Mode] Recovery OTP: ${data.devOtp}`, { duration: 10000 });
+          }
           setShowOtpScreen(true);
         } catch (err: any) {
           toast.error(err.message || 'Failed to initiate recovery');
@@ -299,9 +258,9 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
           setIsLoading(false);
         }
       } else {
-        // Verify OTP for password recovery
+        // Verify OTP for password recovery using custom verify-otp route
         try {
-          const res = await fetch('/api/verify-otp', {
+          const res = await fetch('/api/auth/verify-otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, code: otpCode }),
@@ -329,16 +288,26 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
       return;
     }
 
-    // Default Login flow
+    // ── Custom JWT Login Flow ───────────────────────────────────────────────
     try {
-      const res = await fetch('/api/auth', {
+      const loginRes = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: authMode, email, password }),
+        body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+
+      const data = await loginRes.json();
       if (!data.success) {
-        throw new Error(data.error || 'Authentication failed');
+        if (data.needsVerification) {
+          toast.error('Email not verified. Redirecting to verification...');
+          if (data.devOtp) {
+            console.log('[DEV MODE] OTP Code:', data.devOtp);
+            toast.info(`[Dev Mode] Verification OTP: ${data.devOtp}`, { duration: 10000 });
+          }
+          router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        throw new Error(data.error || 'Login failed.');
       }
 
       try {
@@ -352,10 +321,10 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
         setIsLoading(false);
         toast.success('Logged in successfully!');
         window.location.href = '/dashboard';
-      }, 1200);
+      }, 800);
     } catch (err: any) {
       setIsLoading(false);
-      toast.error(err.message || 'Failed to communicate with authentication service.');
+      toast.error(err.message || 'Authentication failed. Please check your credentials.');
     }
   };
 

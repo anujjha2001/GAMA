@@ -8,6 +8,7 @@ export class MockProvider implements FoodProvider {
     lng?: number;
     vegOnly?: boolean;
     highProtein?: boolean;
+    favOnly?: boolean;
     query?: string;
     page?: number;
     limit?: number;
@@ -16,7 +17,7 @@ export class MockProvider implements FoodProvider {
     const page = options.page || 1;
     const limit = options.limit || 4;
     try {
-      const res = await fetch(`/api/food-search?query=${encodeURIComponent(queryTerm)}&vegOnly=${!!options.vegOnly}&highProtein=${!!options.highProtein}&page=${page}&limit=${limit}`);
+      const res = await fetch(`/api/food-search?query=${encodeURIComponent(queryTerm)}&vegOnly=${!!options.vegOnly}&highProtein=${!!options.highProtein}&favOnly=${!!options.favOnly}&page=${page}&limit=${limit}`);
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.restaurants && Array.isArray(data.restaurants)) {
@@ -33,6 +34,7 @@ export class MockProvider implements FoodProvider {
     restaurantId?: string;
     vegOnly?: boolean;
     highProtein?: boolean;
+    favOnly?: boolean;
     query?: string;
     page?: number;
     limit?: number;
@@ -41,7 +43,7 @@ export class MockProvider implements FoodProvider {
     const page = options.page || 1;
     const limit = options.limit || 4;
     try {
-      const res = await fetch(`/api/food-search?query=${encodeURIComponent(queryTerm)}&vegOnly=${!!options.vegOnly}&highProtein=${!!options.highProtein}&page=${page}&limit=${limit}`);
+      const res = await fetch(`/api/food-search?query=${encodeURIComponent(queryTerm)}&vegOnly=${!!options.vegOnly}&highProtein=${!!options.highProtein}&favOnly=${!!options.favOnly}&page=${page}&limit=${limit}`);
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.meals && Array.isArray(data.meals)) {

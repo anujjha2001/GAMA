@@ -87,6 +87,7 @@ export interface FoodProvider {
     lng?: number;
     vegOnly?: boolean;
     highProtein?: boolean;
+    favOnly?: boolean;
     query?: string;
     page?: number;
     limit?: number;
@@ -95,6 +96,7 @@ export interface FoodProvider {
     restaurantId?: string;
     vegOnly?: boolean;
     highProtein?: boolean;
+    favOnly?: boolean;
     query?: string;
     page?: number;
     limit?: number;
