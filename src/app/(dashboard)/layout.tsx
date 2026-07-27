@@ -4,7 +4,7 @@ import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, LogOut, ChefHat, ShoppingBag, Flame
+  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, LogOut, ChefHat, ShoppingBag, Flame, Menu, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuraVoiceAssistant from '@/components/aura/AuraVoiceAssistant';
@@ -15,6 +15,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
   React.useEffect(() => {
     // Fetch logged in user profile data to sync display name
     fetch('/api/auth')
@@ -55,25 +56,123 @@ export default function DashboardLayout({
       {/* Outer Dashboard Window container */}
       <div className="w-full max-w-[1440px] flex flex-col gap-6 relative z-10 items-stretch">
         <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-stretch w-full">
-          {/* LEFT VERTICAL DOCK SIDEBAR */}
+          {/* MOBILE TOP HEADER */}
+          <div className="md:hidden flex justify-between items-center bg-white/5 backdrop-blur-3xl border border-white/10 rounded-2xl p-4 w-full relative z-20 shadow-md">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer">
+                <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
+              </div>
+              <span className="font-extrabold text-sm uppercase tracking-widest text-foreground">GAMA</span>
+            </Link>
+            
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="p-2 text-foreground/80 hover:text-foreground transition-colors cursor-pointer"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* MOBILE SIDEBAR DRAWER OVERLAY */}
+          <AnimatePresence>
+            {isMobileSidebarOpen && (
+              <>
+                {/* Backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 md:hidden"
+                />
+
+                {/* Drawer */}
+                <motion.aside
+                  initial={{ x: '-100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '-100%' }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                  className="fixed top-0 left-0 bottom-0 w-72 bg-neutral-950/95 backdrop-blur-3xl border-r border-white/10 p-6 flex flex-col justify-between z-50 md:hidden shadow-[5px_0_30px_rgba(0,0,0,0.5)]"
+                >
+                  <div className="flex flex-col gap-6">
+                    {/* Header of Drawer */}
+                    <div className="flex justify-between items-center">
+                      <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileSidebarOpen(false)}>
+                        <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 bg-black flex items-center justify-center">
+                          <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="font-extrabold text-sm uppercase tracking-widest text-foreground">GAMA</span>
+                      </Link>
+                      <button onClick={() => setIsMobileSidebarOpen(false)} className="p-1 text-neutral-400 hover:text-white cursor-pointer">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Navigation Items */}
+                    <nav className="flex flex-col gap-1.5 mt-4 overflow-y-auto max-h-[60vh] pr-1">
+                      {navItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        const Icon = item.icon;
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                              isActive
+                                ? 'bg-white/10 text-white border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.15)] font-semibold'
+                                : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                            }`}
+                          >
+                            <Icon className="w-4.5 h-4.5" />
+                            <span className="text-[11px] uppercase tracking-wider font-semibold">{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </nav>
+                  </div>
+
+                  {/* Drawer Footer / Logout */}
+                  <div className="flex flex-col gap-4 border-t border-white/10 pt-4">
+                    <button
+                      onClick={() => {
+                        setIsMobileSidebarOpen(false);
+                        handleLogout();
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 text-rose-500 hover:bg-rose-500/10 rounded-xl border border-transparent hover:border-rose-500/20 transition-all duration-200 w-full text-left cursor-pointer"
+                    >
+                      <LogOut className="w-4.5 h-4.5" />
+                      <span className="text-[11px] uppercase tracking-wider font-bold">Log Out</span>
+                    </button>
+                    <div className="flex items-center gap-2 px-4">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">System Online</span>
+                    </div>
+                  </div>
+                </motion.aside>
+              </>
+            )}
+          </AnimatePresence>
+
+          {/* LEFT VERTICAL DOCK SIDEBAR (DESKTOP) */}
           <motion.aside
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-            className="w-full md:w-20 bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[32px] p-4 flex flex-row md:flex-col justify-between items-center py-4 md:py-8 shadow-[0_20px_80px_rgba(0,0,0,0.35)] relative z-20 shrink-0 gap-4"
+            className="hidden md:flex md:w-20 bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[32px] p-4 flex-col justify-between items-center py-8 shadow-[0_20px_80px_rgba(0,0,0,0.35)] relative z-20 shrink-0 gap-4"
           >
             {/* Logo at the top */}
-            <div className="flex items-center gap-1.5 md:flex-col shrink-0">
-              <Link href="/" className="flex items-center gap-2 md:flex-col md:gap-1.5 group">
-                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer transition-transform group-hover:scale-105 duration-300">
+            <div className="flex flex-col items-center gap-1.5 shrink-0">
+              <Link href="/" className="flex flex-col items-center gap-1.5 group">
+                <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer transition-transform group-hover:scale-105 duration-300">
                   <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
                 </div>
-                <span className="font-extrabold text-sm md:text-[11px] uppercase tracking-widest text-foreground">GAMA</span>
+                <span className="font-extrabold text-[11px] uppercase tracking-widest text-foreground">GAMA</span>
               </Link>
             </div>
 
             {/* Navigation group */}
-            <div className="flex flex-row md:flex-col gap-3 md:gap-6 flex-1 justify-center md:justify-start md:mt-10 items-center">
+            <div className="flex flex-col gap-6 flex-1 justify-start mt-10 items-center">
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
@@ -82,7 +181,7 @@ export default function DashboardLayout({
                     key={item.href}
                     href={item.href}
                     title={item.label}
-                    className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl md:rounded-full flex items-center justify-center transition-all duration-350 relative cursor-pointer hover:scale-105 active:scale-95 ${isActive
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-350 relative cursor-pointer hover:scale-105 active:scale-95 ${isActive
                       ? 'bg-white/10 text-white border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.15)] scale-105'
                       : 'text-neutral-400 hover:text-white hover:bg-white/5 border border-transparent'
                       }`}
@@ -91,7 +190,7 @@ export default function DashboardLayout({
                     {isActive && (
                       <motion.span
                         layoutId="activeIndicator"
-                        className="absolute hidden md:block -right-1 w-1.5 h-6 rounded-l-full bg-white"
+                        className="absolute -right-1 w-1.5 h-6 rounded-l-full bg-white"
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                       />
                     )}
@@ -102,15 +201,15 @@ export default function DashboardLayout({
               <button
                 onClick={handleLogout}
                 title="Log Out"
-                className="w-10 h-10 md:w-12 md:h-12 mt-0 md:mt-2 rounded-2xl md:rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 text-neutral-400 hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 cursor-pointer"
+                className="w-12 h-12 mt-2 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 text-neutral-400 hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 cursor-pointer"
               >
                 <LogOut className="w-5 h-5" />
               </button>
             </div>
 
             {/* Bottom/Right spacer or ambient element */}
-            <div className="flex flex-row md:flex-col items-center gap-3 md:gap-5 shrink-0">
-              <div className="hidden md:block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="System Online" />
+            <div className="flex flex-col items-center gap-5 shrink-0">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="System Online" />
             </div>
           </motion.aside>
 
