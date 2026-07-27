@@ -15,6 +15,9 @@ interface AuraChatPanelProps {
   setInput: (value: string) => void;
   handleSubmit: (e?: React.FormEvent<HTMLFormElement> | string) => Promise<void>;
   isLoading: boolean;
+  conversationId?: string | null;
+  onSelectConversation?: (id: string) => void;
+  onNewChat?: () => void;
 }
 
 export function AuraChatPanel({ 
@@ -24,9 +27,26 @@ export function AuraChatPanel({
   input,
   setInput,
   handleSubmit,
-  isLoading
+  isLoading,
+  conversationId,
+  onSelectConversation,
+  onNewChat
 }: AuraChatPanelProps) {
   const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
+  const [historyList, setHistoryList] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (isHistoryOpen) {
+      fetch('/api/aura/history')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.conversations) {
+            setHistoryList(data.conversations);
+          }
+        })
+        .catch(err => console.error('Failed to fetch conversation history:', err));
+    }
+  }, [isHistoryOpen, conversationId]);
 
   return (
     <AnimatePresence>
@@ -48,17 +68,32 @@ export function AuraChatPanel({
               >
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider">History</h3>
+                  <button
+                    onClick={onNewChat}
+                    className="p-1 hover:bg-white/10 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                    title="New Chat"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-400 hover:text-white"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin pr-2 text-xs">
-                  <div className="p-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl cursor-pointer transition-colors text-neutral-300 font-medium">
-                    What should I eat to boost my Vitamin C?
-                  </div>
-                  <div className="p-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl cursor-pointer transition-colors text-neutral-400">
-                    Explain my Wellness Score
-                  </div>
-                  <div className="p-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl cursor-pointer transition-colors text-neutral-400">
-                    Nutrition tracking plan
-                  </div>
+                  {historyList.length === 0 ? (
+                    <div className="text-neutral-500 text-center py-4 italic">No history yet.</div>
+                  ) : (
+                    historyList.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => onSelectConversation?.(item.id)}
+                        className={`p-3 border rounded-xl cursor-pointer transition-colors text-left line-clamp-2 ${
+                          conversationId === item.id
+                            ? 'bg-white/10 border-white/20 text-white font-medium shadow-sm'
+                            : 'bg-white/5 border-white/5 text-neutral-400 hover:bg-white/10 hover:text-neutral-300'
+                        }`}
+                      >
+                        {item.title}
+                      </div>
+                    ))
+                  )}
                 </div>
               </motion.div>
             )}

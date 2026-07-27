@@ -583,21 +583,33 @@ export default function AuraVoiceAssistant() {
               <div className="relative w-36 h-36 flex items-center justify-center my-6">
 
                 {/* Outer Glow Spheres */}
-                <div className={`absolute w-32 h-32 rounded-full blur-[40px] opacity-40 transition-all duration-700 ${voiceState === 'LISTENING' ? 'bg-white text-black font-semibold scale-105 animate-pulse' :
-                  voiceState === 'UNDERSTANDING' ? 'bg-amber-500 scale-110' :
-                    voiceState === 'GENERATING' || voiceState === 'RETRIEVING_CONTEXT' || voiceState === 'SELECTING_AGENT' ? 'bg-sky-500 animate-spin duration-3000' :
-                      voiceState === 'CALLING_TOOL' ? 'bg-purple-500 scale-105' :
-                        voiceState === 'SPEAKING' ? 'bg-emerald-500 scale-105 animate-pulse' :
-                          'bg-indigo-600/30'
-                  }`} />
+                <div className={`absolute w-32 h-32 rounded-full blur-[45px] opacity-65 transition-all duration-700 ${
+                  voiceState === 'LISTENING' ? 'bg-gradient-to-tr from-rose-500 via-fuchsia-500 to-cyan-500 scale-105 animate-pulse' :
+                  voiceState === 'UNDERSTANDING' ? 'bg-gradient-to-tr from-fuchsia-500 via-pink-500 to-rose-500 scale-110' :
+                  (voiceState === 'GENERATING' || voiceState === 'RETRIEVING_CONTEXT') ? 'bg-gradient-to-tr from-violet-600 via-purple-500 to-pink-500 animate-spin duration-3000' :
+                  voiceState === 'CALLING_TOOL' ? 'bg-gradient-to-tr from-purple-600 via-indigo-500 to-blue-500 scale-105' :
+                  voiceState === 'SPEAKING' ? 'bg-gradient-to-tr from-cyan-400 via-fuchsia-500 to-rose-500 scale-105 animate-pulse' :
+                  'bg-fuchsia-950/20'
+                }`} />
 
                 {/* Orb Ring */}
-                <div className={`absolute inset-0 rounded-full border-2 border-dashed transition-all duration-700 ${voiceState === 'GENERATING' ? 'border-white/45 animate-spin' : 'border-white/10'
-                  }`} />
+                <div className={`absolute inset-0 rounded-full border-2 border-dashed transition-all duration-700 ${
+                  voiceState === 'GENERATING' ? 'border-fuchsia-500/50 animate-spin' :
+                  voiceState === 'LISTENING' ? 'border-cyan-500/50 animate-pulse' :
+                  voiceState === 'SPEAKING' ? 'border-rose-500/50 animate-pulse' :
+                  'border-white/10'
+                }`} />
 
                 {/* Main Orb Center */}
-                <div className={`w-24 h-24 rounded-full bg-gradient-to-tr transition-all duration-700 relative shadow-2xl ${voiceState === 'LISTENING' ? 'from-neutral-700 via-neutral-800 to-neutral-900 scale-105' : voiceState === 'UNDERSTANDING' ? 'from-neutral-600 via-neutral-700 to-neutral-800 scale-105' : voiceState === 'GENERATING' || voiceState === 'RETRIEVING_CONTEXT' ? 'from-neutral-750 via-neutral-800 to-neutral-850 scale-95' : voiceState === 'CALLING_TOOL' ? 'from-neutral-700 via-neutral-750 to-neutral-800 scale-105' : voiceState === 'SPEAKING' ? 'from-white/20 via-neutral-800 to-white/10 scale-105' : 'from-neutral-800 via-neutral-900 to-black'}`}>
-                  <div className="absolute inset-2 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center overflow-hidden">
+                <div className={`w-24 h-24 rounded-full bg-gradient-to-tr transition-all duration-700 relative shadow-2xl ${
+                  voiceState === 'LISTENING' ? 'from-rose-500 via-fuchsia-500 to-cyan-500 scale-105' :
+                  voiceState === 'UNDERSTANDING' ? 'from-fuchsia-500 via-pink-500 to-rose-500 scale-105' :
+                  (voiceState === 'GENERATING' || voiceState === 'RETRIEVING_CONTEXT') ? 'from-violet-600 via-purple-500 to-pink-500 scale-95' :
+                  voiceState === 'CALLING_TOOL' ? 'from-purple-600 via-indigo-500 to-blue-500 scale-105' :
+                  voiceState === 'SPEAKING' ? 'from-cyan-400 via-fuchsia-500 to-rose-500 scale-105' :
+                  'from-neutral-800 via-[#1f1715] to-[#2c1a14]'
+                }`}>
+                  <div className="absolute inset-1.5 rounded-full bg-black/50 backdrop-blur-xs flex items-center justify-center overflow-hidden">
                     {/* Inner GAMA logo with active indicators based on voice state */}
                     {voiceState === 'LISTENING' ? (
                       <div className="relative w-12 h-12 flex items-center justify-center">
@@ -629,7 +641,7 @@ export default function AuraVoiceAssistant() {
 
                 {/* Pulse wave ring */}
                 {voiceState === 'LISTENING' && (
-                  <span className="absolute -inset-2 rounded-full border border-white/20/50 animate-ping" />
+                  <span className="absolute -inset-2 rounded-full border border-fuchsia-500/40 animate-ping" />
                 )}
               </div>
 
@@ -647,9 +659,13 @@ export default function AuraVoiceAssistant() {
                   Status: {voiceState.replace('_', ' ')}
                 </span>
 
-                {/* Speech transcript */}
-                <p className="text-sm font-semibold text-white leading-relaxed line-clamp-3">
-                  {transcription || caption || 'Silence. Say "Hey Aura" to interact.'}
+                {/* Visual state guide without rendering actual transcription or caption text */}
+                <p className="text-sm font-semibold text-neutral-400 leading-relaxed">
+                  {voiceState === 'LISTENING' ? 'AURA is listening to your voice...' :
+                   voiceState === 'SPEAKING' ? 'AURA is speaking...' :
+                   (voiceState === 'GENERATING' || voiceState === 'RETRIEVING_CONTEXT') ? 'AURA is thinking...' :
+                   voiceState === 'CALLING_TOOL' ? 'Executing command...' :
+                   'Silence. Say "Hey Aura" to interact.'}
                 </p>
               </div>
 
