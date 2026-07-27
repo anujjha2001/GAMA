@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Star, Clock, MapPin, Search, Sparkles, Flame, Droplets, Zap, ShieldCheck } from 'lucide-react';
+import { X, Star, Clock, MapPin, Search, Sparkles, Flame, Droplets, Zap, ShieldCheck, Heart } from 'lucide-react';
 import { Restaurant, Meal } from '@/lib/ai/marketplace/food-provider';
 
 interface RestaurantOverlayProps {
@@ -13,6 +13,10 @@ interface RestaurantOverlayProps {
   onOrderNow: (meal: Meal) => void;
   onToggleCompare: (meal: Meal) => void;
   compareList: Meal[];
+  onToggleFavoriteRestaurant?: (restaurant: Restaurant) => void;
+  isFavoriteRestaurant?: (id: string) => boolean;
+  onToggleFavoriteMeal?: (meal: Meal) => void;
+  isFavoriteMeal?: (id: string) => boolean;
 }
 
 export default function RestaurantOverlay({
@@ -22,7 +26,11 @@ export default function RestaurantOverlay({
   onOptimize,
   onOrderNow,
   onToggleCompare,
-  compareList
+  compareList,
+  onToggleFavoriteRestaurant,
+  isFavoriteRestaurant,
+  onToggleFavoriteMeal,
+  isFavoriteMeal
 }: RestaurantOverlayProps) {
   const [activeMenuCategory, setActiveMenuCategory] = React.useState('All');
   const [menuSearchQuery, setMenuSearchQuery] = React.useState('');
@@ -82,7 +90,22 @@ export default function RestaurantOverlay({
             <span className="text-[10px] font-black uppercase bg-white text-black font-semibold text-black px-2.5 py-0.5 rounded-full tracking-wider mb-2 inline-block">
               {restaurant.platform} Partner
             </span>
-            <h2 className="text-2xl font-black text-white tracking-tight">{restaurant.name}</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-black text-white tracking-tight">{restaurant.name}</h2>
+              {onToggleFavoriteRestaurant && isFavoriteRestaurant && (
+                <button
+                  onClick={() => onToggleFavoriteRestaurant(restaurant)}
+                  className={`p-2 rounded-full border transition-all cursor-pointer ${
+                    isFavoriteRestaurant(restaurant.id)
+                      ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                      : 'bg-black/60 text-neutral-400 border-white/5 hover:border-white/10'
+                  }`}
+                  title={isFavoriteRestaurant(restaurant.id) ? "Remove from Favorites" : "Add to Favorites"}
+                >
+                  <Heart className={`w-4 h-4 ${isFavoriteRestaurant(restaurant.id) ? 'fill-current text-rose-400' : ''}`} />
+                </button>
+              )}
+            </div>
             <p className="text-xs text-neutral-400 mt-1">{restaurant.cuisine}</p>
 
             <div className="flex gap-4 items-center mt-3 text-xs text-neutral-300">
@@ -162,6 +185,18 @@ export default function RestaurantOverlay({
                   </div>
 
                   <div className="flex flex-row md:flex-col gap-2 shrink-0 justify-end md:justify-center items-center md:items-stretch">
+                    {onToggleFavoriteMeal && isFavoriteMeal && (
+                      <button
+                        onClick={() => onToggleFavoriteMeal(meal)}
+                        className={`px-3 py-1.5 border rounded-xl text-[9px] font-black uppercase tracking-wider cursor-pointer text-center flex items-center justify-center gap-1 ${
+                          isFavoriteMeal(meal.id)
+                            ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                            : 'bg-[#1e1714] text-neutral-300 border-[#2c1e15] hover:border-white/10'
+                        }`}
+                      >
+                        <Heart className={`w-3 h-3 ${isFavoriteMeal(meal.id) ? 'fill-current text-rose-400' : ''}`} /> Favorite
+                      </button>
+                    )}
                     <button
                       onClick={() => onOptimize(meal)}
                       className="px-3 py-1.5 bg-[#1e1714] border border-[#2c1e15] hover:border-white/10 text-neutral-300 rounded-xl text-[9px] font-black uppercase tracking-wider cursor-pointer text-center"

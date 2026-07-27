@@ -1,5 +1,25 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import * as jose from 'jose';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'gama-super-secret-key-change-in-production-12345';
+
+const PROTECTED_PREFIXES = [
+  '/dashboard',
+  '/insights',
+  '/schedule',
+  '/vault',
+  '/meals',
+  '/settings',
+  '/live-order',
+  '/workout',
+  '/workout-studio',
+  '/chat',
+  '/health',
+  '/nutrition',
+  '/profile',
+];
+
+const AUTH_ROUTES = ['/login', '/register', '/forgot', '/forgot-password'];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -8,78 +28,86 @@ export async function proxy(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon.ico') ||
-    /\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|ogg|css|js|json)$/i.test(pathname)
+    pathname.startsWith('/sw.js') ||
+    pathname.startsWith('/manifest.json') ||
+    /\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|ogg|css|js|json|ico|woff2?)$/i.test(pathname)
   ) {
     return NextResponse.next();
   }
 
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inluc2did2l6aG14dmV5cXJ2aXpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzOTc3NjYsImV4cCI6MjA5ODk3Mzc2Nn0.g0P_Aq43c8iUNi0FbAmsmnNeGNpj_Mb1YhE5GTGXYmI',
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  // Check if session cookie exists
-  const hasSessionCookie = request.cookies.has('gama_session');
-
-  const isDashboardRoute = [
-    '/dashboard',
-    '/insights',
-    '/schedule',
-    '/vault',
-    '/meals',
-    '/settings',
-    '/live-order',
-  ].some((path) => pathname === path || pathname.startsWith(path + '/'));
-
-  const isAuthRoute = [
-    '/login',
-    '/register',
-    '/forgot',
-    '/forgot-password',
-    '/auth',
-  ].some((path) => pathname === path || pathname.startsWith(path + '/'));
-
-  // Allow landing page and public assets directly
-  if (pathname === '/') {
-    return supabaseResponse;
+  // Allow API routes through without session checks (API routes handle their own auth)
+  if (pathname.startsWith('/api')) {
+    return NextResponse.next();
   }
 
-  // Redirect unauthenticated user trying to access dashboard routes to /login
-  if (isDashboardRoute && !hasSessionCookie) {
+  const authCookie = request.cookies.get('gama_session');
+  let userPayload: any = null;
+  let hasInvalidCookie = false;
+
+  if (authCookie && authCookie.value) {
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jose.jwtVerify(authCookie.value, secret);
+      userPayload = payload;
+    } catch (err: any) {
+      console.warn('[PROXY] JWT verification failed, bailing out:', err?.message || String(err)); hasInvalidCookie = true;
+    }
+  }
+
+  const isProtected = PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + '/')
+  );
+
+  const isAuthRoute = AUTH_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(route + '/')
+  );
+
+  const isVerifyRoute = pathname === '/auth/verify' || pathname.startsWith('/auth/verify/');
+
+  // ── No session / Invalid session ──────────────────────────────────────────
+  if (!userPayload) {
+    if (isProtected) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('redirectTo', pathname);
+      const response = NextResponse.redirect(url);
+      if (hasInvalidCookie) {
+        response.cookies.delete('gama_session');
+      }
+      return response;
+    }
+
+    if (hasInvalidCookie) {
+      const response = NextResponse.next();
+      response.cookies.delete('gama_session');
+      return response;
+    }
+
+    return NextResponse.next();
+  }
+
+  // ── Session exists ────────────────────────────────────────────────────────
+  const isEmailVerified = Boolean(userPayload.emailVerified);
+
+  // Unverified user trying to access protected routes → /auth/verify
+  if (!isEmailVerified && isProtected) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
+    url.pathname = '/auth/verify';
+    if (userPayload.email) url.searchParams.set('email', userPayload.email);
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated user trying to access auth pages to /dashboard
-  if (isAuthRoute && hasSessionCookie) {
+  // Verified user trying to access auth pages or verify page → /dashboard
+  if (isEmailVerified && (isAuthRoute || isVerifyRoute)) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  return NextResponse.next();
 }
+
+// ─── Matcher ──────────────────────────────────────────────────────────────────
 
 export const config = {
   matcher: [
