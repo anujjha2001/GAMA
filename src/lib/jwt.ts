@@ -1,5 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { type NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'gama-super-secret-key-change-in-production-12345';
@@ -8,6 +7,7 @@ export interface DecodedToken {
   id: string;
   email: string;
   fullName: string;
+  emailVerified: boolean;
 }
 
 export async function verifyToken(req: NextRequest): Promise<DecodedToken | null> {

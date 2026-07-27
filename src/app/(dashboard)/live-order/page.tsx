@@ -117,6 +117,9 @@ export default function LiveOrderPage() {
   });
 
   // Loaded Catalog Data
+  const [favRestaurants, setFavRestaurants] = React.useState<any[]>([]);
+  const [favMeals, setFavMeals] = React.useState<any[]>([]);
+  const [favOnlyFilter, setFavOnlyFilter] = React.useState(false);
   const [restaurants, setRestaurants] = React.useState<Restaurant[]>([]);
   const [meals, setMeals] = React.useState<Meal[]>([]);
   const [groceries, setGroceries] = React.useState<GroceryItem[]>([]);
@@ -184,35 +187,35 @@ export default function LiveOrderPage() {
     },
     {
       id: "fav-2",
-      name: "Ube Coconut Cake Slice",
+      name: "Avocado Chocolate Chia Mousse",
       restaurantId: "969857",
-      restaurantName: "Sweet Cravings Pastry",
-      platform: "Zomato",
-      imageUrl: "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=500&auto=format&fit=crop&q=60",
+      restaurantName: "Pure Green Confectionery",
+      platform: "Swiggy",
+      imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60",
       price: 180,
       category: "Desserts",
-      auraScore: 65,
+      auraScore: 95,
       nutrients: {
-        calories: 240,
-        proteinG: 4,
-        carbsG: 32,
+        calories: 160,
+        proteinG: 6,
+        carbsG: 12,
         fatG: 10,
-        fiberG: 2,
-        sugarG: 16,
-        sodiumMg: 120,
-        glycemicLoad: 18,
-        processingLevel: "Moderately Processed",
-        vitamins: ["Vitamin B"],
-        minerals: ["Potassium"]
+        fiberG: 6,
+        sugarG: 2,
+        sodiumMg: 45,
+        glycemicLoad: 2,
+        processingLevel: "Minimally Processed",
+        vitamins: ["Vitamin E", "B-Complex"],
+        minerals: ["Magnesium", "Potassium"]
       },
       scores: {
-        overall: 65, recovery: 50, protein: 40, digestion: 70, sleep: 65, workout: 50, hydration: 60, brain: 55, longevity: 50, gut: 60, inflammation: 45
+        overall: 95, recovery: 90, protein: 70, digestion: 96, sleep: 92, workout: 80, hydration: 75, brain: 85, longevity: 92, gut: 94, inflammation: 95
       },
-      whyRecommend: "Rich in antioxidants from wild purple yam, uses organic coconut sugar sugar base.",
-      whyAvoid: "Contains processed flour. Best consumed post-workout window.",
-      alternativeName: "Avocado Chocolate Chia Mousse",
+      whyRecommend: "Rich in healthy monounsaturated fats, sugar-free, loaded with prebiotic fiber from chia seeds.",
+      whyAvoid: "None. Premium guilt-free dessert.",
+      alternativeName: "Low-GI Almond Berry Tart",
       alternativeId: "fav-alt-2",
-      expectedFeeling: "Heavy"
+      expectedFeeling: "Energized"
     },
     {
       id: "fav-3",
@@ -248,37 +251,128 @@ export default function LiveOrderPage() {
     },
     {
       id: "fav-4",
-      name: "Iced Vanilla Latte",
+      name: "Cold-Pressed Green Detox Juice",
       restaurantId: "12345",
-      restaurantName: "Cafe Roasters",
+      restaurantName: "Green Grocer Cafe",
       platform: "Swiggy",
       imageUrl: "https://images.unsplash.com/photo-1497534446932-c925b458314e?w=500&auto=format&fit=crop&q=60",
       price: 190,
       category: "Drinks",
-      auraScore: 78,
+      auraScore: 96,
       nutrients: {
-        calories: 120,
-        proteinG: 6,
+        calories: 70,
+        proteinG: 2,
         carbsG: 14,
-        fatG: 4,
-        fiberG: 0,
-        sugarG: 10,
-        sodiumMg: 85,
-        glycemicLoad: 8,
-        processingLevel: "Minimally Processed",
-        vitamins: ["Vitamin D"],
-        minerals: ["Calcium"]
+        fatG: 0,
+        fiberG: 4,
+        sugarG: 4,
+        sodiumMg: 50,
+        glycemicLoad: 1,
+        processingLevel: "Unprocessed",
+        vitamins: ["Vitamin A", "Vitamin C", "Vitamin K"],
+        minerals: ["Potassium", "Calcium"]
       },
       scores: {
-        overall: 78, recovery: 70, protein: 60, digestion: 80, sleep: 40, workout: 85, hydration: 75, brain: 85, longevity: 70, gut: 75, inflammation: 70
+        overall: 96, recovery: 92, protein: 50, digestion: 98, sleep: 90, workout: 75, hydration: 98, brain: 90, longevity: 96, gut: 96, inflammation: 98
       },
-      whyRecommend: "Steamed almond milk base. Great cognitive alert boost without blood sugar crash.",
-      whyAvoid: "Contains caffeine. Avoid taking after 2:00 PM to maintain sleep architecture.",
+      whyRecommend: "100% cold-pressed celery, cucumber, kale, spinach, and lemon. High chlorophyll & alkaline hydration.",
+      whyAvoid: "None. Ideal cellular recovery intake.",
       alternativeName: "Organic Matcha Oat Latte",
       alternativeId: "fav-alt-4",
       expectedFeeling: "Energized"
     }
   ];
+
+  const fetchFavorites = async () => {
+    try {
+      const res = await fetch('/api/favorites');
+      const data = await res.json();
+      if (data.success) {
+        setFavRestaurants(data.restaurants || []);
+        setFavMeals(data.meals || []);
+      }
+    } catch (err) {
+      console.error('Error fetching favorites:', err);
+    }
+  };
+
+  const toggleFavoriteRestaurant = async (restaurant: Restaurant) => {
+    const isFav = favRestaurants.some(r => r.restaurantId === restaurant.id);
+    try {
+      if (isFav) {
+        const res = await fetch(`/api/favorites?type=restaurant&id=${restaurant.id}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          setFavRestaurants(prev => prev.filter(r => r.restaurantId !== restaurant.id));
+          toast.success(`${restaurant.name} removed from favorites`);
+        }
+      } else {
+        const res = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'restaurant',
+            restaurantId: restaurant.id,
+            name: restaurant.name,
+            platform: restaurant.platform || 'Swiggy',
+            healthRating: restaurant.healthRating
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setFavRestaurants(prev => [data.restaurant, ...prev]);
+          toast.success(`${restaurant.name} added to favorites`);
+        }
+      }
+    } catch (err) {
+      console.error('Error toggling restaurant favorite:', err);
+      toast.error('Failed to update favorites');
+    }
+  };
+
+  const toggleFavoriteMeal = async (meal: Meal) => {
+    const isFav = favMeals.some(m => m.mealId === meal.id);
+    try {
+      if (isFav) {
+        const res = await fetch(`/api/favorites?type=meal&id=${meal.id}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          setFavMeals(prev => prev.filter(m => m.mealId !== meal.id));
+          toast.success(`${meal.name} removed from favorites`);
+        }
+      } else {
+        const res = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'meal',
+            mealId: meal.id,
+            name: meal.name,
+            restaurantName: meal.restaurantName,
+            platform: meal.platform || 'Swiggy',
+            auraScore: meal.auraScore,
+            calories: meal.nutrients.calories,
+            protein: meal.nutrients.proteinG
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setFavMeals(prev => [data.meal, ...prev]);
+          toast.success(`${meal.name} added to favorites`);
+        }
+      }
+    } catch (err) {
+      console.error('Error toggling meal favorite:', err);
+      toast.error('Failed to update favorites');
+    }
+  };
+
+  const isFavoriteRestaurant = (id: string) => favRestaurants.some(r => r.restaurantId === id);
+  const isFavoriteMeal = (id: string) => favMeals.some(m => m.mealId === id);
 
   // Load Data
   React.useEffect(() => {
@@ -290,6 +384,7 @@ export default function LiveOrderPage() {
     );
     loadCatalog();
     generateWeeklyPlan();
+    fetchFavorites();
 
     // Fetch user details for Gating Check
     setCheckingRole(true);
@@ -310,8 +405,8 @@ export default function LiveOrderPage() {
     const targetPage = resetPage ? 1 : page;
     setIsLoadingMore(true);
 
-    const rData = await provider.getRestaurants({ vegOnly: vegFilter, query: debouncedQuery, page: targetPage });
-    const mData = await provider.getMeals({ vegOnly: vegFilter, highProtein: highProteinFilter, query: debouncedQuery, page: targetPage });
+    const rData = await provider.getRestaurants({ vegOnly: vegFilter, favOnly: favOnlyFilter, query: debouncedQuery, page: targetPage });
+    const mData = await provider.getMeals({ vegOnly: vegFilter, highProtein: highProteinFilter, favOnly: favOnlyFilter, query: debouncedQuery, page: targetPage });
     const gData = await provider.getGroceryItems(debouncedQuery, targetPage);
 
     if (resetPage) {
@@ -343,7 +438,7 @@ export default function LiveOrderPage() {
 
   React.useEffect(() => {
     loadCatalog(true);
-  }, [vegFilter, highProteinFilter, debouncedQuery]);
+  }, [vegFilter, highProteinFilter, favOnlyFilter, debouncedQuery]);
 
   // Load more when page increments
   React.useEffect(() => {
@@ -1028,12 +1123,19 @@ export default function LiveOrderPage() {
                 >
                   🍗 High Protein (25g+)
                 </button>
+                <button
+                  onClick={() => setFavOnlyFilter(!favOnlyFilter)}
+                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1 ${favOnlyFilter ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 'bg-[#1a1614] text-neutral-400 border-white/5'}`}
+                >
+                  ❤️ Saved Spots Only
+                </button>
               </div>
 
               {/* Grid representation */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {mealsListToRender.map((meal) => {
                   const isCompared = compareList.find(c => c.id === meal.id);
+                  const isFav = favMeals.some(m => m.mealId === meal.id || m.mealId === `meal-${searchQuery}-${meal.restaurantId}`);
                   return (
                     <motion.div
                       key={meal.id}
@@ -1046,22 +1148,64 @@ export default function LiveOrderPage() {
                         <span className="text-[9px] text-[#eae3dc] font-black font-display-jakarta">{meal.auraScore}/100</span>
                       </div>
 
-                      {/* Compare toggle */}
-                      <button
-                        onClick={() => handleToggleCompare(meal)}
-                        className={`absolute top-3 right-3 z-20 p-2 rounded-full border transition-all cursor-pointer ${isCompared ? 'bg-white text-black border-white' : 'bg-black/60 text-neutral-400 border-white/5 hover:border-white/10'}`}
-                      >
-                        <Sliders className="w-3 h-3" />
-                      </button>
+                      {/* Top right actions */}
+                      <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
+                        {/* Favorite toggle */}
+                        <button
+                          onClick={() => toggleFavoriteMeal(meal)}
+                          className={`p-2 rounded-full border transition-all cursor-pointer ${isFav ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 'bg-black/60 text-neutral-400 border-white/5 hover:border-white/10'}`}
+                          title={isFav ? "Remove from Favorites" : "Add to Favorites"}
+                        >
+                          <Heart className={`w-3 h-3 ${isFav ? 'fill-current' : ''}`} />
+                        </button>
+
+                        {/* Compare toggle */}
+                        <button
+                          onClick={() => handleToggleCompare(meal)}
+                          className={`p-2 rounded-full border transition-all cursor-pointer ${isCompared ? 'bg-white text-black border-white' : 'bg-black/60 text-neutral-400 border-white/5 hover:border-white/10'}`}
+                          title="Compare Meal"
+                        >
+                          <Sliders className="w-3 h-3" />
+                        </button>
+                      </div>
 
                       {/* Food image wrapper */}
                       <div className="h-44 w-full relative overflow-hidden">
                         <img src={meal.imageUrl} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500" alt={meal.name} />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1614] via-transparent to-transparent" />
                         <div className="absolute bottom-2 left-3">
-                          <span className="text-[8px] bg-black/60 text-neutral-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider border border-white/5">
+                          <button
+                            onClick={() => {
+                              const foundRest = restaurants.find(r => r.id === meal.restaurantId);
+                              if (foundRest) {
+                                setSelectedRestaurant(foundRest);
+                              } else {
+                                setSelectedRestaurant({
+                                  id: meal.restaurantId,
+                                  name: meal.restaurantName,
+                                  cuisine: meal.category,
+                                  platform: meal.platform || 'Swiggy',
+                                  healthRating: 4.5,
+                                  trustScore: 90,
+                                  healthyMenuPercent: 95,
+                                  freshScore: 90,
+                                  lowOilAvailable: true,
+                                  vegScore: 80,
+                                  deliveryReliability: 95,
+                                  distanceKm: 2.0,
+                                  deliveryTimeMins: 25,
+                                  priceForTwo: 300,
+                                  isBusyNow: false,
+                                  offers: ['Flat 15% OFF with GAMA Pro'],
+                                  imageUrl: meal.imageUrl,
+                                  scores: { overall: 90, nutrition: 90, recovery: 85, value: 85 }
+                                });
+                              }
+                            }}
+                            className="text-[8px] bg-black/60 hover:bg-black/80 text-neutral-300 hover:text-white font-bold px-2 py-0.5 rounded uppercase tracking-wider border border-white/5 cursor-pointer transition-colors"
+                          >
                             {meal.restaurantName}
-                          </span>
+                          </button>
                         </div>
                       </div>
 
@@ -1893,6 +2037,10 @@ export default function LiveOrderPage() {
             onOrderNow={triggerOrderRedirection}
             onToggleCompare={handleToggleCompare}
             compareList={compareList}
+            onToggleFavoriteRestaurant={toggleFavoriteRestaurant}
+            isFavoriteRestaurant={isFavoriteRestaurant}
+            onToggleFavoriteMeal={toggleFavoriteMeal}
+            isFavoriteMeal={isFavoriteMeal}
           />
         )}
       </AnimatePresence>

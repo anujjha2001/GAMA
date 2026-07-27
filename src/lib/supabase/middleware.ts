@@ -1,14 +1,21 @@
+/**
+ * Supabase Auth middleware helper.
+ * Refreshes the session on each request and returns the user.
+ */
+
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import type { User } from '@supabase/supabase-js';
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+export async function updateSession(request: NextRequest): Promise<{
+  response: NextResponse;
+  user: User | null;
+}> {
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inluc2did2l6aG14dmV5cXJ2aXpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzOTc3NjYsImV4cCI6MjA5ODk3Mzc2Nn0.g0P_Aq43c8iUNi0FbAmsmnNeGNpj_Mb1YhE5GTGXYmI',
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
@@ -16,9 +23,7 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+          supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set({ name, value, ...options })
           );
@@ -27,17 +32,17 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // This will refresh session if expired
-  if (
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://example.supabase.co'
-  ) {
-    try {
-      await supabase.auth.getUser();
-    } catch (error) {
-      console.error('Supabase session refresh failed:', error);
-    }
+  // IMPORTANT: Do not write any code between createServerClient and getUser()
+  // A simple mistake could make it very hard to debug issues with users being
+  // randomly logged out.
+  let user: User | null = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // Session invalid or network error — treat as unauthenticated
+    user = null;
   }
 
-  return supabaseResponse;
+  return { response: supabaseResponse, user };
 }
