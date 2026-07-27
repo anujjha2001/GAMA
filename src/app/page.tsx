@@ -10,7 +10,7 @@ import {
   ArrowRight, Globe, Check, Activity, Zap,
   Moon, Flame, Brain, BookOpen, Compass, Upload,
   Plus, CircleDot, Database, FileText, Smartphone, AlertCircle, Sliders,
-  Apple, Utensils, Droplets, Sparkles, ShoppingBag
+  Apple, Utensils, Droplets, Sparkles, ShoppingBag, Menu, X
 } from 'lucide-react';
 const HealthOrb3D = dynamic(() => import('@/components/shared/health-orb-3d'), {
   ssr: false,
@@ -26,6 +26,23 @@ export default function HomePage() {
   const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
   const [showVideoModal, setShowVideoModal] = React.useState(false);
   const [userRole, setUserRole] = React.useState<string | null>(null);
+  
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  // Custom upload food scanner states
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [customImage, setCustomImage] = React.useState<string | null>(null);
+  const [customFoodResult, setCustomFoodResult] = React.useState<any | null>(null);
+  const [currentLoadingStage, setCurrentLoadingStage] = React.useState(0);
+
+  const LOADING_STAGES = [
+    "🔍 Detecting image...",
+    "🍽 Identifying food...",
+    "📏 Estimating portion...",
+    "🥗 Calculating nutrition...",
+    "🧠 Generating AI health insights...",
+    "✓ Complete"
+  ];
 
   React.useEffect(() => {
     fetch('/api/auth')
@@ -82,11 +99,70 @@ export default function HomePage() {
   const handleScanFood = (foodType: 'salad' | 'burger') => {
     setIsScanning(true);
     setScannedFood(null);
+    setCustomImage(null);
+    setCustomFoodResult(null);
     setTimeout(() => {
       setIsScanning(false);
       setScannedFood(foodType);
       toast.success(`Scanned ${foodType === 'salad' ? 'Salad' : 'Burger'} successfully!`);
     }, 1500);
+  };
+
+  const handleCustomImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64String = reader.result as string;
+      setCustomImage(base64String);
+      setScannedFood('custom');
+      setCustomFoodResult(null);
+      setIsScanning(true);
+      setCurrentLoadingStage(0);
+
+      // Sequentially advance loading stages every 1.2 seconds up to stage 4
+      const interval = setInterval(() => {
+        setCurrentLoadingStage((prev) => {
+          if (prev < 4) return prev + 1;
+          return prev;
+        });
+      }, 1200);
+
+      try {
+        const res = await fetch('/api/food-scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64String })
+        });
+        
+        clearInterval(interval);
+
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentLoadingStage(5);
+          await new Promise((resolve) => setTimeout(resolve, 600));
+          if (data.success) {
+            setCustomFoodResult(data);
+            toast.success(`Successfully analyzed ${data.food}!`);
+          } else {
+            setCustomFoodResult({
+              error: true,
+              message: data.message || 'Image did not meet food scanner safety guidelines.'
+            });
+            toast.error(data.message || 'Verification failed.');
+          }
+        } else {
+          throw new Error('Server error');
+        }
+      } catch (err) {
+        clearInterval(interval);
+        toast.error('Failed to analyze meal image.');
+      } finally {
+        setIsScanning(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const loadRazorpayScript = () => {
@@ -265,33 +341,59 @@ export default function HomePage() {
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 100, damping: 20, delay: 0.1 }}
-        className="fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-5xl z-50 border border-white/10 bg-black/45 backdrop-blur-md rounded-full px-8 py-3 flex justify-between items-center shadow-2xl shadow-black/40 hover:border-white/20 transition-all duration-300"
+        className={`fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-5xl z-50 border border-white/10 bg-black/75 backdrop-blur-md px-8 py-3 flex flex-col justify-between shadow-2xl shadow-black/40 hover:border-white/20 transition-all duration-300 ${
+          isMobileMenuOpen ? 'rounded-[24px] gap-4' : 'rounded-full'
+        }`}
       >
-        <div className="flex items-center gap-3">
-          <motion.div
-            whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
-            className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer"
-          >
-            <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
-          </motion.div>
-          <span className="font-extrabold text-xl tracking-wider text-white">GAMA</span>
+        <div className="flex justify-between items-center w-full">
+          <div className="flex items-center gap-3">
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
+              className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black flex items-center justify-center cursor-pointer"
+            >
+              <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover" />
+            </motion.div>
+            <span className="font-extrabold text-xl tracking-wider text-white">GAMA</span>
+          </div>
+
+          <nav className="hidden md:flex items-center gap-8 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+            <a href="#why-gama" className="hover:text-white transition-all duration-200">Overview</a>
+            <a href="#dashboard" className="hover:text-white transition-all duration-200">Dashboard</a>
+            <a href="#food-scanner" className="hover:text-white transition-all duration-200">Food Scanner</a>
+            <a href="#pricing" className="hover:text-white transition-all duration-200">Pricing</a>
+          </nav>
+
+          <div className="flex items-center gap-2 md:gap-4">
+            <Link
+              href="/login"
+              className="px-4 py-2 bg-white hover:bg-white/95 text-black font-semibold rounded-full text-xs shadow-lg transition-all cursor-pointer flex items-center gap-1 hover:scale-105 active:scale-95 duration-200"
+            >
+              Start Free
+            </Link>
+            
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-white/80 hover:text-white transition-colors"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
-        <nav className="hidden md:flex items-center gap-8 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-          <a href="#why-gama" className="hover:text-white transition-all duration-200">Overview</a>
-          <a href="#dashboard" className="hover:text-white transition-all duration-200">Dashboard</a>
-          <a href="#food-scanner" className="hover:text-white transition-all duration-200">Food Scanner</a>
-          <a href="#pricing" className="hover:text-white transition-all duration-200">Pricing</a>
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <Link
-            href="/login"
-            className="px-5 py-2.5 bg-white hover:bg-white/95 text-black font-semibold rounded-full text-xs shadow-lg transition-all cursor-pointer flex items-center gap-1 hover:scale-105 active:scale-95 duration-200"
+        {/* Mobile menu items */}
+        {isMobileMenuOpen && (
+          <motion.nav 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex flex-col gap-3 text-xs font-semibold uppercase tracking-wider text-white/50 pb-2 md:hidden w-full text-center"
           >
-            Start Free
-          </Link>
-        </div>
+            <a href="#why-gama" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-white py-2 transition-all duration-200 border-b border-white/5">Overview</a>
+            <a href="#dashboard" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-white py-2 transition-all duration-200 border-b border-white/5">Dashboard</a>
+            <a href="#food-scanner" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-white py-2 transition-all duration-200 border-b border-white/5">Food Scanner</a>
+            <a href="#pricing" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-white py-2 transition-all duration-200">Pricing</a>
+          </motion.nav>
+        )}
       </motion.header>
 
       {/* HERO SECTION */}
@@ -720,7 +822,14 @@ export default function HomePage() {
             <p className="text-sm text-white/60 leading-relaxed">
               Snap a picture of any meal. GAMA&apos;s deep-vision parser instantly structures calories, macros, micro-nutrients, and offers suggestions to optimize blood-glucose stability.
             </p>
-            <div className="flex gap-4 pt-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleCustomImageUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <div className="flex flex-wrap gap-4 pt-2">
               <button
                 onClick={() => handleScanFood('salad')}
                 className="px-5 py-3 bg-[#0a84ff]/10 border border-[#0a84ff]/20 hover:bg-[#0a84ff]/20 text-[#0a84ff] font-bold rounded-xl text-xs transition-colors cursor-pointer"
@@ -732,6 +841,12 @@ export default function HomePage() {
                 className="px-5 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
               >
                 Scan Burger (Caution)
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-black font-extrabold rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-lg shadow-emerald-500/10"
+              >
+                <Upload className="w-3.5 h-3.5" /> Upload Meal
               </button>
             </div>
           </div>
@@ -762,6 +877,13 @@ export default function HomePage() {
                     className="w-full h-full object-cover"
                   />
                 )}
+                {scannedFood === 'custom' && customImage && (
+                  <img
+                    src={customImage}
+                    alt="Custom Upload"
+                    className="w-full h-full object-cover"
+                  />
+                )}
                 {!scannedFood && !isScanning && (
                   <div className="text-center p-6 space-y-2">
                     <Smartphone className="w-8 h-8 text-white/50 mx-auto" />
@@ -772,9 +894,128 @@ export default function HomePage() {
               </div>
 
               {/* Analytical Output Details */}
-              <div className="flex-1 bg-[#070709] p-6 flex flex-col justify-between">
+              <div className="flex-1 bg-[#070709] p-6 flex flex-col justify-between overflow-y-auto">
                 <AnimatePresence mode="wait">
-                  {scannedFood ? (
+                  {isScanning && scannedFood === 'custom' ? (
+                    <div key="loading-stages" className="flex-1 flex flex-col justify-center space-y-2.5 font-mono text-[9px] text-white/70">
+                      <span className="text-[9px] font-black uppercase text-[#0a84ff] tracking-widest animate-pulse block text-center mb-1">AURA Vision Analyzing</span>
+                      {LOADING_STAGES.map((stage, idx) => {
+                        const isCompleted = currentLoadingStage > idx;
+                        const isActive = currentLoadingStage === idx;
+                        return (
+                          <div key={idx} className="flex items-center gap-1.5 transition-all duration-300">
+                            <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-black border ${
+                              isCompleted 
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
+                                : isActive 
+                                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse' 
+                                  : 'bg-white/5 text-neutral-500 border-white/10'
+                            }`}>
+                              {isCompleted ? "✓" : isActive ? "▶" : "○"}
+                            </span>
+                            <span className={isActive ? "text-amber-400 font-bold" : isCompleted ? "text-neutral-400" : "text-neutral-600"}>
+                              {stage}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : scannedFood === 'custom' && customFoodResult ? (
+                    customFoodResult.error ? (
+                      <motion.div
+                        key="custom-error"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="space-y-3 h-full flex flex-col justify-between"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-1.5 text-rose-400 font-bold text-[10px] uppercase tracking-wider">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                            Validation Failure
+                          </div>
+                          <p className="text-[9px] text-neutral-400 leading-relaxed bg-rose-950/20 border border-rose-900/30 p-2.5 rounded-xl font-medium">
+                            {customFoodResult.message}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => { setScannedFood(null); setCustomImage(null); setCustomFoodResult(null); }}
+                          className="w-full py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors cursor-pointer"
+                        >
+                          Try Again
+                        </button>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="custom-success"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="space-y-3 h-full flex flex-col justify-between"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[9px] font-bold text-[#0a84ff] uppercase tracking-wider">AURA Health Score</span>
+                            <span className="text-[10px] font-mono font-bold text-white bg-[#0a84ff]/10 border border-[#0a84ff]/20 px-2 py-0.5 rounded">
+                              {customFoodResult.healthScore}/100
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-black text-white line-clamp-1">{customFoodResult.food}</h4>
+                          <div className="text-[8px] bg-white/5 text-neutral-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider inline-block">
+                            Confidence: {Math.round(customFoodResult.confidence * 100)}%
+                          </div>
+                        </div>
+
+                        {/* Macronutrient breakdown */}
+                        <div className="grid grid-cols-4 gap-1.5 text-center py-2 border-y border-white/5">
+                          <div>
+                            <span className="text-[7px] text-white/50 block uppercase">Calories</span>
+                            <span className="text-[10px] font-mono font-bold text-white">
+                              {customFoodResult.nutrition.calories}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[7px] text-white/50 block uppercase">Protein</span>
+                            <span className="text-[10px] font-mono font-bold text-white">
+                              {customFoodResult.nutrition.protein}g
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[7px] text-white/50 block uppercase">Fat</span>
+                            <span className="text-[10px] font-mono font-bold text-white">
+                              {customFoodResult.nutrition.fat}g
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[7px] text-white/50 block uppercase">Carbs</span>
+                            <span className="text-[10px] font-mono font-bold text-white">
+                              {customFoodResult.nutrition.carbs}g
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 text-[9px]">
+                          <div>
+                            <span className="text-[8px] text-emerald-400 font-extrabold block">✓ Why Recommended</span>
+                            <p className="text-neutral-400 leading-normal line-clamp-2">{customFoodResult.goalRecommendation}</p>
+                          </div>
+                          {customFoodResult.suggestions?.[0] && (
+                            <div>
+                              <span className="text-[8px] text-white/50 uppercase font-extrabold block">Better Alternative</span>
+                              <p className="text-[9px] text-emerald-400 leading-normal font-bold">{customFoodResult.suggestions[0]}</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <button
+                          onClick={() => { setScannedFood(null); setCustomImage(null); setCustomFoodResult(null); }}
+                          className="w-full py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors cursor-pointer"
+                        >
+                          Clear Scan
+                        </button>
+                      </motion.div>
+                    )
+                  ) : scannedFood && scannedFood !== 'custom' ? (
                     <motion.div
                       key={scannedFood}
                       initial={{ opacity: 0, y: 10 }}
@@ -833,7 +1074,7 @@ export default function HomePage() {
                         <Upload className="w-5 h-5 text-white/50 animate-bounce" />
                       </div>
                       <span className="text-[10px] text-white/60 uppercase font-bold tracking-wider">Awaiting Scan Telemetry</span>
-                      <p className="text-[9px] text-white/50 max-w-[180px]">Run a camera simulation scan to visualize real-time macro analytics.</p>
+                      <p className="text-[9px] text-white/50 max-w-[180px]">Run a camera simulation scan or upload your meal to visualize real-time macro analytics.</p>
                     </div>
                   )}
                 </AnimatePresence>

@@ -564,7 +564,7 @@ export default function MealGuidePage() {
 
         {/* Left column: Submodule panel */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="flex border-b border-white/10 gap-6 mb-4">
+          <div className="flex border-b border-white/10 gap-6 mb-4 overflow-x-auto whitespace-nowrap pb-1 scrollbar-none">
             <button
               onClick={() => setActiveTab('plan')}
               className={`pb-2.5 font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer ${activeTab === 'plan' ? 'text-white border-b-2 border-white/20' : 'text-neutral-400 hover:text-white'}`}

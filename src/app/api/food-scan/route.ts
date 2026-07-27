@@ -12,9 +12,6 @@ export async function POST(req: NextRequest) {
   try {
     // Stage 9 Pre-auth (needed for personalization and timeline)
     const user = await verifyToken(req);
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
 
     const { image } = await req.json(); // base64 representation of image
 
@@ -40,14 +37,16 @@ export async function POST(req: NextRequest) {
       console.log(`[Food Scan Cache Hit] Found completed scan for hash: ${imageHash}`);
       
       // Load user goal meta for personalized recommendation even on cache hits
-      const profile = await prisma.userProfile.findUnique({
-        where: { id: user.id },
-        include: { preferences: true, userMemory: true }
-      });
       let goalRecommendation = 'This meal matches your daily nutrition outline.';
-      if (profile) {
-        const goal = profile.preferences?.find(p => p.category === 'primaryGoal')?.value || profile.userMemory?.fitnessGoals?.join(', ') || 'fitness';
-        goalRecommendation = `This cached meal is verified to support your ${goal} target.`;
+      if (user) {
+        const profile = await prisma.userProfile.findUnique({
+          where: { id: user.id },
+          include: { preferences: true, userMemory: true }
+        });
+        if (profile) {
+          const goal = profile.preferences?.find(p => p.category === 'primaryGoal')?.value || profile.userMemory?.fitnessGoals?.join(', ') || 'fitness';
+          goalRecommendation = `This cached meal is verified to support your ${goal} target.`;
+        }
       }
 
       const visionPayload = {
@@ -105,42 +104,46 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Load User Profile details
-    const profile = await prisma.userProfile.findUnique({
-      where: { id: user.id },
-      include: {
-        preferences: true,
-        userMemory: true,
-        healthRecords: { orderBy: { recordedAt: 'desc' }, take: 1 }
-      }
-    });
-
-    if (!profile) {
-      return NextResponse.json({ success: false, error: 'User profile not found' }, { status: 404 });
-    }
-
-    // Minimized metadata for privacy and token limits
-    const preferences = profile.preferences || [];
-    const memory = profile.userMemory;
-    const latestHealth = profile.healthRecords[0];
-
-    const dobPref = preferences.find(p => p.category === 'dob')?.value;
+    // Load User Profile details if authenticated
+    let goal = 'fitness';
     let age: number | undefined = undefined;
-    if (dobPref) {
-      const birthDate = new Date(dobPref);
-      if (!isNaN(birthDate.getTime())) {
-        const today = new Date();
-        let calculatedAge = today.getFullYear() - birthDate.getFullYear();
-        const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) calculatedAge--;
-        age = calculatedAge;
+    let weight: number | undefined = undefined;
+    let dietPreference = 'none';
+    let allergies: string[] = [];
+
+    if (user) {
+      const profile = await prisma.userProfile.findUnique({
+        where: { id: user.id },
+        include: {
+          preferences: true,
+          userMemory: true,
+          healthRecords: { orderBy: { recordedAt: 'desc' }, take: 1 }
+        }
+      });
+
+      if (profile) {
+        const preferences = profile.preferences || [];
+        const memory = profile.userMemory;
+        const latestHealth = profile.healthRecords[0];
+
+        const dobPref = preferences.find(p => p.category === 'dob')?.value;
+        if (dobPref) {
+          const birthDate = new Date(dobPref);
+          if (!isNaN(birthDate.getTime())) {
+            const today = new Date();
+            let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) calculatedAge--;
+            age = calculatedAge;
+          }
+        }
+        const gender = preferences.find(p => p.category === 'gender')?.value || 'other';
+        weight = latestHealth?.weight || parseFloat(preferences.find(p => p.category === 'weight')?.value || '0') || undefined;
+        goal = preferences.find(p => p.category === 'primaryGoal')?.value || memory?.fitnessGoals?.join(', ') || 'fitness';
+        dietPreference = memory?.dietPreference || 'none';
+        allergies = memory?.allergies || [];
       }
     }
-    const gender = preferences.find(p => p.category === 'gender')?.value || 'other';
-    const weight = latestHealth?.weight || parseFloat(preferences.find(p => p.category === 'weight')?.value || '0') || undefined;
-    const goal = preferences.find(p => p.category === 'primaryGoal')?.value || memory?.fitnessGoals?.join(', ') || 'fitness';
-    const dietPreference = memory?.dietPreference || 'none';
-    const allergies = memory?.allergies || [];
 
     // ----------------------------------------------------
     // STAGE 0 — IMAGE QUALITY CHECK & STAGE 2 — CONTENT MODERATION
@@ -179,23 +182,28 @@ You must return a JSON object in this exact format:
     // ----------------------------------------------------
     // STAGE 1 — IMAGE VALIDATION & STAGE 3 — NON-FOOD DETECTION
     // ----------------------------------------------------
-    const validationPrompt = `Determine whether this image actually contains food or a beverage.
-Identify the primary object in the image (e.g. laptop, table, chair, dog, cat, person, car, building, wallpaper, keyboard, tv, landscape, room, clothes, furniture, books, plants, documents, food).
-You must return a JSON object in this exact format:
+    const validationPrompt = `You are a strict food classification guard. Your primary task is to identify if the image is a picture of edible food or drink ready for consumption.
+If the image does not clearly depict food or drink (for example, if it is a photo of a laptop, phone, keyboard, screen, monitor, mouse, desk, animal, person, face, hand, car, empty bowl, text, document, paper, book, furniture, building, or random indoor/outdoor scene), you MUST classify it as non-food: set "isFood" to false, "confidence" to 1.0, and "primaryObject" to the name of the non-food object category (e.g. "laptop").
+Do NOT try to find tiny crumbs or hallucinate. Be extremely strict and conservative.
+
+Return a JSON object in this exact format:
 {
   "isFood": boolean,
-  "confidence": number, // Decimal confidence score from 0.0 to 1.0 representing how confident you are that there is food/beverage in the image
-  "foodDetected": string, // Name of the main recognizable food or beverage item, or empty string
-  "primaryObject": string // The main object category in the image
+  "confidence": number, // confidence score between 0.0 and 1.0
+  "foodDetected": string, // name of food item if detected, else empty
+  "primaryObject": string // the main object category in the image (e.g. "food", "laptop", "keyboard", "person", "dog")
 }`;
 
     const validationResult = await VisionLayer.analyzeImage(base64Image, validationPrompt);
     const validationData = JSON.parse(validationResult.content);
 
     const primaryObjectLower = (validationData.primaryObject || '').toLowerCase().trim();
-    const isFoodCategory = ['food', 'beverage', 'meal', 'fruit', 'vegetable', 'snack', 'drink'].some(cat => primaryObjectLower.includes(cat));
+    const isFoodCategory = ['food', 'beverage', 'meal', 'fruit', 'vegetable', 'snack', 'drink', 'juice', 'soup', 'bread', 'rice', 'curry', 'meat', 'chicken', 'paneer', 'pizza', 'burger', 'salad', 'sweet', 'dessert', 'coffee', 'tea', 'egg', 'fish', 'dish', 'plate of'].some(cat => primaryObjectLower.includes(cat));
 
-    if (!validationData.isFood || validationData.confidence < 0.90 || !isFoodCategory) {
+    const nonFoodKeywords = ['laptop', 'computer', 'keyboard', 'phone', 'smartphone', 'mouse', 'screen', 'monitor', 'desk', 'chair', 'person', 'human', 'man', 'woman', 'face', 'hand', 'dog', 'cat', 'animal', 'car', 'vehicle', 'house', 'building', 'room', 'wall', 'text', 'document', 'paper', 'book', 'pen', 'pencil', 'clothing', 'shoe', 'bag', 'backpack', 'wallet'];
+    const isNonFoodObject = nonFoodKeywords.some(keyword => primaryObjectLower.includes(keyword));
+
+    if (!validationData.isFood || validationData.confidence < 0.90 || !isFoodCategory || isNonFoodObject) {
       return NextResponse.json({
         success: false,
         reason: 'No recognizable food detected.',
@@ -465,51 +473,55 @@ Format:
       iron: Math.round(totalIron * 10) / 10
     };
 
-    const savedAnalysis = await prisma.foodAnalysis.create({
-      data: {
-        profileId: user.id,
-        imageUrl: image,
-        mealType: 'lunch',
-        foodItems: detectedFoodNames,
-        ingredients: allIngredients,
-        calories: Math.round(totalCalories),
-        protein: totalProtein,
-        fat: totalFat,
-        carbs: totalCarbs,
-        fiber: totalFiber,
-        sugar: totalSugar,
-        vitamins: vitaminsObj,
-        minerals: mineralsObj,
-        glycemicLoad: Math.round(totalCarbs * 0.1),
-        portionSize: finalPortion,
-        confidenceScore: overallConfidenceScore,
-        healthRating: healthData.healthScore || 85,
-        alternatives: healthData.suggestions || [],
-        explanation: healthData.goalRecommendation || '',
-        status: 'COMPLETED',
-        imageHash,
-        nutritionSource: databaseSourceUsed,
-        modelVersion: qualityCheckResult.modelUsed || 'google/gemini-2.5-flash',
-        provider: qualityCheckResult.provider || 'openrouter'
-      }
-    });
-
-    // Save event to user Timeline
-    await prisma.timelineEvent.create({
-      data: {
-        profileId: user.id,
-        type: 'FOOD_SCAN',
-        title: `Scanned ${mealName}`,
-        description: `Logged a ${finalPortion} portion of ${mealName} (~${Math.round(totalCalories)} kcal). Health score: ${healthData.healthScore || 85}/100.`,
-        metadata: {
-          analysisId: savedAnalysis.id,
+    let savedAnalysisId: string | undefined = undefined;
+    if (user) {
+      const savedAnalysis = await prisma.foodAnalysis.create({
+        data: {
+          profileId: user.id,
+          imageUrl: image,
+          mealType: 'lunch',
+          foodItems: detectedFoodNames,
+          ingredients: allIngredients,
           calories: Math.round(totalCalories),
-          protein: Math.round(totalProtein),
-          carbs: Math.round(totalCarbs),
-          fat: Math.round(totalFat)
+          protein: totalProtein,
+          fat: totalFat,
+          carbs: totalCarbs,
+          fiber: totalFiber,
+          sugar: totalSugar,
+          vitamins: vitaminsObj,
+          minerals: mineralsObj,
+          glycemicLoad: Math.round(totalCarbs * 0.1),
+          portionSize: finalPortion,
+          confidenceScore: overallConfidenceScore,
+          healthRating: healthData.healthScore || 85,
+          alternatives: healthData.suggestions || [],
+          explanation: healthData.goalRecommendation || '',
+          status: 'COMPLETED',
+          imageHash,
+          nutritionSource: databaseSourceUsed,
+          modelVersion: qualityCheckResult.modelUsed || 'google/gemini-2.5-flash',
+          provider: qualityCheckResult.provider || 'openrouter'
         }
-      }
-    });
+      });
+      savedAnalysisId = savedAnalysis.id;
+
+      // Save event to user Timeline
+      await prisma.timelineEvent.create({
+        data: {
+          profileId: user.id,
+          type: 'FOOD_SCAN',
+          title: `Scanned ${mealName}`,
+          description: `Logged a ${finalPortion} portion of ${mealName} (~${Math.round(totalCalories)} kcal). Health score: ${healthData.healthScore || 85}/100.`,
+          metadata: {
+            analysisId: savedAnalysis.id,
+            calories: Math.round(totalCalories),
+            protein: Math.round(totalProtein),
+            carbs: Math.round(totalCarbs),
+            fat: Math.round(totalFat)
+          }
+        }
+      });
+    }
 
     // Return exact requested output format
     return NextResponse.json({
