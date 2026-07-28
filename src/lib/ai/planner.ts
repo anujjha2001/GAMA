@@ -1,4 +1,4 @@
-import { getValidatedModel, groqClient } from './client';
+import { getValidatedModel, openRouterClient } from './client';
 import { detectIntent } from './intent';
 import { executeTool } from './tools';
 import { buildSystemPrompt } from './prompt';
@@ -36,7 +36,7 @@ export async function runAURA(
 
   try {
     // 5. Final LLM Generation
-    const completion = await groqClient.chat.completions.create({
+    const completion = await openRouterClient.chat.completions.create({
       model: model,
       messages: messages as any,
       temperature: 0.2, // Factual, deterministic tone for health

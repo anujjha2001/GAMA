@@ -1,4 +1,4 @@
-import { groqClient } from '@/lib/ai/client';
+import { openRouterClient } from '@/lib/ai/client';
 
 export interface VisionModelResult {
   content: string;
@@ -112,7 +112,7 @@ export class VisionLayer {
   }
 
   private static async callGroqVision(modelName: string, base64Image: string, prompt: string): Promise<string> {
-    const response = await groqClient.chat.completions.create({
+    const response = await openRouterClient.chat.completions.create({
       model: modelName,
       messages: [
         {

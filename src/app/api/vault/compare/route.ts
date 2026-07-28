@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
-import { groqClient } from '@/lib/ai/client';
+import { openRouterClient } from '@/lib/ai/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,7 +68,7 @@ Ensure you output valid JSON. Do not include markdown code block formatting.`;
     const userPrompt = `Compare the following historical reports:
 ${JSON.stringify(comparisonContext, null, 2)}`;
 
-    const response = await groqClient.chat.completions.create({
+    const response = await openRouterClient.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: systemPrompt },

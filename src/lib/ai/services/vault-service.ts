@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { groqClient } from '../client';
+import { openRouterClient } from '../client';
 import { deleteFromVault } from '@/lib/supabase/vault-storage';
 // Mock DOM classes for Node.js environment to satisfy pdf-parse runtime dependencies
 if (typeof globalThis !== 'undefined') {
@@ -49,7 +49,7 @@ export class VaultService {
       const base64 = buffer.toString('base64');
       const dataUrl = `data:${mimeType};base64,${base64}`;
 
-      const response = await groqClient.chat.completions.create({
+      const response = await openRouterClient.chat.completions.create({
         model: 'llama-3.2-11b-vision-preview',
         messages: [
           {
@@ -208,7 +208,7 @@ Extracted Text Content:
 ${extractedText}
 ---`;
 
-      const response = await groqClient.chat.completions.create({
+      const response = await openRouterClient.chat.completions.create({
         model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },

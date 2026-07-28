@@ -1,11 +1,11 @@
-import { getValidatedModel, groqClient } from './client';
+import { getValidatedModel, openRouterClient } from './client';
 import { AURAIntent } from './types';
 
 export async function detectIntent(message: string): Promise<AURAIntent> {
   const model = await getValidatedModel();
 
   try {
-    const response = await groqClient.chat.completions.create({
+    const response = await openRouterClient.chat.completions.create({
       model: model,
       messages: [
         {
