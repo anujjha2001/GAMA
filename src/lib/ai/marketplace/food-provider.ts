@@ -53,7 +53,7 @@ export interface Restaurant {
   cuisine: string;
   platform: 'Swiggy' | 'Zomato';
   healthRating: number;
-  trustScore: number; // AURA Trust Score (0-100)
+  trustScore: number;
   healthyMenuPercent: number;
   freshScore: number;
   lowOilAvailable: boolean;

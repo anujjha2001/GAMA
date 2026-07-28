@@ -44,11 +44,10 @@ export async function POST(request: NextRequest) {
   // from the session without exposing health data to any external party.
   let userId = 'anonymous';
   try {
-    // Dynamic import to avoid issues if auth lib isn't available in all envs
-    const authModule = await import('@/lib/auth').catch(() => null);
-    if (authModule && typeof authModule.getServerSession === 'function') {
-      const session = await authModule.getServerSession();
-      if (session?.user?.id) userId = session.user.id;
+    const { verifyToken } = await import('@/lib/jwt').catch(() => ({ verifyToken: null }));
+    if (verifyToken) {
+      const user = await verifyToken(request);
+      if (user?.id) userId = user.id;
     }
   } catch { /* proceed without auth guard for Phase 1 */ }
 
