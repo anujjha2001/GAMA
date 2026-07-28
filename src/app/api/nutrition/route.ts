@@ -1,6 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-const OPENROUTER_KEY = process.env.Edamam_API || '';
+const OPENROUTER_KEY =
+  process.env.OPENROUTER_API_KEY ||
+  process.env.Edamam_API ||
+  process.env.Google_Places_API ||
+  process.env.Indian_Food_Composition_Tables ||
+  process.env.FatSecret_Platform_API ||
+  process.env.Open_FoodFacts_API ||
+  '';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export async function GET(req: NextRequest) {
