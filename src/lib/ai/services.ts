@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { getValidatedModel, openRouterClient } from './client';
+
 import { SummaryType, RiskLevel, ProcessingStatus, PredictionMetric, RecommendationSeverity, InsightCategory } from '@prisma/client';
 
 // -------------------------------------------------------------
