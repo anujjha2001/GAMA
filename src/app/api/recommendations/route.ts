@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
   try {
     rawMeals = await recChain.execute(p => p.generate(context));
-    providerUsed = groqProvider.name;
+    providerUsed = aiProvider.name;
     providerFailures.push(...recChain.getFailures());
   } catch (err: any) {
     providerFailures.push(...recChain.getFailures());
