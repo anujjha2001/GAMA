@@ -1,15 +1,24 @@
+/**
+ * Centralized AI Configuration
+ * Replacing Groq with Unified Poolside & OpenRouter architecture.
+ */
+
 export const AI_CONFIG = {
+  defaultProvider: (process.env.DEFAULT_AI_PROVIDER || 'poolside') as 'poolside' | 'openrouter',
   providers: {
-    groq: {
-      baseURL: 'https://api.groq.com/openai/v1',
-      defaultModel: 'llama-3.3-70b-versatile',
-      fallbackModels: [
-        'llama-3.1-8b-instant',
-        'mixtral-8x7b-32768',
-        'gemma2-9b-it'
-      ]
+    poolside: {
+      baseURL: 'https://api.poolside.ai/v1',
+      defaultModel: process.env.DEFAULT_MODEL || 'poolside-llama-3',
+      apiKey: process.env.POOLSIDE_API_KEY || ''
+    },
+    openrouter: {
+      baseURL: 'https://openrouter.ai/api/v1',
+      defaultModel: process.env.DEFAULT_MODEL || 'meta-llama/llama-3.3-70b-instruct',
+      apiKey: process.env.OPENROUTER_API_KEY || ''
     }
   },
   timeoutMs: 30000,
-  maxRetries: 3
+  maxRetries: 3,
+  temperature: 0.7,
+  maxTokens: 8000
 };

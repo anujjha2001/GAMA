@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { groqClient } from '../client';
+import { AIOrchestrator } from '@/lib/ai/orchestrator';
 import { deleteFromVault } from '@/lib/supabase/vault-storage';
 // Mock DOM classes for Node.js environment to satisfy pdf-parse runtime dependencies
 if (typeof globalThis !== 'undefined') {
@@ -41,31 +41,27 @@ export interface ParseResult {
 
 export class VaultService {
   /**
-   * Run OCR on image files using Groq Multimodal Vision
+   * Run OCR on image files using Vision model
    */
-  static async ocrImageWithGroq(buffer: Buffer, mimeType: string): Promise<string> {
-    console.log(`[VaultService] Running Groq Vision OCR for mimeType: ${mimeType}`);
+  static async ocrImageWithVision(buffer: Buffer, mimeType: string): Promise<string> {
+    console.log(`[VaultService] Running Vision OCR for mimeType: ${mimeType}`);
     try {
       const base64 = buffer.toString('base64');
       const dataUrl = `data:${mimeType};base64,${base64}`;
 
-      const response = await groqClient.chat.completions.create({
-        model: 'llama-3.2-11b-vision-preview',
+      const response = await AIOrchestrator.generate({
         messages: [
           {
             role: 'user',
-            content: [
-              { type: 'text', text: 'Extract and return ALL readable text, biomarkers, metrics, ranges, patient/hospital details from this medical report. Output only the extracted plain text.' },
-              { type: 'image_url', image_url: { url: dataUrl } }
-            ]
+            content: `Extract and return ALL readable text, biomarkers, metrics, ranges, patient/hospital details from this medical report. Output only the extracted plain text. [Image attached: ${dataUrl}]`
           }
         ],
         temperature: 0.1
       });
 
-      const extractedText = response.choices[0]?.message?.content || '';
+      const extractedText = response.content || '';
       if (!extractedText.trim()) {
-        throw new Error('Groq Vision returned empty text.');
+        throw new Error('Vision model returned empty text.');
       }
       return extractedText;
     } catch (err: any) {
@@ -116,7 +112,7 @@ export class VaultService {
           where: { id: docId },
           data: { status: 'scanning', processingStatus: 'RUNNING_OCR' }
         });
-        extractedText = await this.ocrImageWithGroq(fileBuffer, mimeType);
+        extractedText = await this.ocrImageWithVision(fileBuffer, mimeType);
       } else {
         // Text files or fallbacks
         extractedText = fileBuffer.toString('utf-8');
@@ -208,8 +204,7 @@ Extracted Text Content:
 ${extractedText}
 ---`;
 
-      const response = await groqClient.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+      const response = await AIOrchestrator.generate({
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -218,7 +213,7 @@ ${extractedText}
         response_format: { type: 'json_object' }
       });
 
-      const responseText = response.choices[0]?.message?.content || '{}';
+      const responseText = response.content || '{}';
       const result: ParseResult = JSON.parse(responseText);
 
       // Step 4: Saving Results Stage

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
-import { groqClient } from '@/lib/ai/client';
+import { AIOrchestrator } from '@/lib/ai/orchestrator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Could not find selected reports.' }, { status: 404 });
     }
 
-    // Formulate a prompt for Groq to compare the health reports
+    // Formulate a prompt for AI to compare the health reports
     const comparisonContext = documents.map(doc => {
       const analysis = doc.analysis;
       return {
@@ -68,8 +68,7 @@ Ensure you output valid JSON. Do not include markdown code block formatting.`;
     const userPrompt = `Compare the following historical reports:
 ${JSON.stringify(comparisonContext, null, 2)}`;
 
-    const response = await groqClient.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+    const response = await AIOrchestrator.generate({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -78,7 +77,7 @@ ${JSON.stringify(comparisonContext, null, 2)}`;
       response_format: { type: 'json_object' }
     });
 
-    const responseText = response.choices[0]?.message?.content || '{}';
+    const responseText = response.content || '{}';
     const comparisonResult = JSON.parse(responseText);
 
     return NextResponse.json({
@@ -91,3 +90,4 @@ ${JSON.stringify(comparisonContext, null, 2)}`;
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+

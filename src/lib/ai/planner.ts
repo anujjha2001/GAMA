@@ -1,4 +1,4 @@
-import { getValidatedModel, groqClient } from './client';
+import { AIOrchestrator } from './orchestrator';
 import { detectIntent } from './intent';
 import { executeTool } from './tools';
 import { buildSystemPrompt } from './prompt';
@@ -9,8 +9,6 @@ export async function runAURA(
   context: AURAContext,
   history: AURAConversationHistory
 ): Promise<any> {
-  const model = await getValidatedModel();
-
   // 1. Detect Intent
   const intent = await detectIntent(message);
   const toolResults: ToolResult[] = [];
@@ -36,20 +34,19 @@ export async function runAURA(
 
   try {
     // 5. Final LLM Generation
-    const completion = await groqClient.chat.completions.create({
-      model: model,
+    const response = await AIOrchestrator.generate({
       messages: messages as any,
       temperature: 0.2, // Factual, deterministic tone for health
     });
 
     return {
       success: true,
-      text: completion.choices[0]?.message?.content,
+      text: response.content,
       intent,
       toolResults
     };
   } catch (error: any) {
-    console.error("Groq completion failed:", error);
+    console.error("AI completion failed:", error);
     throw new Error(error.message);
   }
 }

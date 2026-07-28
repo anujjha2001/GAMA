@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 import { prisma } from '@/lib/prisma';
-import { Groq } from 'groq-sdk';
+import { AIOrchestrator } from '@/lib/ai/orchestrator';
 
 export const maxDuration = 60;
 
@@ -141,15 +141,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
-    }
-
     const body = await req.json();
     const { action, payload } = body;
-
-    const groq = new Groq({ apiKey });
 
     // Handle AI Smart Meal Builder
     if (action === 'generate_recipes') {
@@ -182,15 +175,13 @@ Each recipe in the array must strictly have this schema:
   "recommendationReason": "Why this is recommended based on health profile."
 }`;
 
-      const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+      const response = await AIOrchestrator.generate({
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
         temperature: 0.3
       });
 
-      const responseText = completion.choices[0]?.message?.content || '{}';
-      return NextResponse.json(JSON.parse(responseText));
+      return NextResponse.json(JSON.parse(response.content || '{}'));
     }
 
     // Handle Restaurant Intelligence
@@ -215,15 +206,13 @@ Each recommendation must have this schema:
   "reason": "Why this menu item is recommended."
 }`;
 
-      const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+      const response = await AIOrchestrator.generate({
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
         temperature: 0.2
       });
 
-      const responseText = completion.choices[0]?.message?.content || '{}';
-      return NextResponse.json(JSON.parse(responseText));
+      return NextResponse.json(JSON.parse(response.content || '{}'));
     }
 
     // Handle Travel Meal Guide
@@ -257,15 +246,13 @@ Return a JSON object matching this schema:
   ]
 }`;
 
-      const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+      const response = await AIOrchestrator.generate({
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
         temperature: 0.2
       });
 
-      const responseText = completion.choices[0]?.message?.content || '{}';
-      return NextResponse.json(JSON.parse(responseText));
+      return NextResponse.json(JSON.parse(response.content || '{}'));
     }
 
     // Handle Pantry Scanner
@@ -283,13 +270,12 @@ Return a JSON object matching this schema:
   "alert": "You have enough vegetables for the next 2 days, but your protein sources are running low. Consider buying eggs, Greek yogurt, chicken breast, or tofu."
 }`;
 
-      const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+      const response = await AIOrchestrator.generate({
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' }
       });
 
-      return NextResponse.json(JSON.parse(completion.choices[0]?.message?.content || '{}'));
+      return NextResponse.json(JSON.parse(response.content || '{}'));
     }
 
     return NextResponse.json({ error: 'Action not supported' }, { status: 400 });
@@ -299,3 +285,4 @@ Return a JSON object matching this schema:
     return NextResponse.json({ error: 'Failed to process AI request.' }, { status: 500 });
   }
 }
+

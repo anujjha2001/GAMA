@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
 import { VaultService } from '@/lib/ai/services/vault-service';
 import { getVaultSignedUrl, downloadFromVault } from '@/lib/supabase/vault-storage';
-import { createClient } from '@/lib/supabase/server';
 
 // GET /api/vault/[id]
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
