@@ -1,110 +1,65 @@
-import { createClient } from './server';
-import fs from 'fs/promises';
-import path from 'path';
+import { createAdminClient } from './admin';
 
 const BUCKET_NAME = 'medical-documents';
-const LOCAL_UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'medical-documents');
 
 export async function uploadToVault(storagePath: string, fileBuffer: Buffer, mimeType: string) {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(storagePath, fileBuffer, {
-        contentType: mimeType,
-        upsert: true
-      });
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(storagePath, fileBuffer, {
+      contentType: mimeType,
+      upsert: true,
+    });
 
-    if (error) {
-      throw error;
-    }
-    return data;
-  } catch (error: any) {
-    if (error.message.toLowerCase().includes('bucket not found') || error.message.toLowerCase().includes('does not exist')) {
-      console.warn("Private storage bucket 'medical-documents' does not exist in Supabase. Falling back to local storage.");
-    } else if (error.message.toLowerCase().includes('signature verification failed')) {
-      console.warn("Supabase Anon Key mismatch (signature verification failed). Falling back to local storage.");
-    } else {
-      console.warn(`Supabase upload failed: ${error.message}. Falling back to local storage.`);
-    }
-
-    // Fallback to local filesystem
-    const fullPath = path.join(LOCAL_UPLOAD_DIR, storagePath);
-    await fs.mkdir(path.dirname(fullPath), { recursive: true });
-    await fs.writeFile(fullPath, fileBuffer);
-    return { path: storagePath, local: true };
+  if (error) {
+    console.error(`[VaultStorage] Upload failed for ${storagePath}:`, error.message);
+    throw new Error(`Failed to upload document to storage: ${error.message}`);
   }
+
+  return data;
 }
 
 export async function getVaultSignedUrl(storagePath: string, expiresInSeconds: number = 3600) {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .createSignedUrl(storagePath, expiresInSeconds);
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .createSignedUrl(storagePath, expiresInSeconds);
 
-    if (error) {
-      throw error;
-    }
-    return data.signedUrl;
-  } catch (error: any) {
-    // Check if the file exists locally
-    const fullPath = path.join(LOCAL_UPLOAD_DIR, storagePath);
-    try {
-      await fs.access(fullPath);
-      // Return a local URL path
-      return `/uploads/medical-documents/${storagePath}`;
-    } catch {
-      console.error(`Failed to generate signed URL and local file not found: ${error.message}`);
-      return `/uploads/medical-documents/${storagePath}`; // Fallback best-effort
-    }
+  if (error) {
+    console.error(`[VaultStorage] Failed to create signed URL for ${storagePath}:`, error.message);
+    throw new Error(`Failed to generate signed URL: ${error.message}`);
   }
+
+  return data.signedUrl;
 }
 
 export async function deleteFromVault(storagePath: string) {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove([storagePath]);
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .remove([storagePath]);
 
-    if (error) {
-      throw error;
-    }
-    return data;
-  } catch (error: any) {
-    console.warn(`[VaultStorage] Error deleting ${storagePath} from Supabase:`, error.message);
-    // Delete from local storage
-    const fullPath = path.join(LOCAL_UPLOAD_DIR, storagePath);
-    try {
-      await fs.unlink(fullPath);
-    } catch (e) {
-      console.error(`[VaultStorage] Error deleting local file:`, e);
-    }
-    return null;
+  if (error) {
+    console.error(`[VaultStorage] Failed to delete ${storagePath}:`, error.message);
+    throw new Error(`Failed to delete document from storage: ${error.message}`);
   }
+
+  return data;
 }
 
 export async function downloadFromVault(storagePath: string): Promise<Buffer> {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .download(storagePath);
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .download(storagePath);
 
-    if (error || !data) {
-      throw error || new Error('No data received from Supabase');
-    }
-    const arrayBuffer = await data.arrayBuffer();
-    return Buffer.from(arrayBuffer);
-  } catch (error: any) {
-    console.warn(`[VaultStorage] Supabase download failed for ${storagePath}, falling back to local storage:`, error?.message);
-    const fullPath = path.join(LOCAL_UPLOAD_DIR, storagePath);
-    try {
-      const fileBuffer = await fs.readFile(fullPath);
-      return fileBuffer;
-    } catch (e: any) {
-      throw new Error(`Failed to download document from both Supabase and local storage: ${e.message}`);
-    }
+  if (error || !data) {
+    const msg = error?.message ?? 'No data received from Supabase';
+    console.error(`[VaultStorage] Download failed for ${storagePath}:`, msg);
+    throw new Error(`Failed to download document from storage: ${msg}`);
   }
+
+  const arrayBuffer = await data.arrayBuffer();
+  return Buffer.from(arrayBuffer);
 }
+
