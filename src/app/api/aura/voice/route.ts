@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 import { prisma } from '@/lib/prisma';
-import { Groq } from 'groq-sdk';
+import { AIOrchestrator } from '@/lib/ai/orchestrator';
 import { searchRealImage } from '@/lib/ai/image-search';
 import { generatePremiumSpeech } from '@/lib/ai/tts-provider';
 import crypto from 'crypto';
@@ -127,43 +127,26 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = AURA_VOICE_SYSTEM_PROMPT + contextBlock;
 
-    // 3. Model Router
-    // Determine user intent complexity to route to best LLM
-    let model = 'llama-3.1-8b-instant'; // Default fast model (AURA-v1)
-    const complexKeywords = ['analyze', 'report', 'compare', 'prediction', 'why', 'explain', 'scientific', 'disease', 'symptom'];
-    const isComplex = complexKeywords.some(kw => message.toLowerCase().includes(kw));
-
-    if (modelOverride) {
-      model = modelOverride;
-    } else if (isComplex) {
-      model = 'llama-3.3-70b-versatile'; // Deeper model (AURA-v2 / Thinking Bit fallback)
-    }
-
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'AI service not configured.' }, { status: 503 });
-    }
-
-    const groq = new Groq({ apiKey });
+    let model = modelOverride || 'meta-llama/llama-3.1-8b-instruct'; // Provider-agnostic model hint
 
     // Process history context
-    const groqMessages: any[] = [{ role: 'system', content: systemPrompt }];
+    const orchestratorMessages: any[] = [{ role: 'system', content: systemPrompt }];
     if (history && Array.isArray(history)) {
       for (const h of history.slice(-6)) { // Take last 6 turns
-        groqMessages.push({ role: h.role, content: h.content });
+        orchestratorMessages.push({ role: h.role, content: h.content });
       }
     }
-    groqMessages.push({ role: 'user', content: message });
+    orchestratorMessages.push({ role: 'user', content: message });
 
     // 4. Execute LLM Router
-    const completion = await groq.chat.completions.create({
+    const response = await AIOrchestrator.generate({
       model: model,
-      messages: groqMessages,
+      messages: orchestratorMessages,
       response_format: { type: 'json_object' },
       temperature: 0.3
     });
 
-    const responseText = completion.choices[0]?.message?.content || '{}';
+    const responseText = response.content || '{}';
     const result = JSON.parse(responseText);
 
     // Default tool structure if missing
@@ -192,9 +175,9 @@ export async function POST(req: NextRequest) {
       await prisma.aIAuditLog.create({
         data: {
           profileId: user.id,
-          action: `VoiceAssistant-${model}`,
+          action: `VoiceAssistant-${response.model}`,
           prompt: message,
-          model: model,
+          model: response.model,
           response: result.message || '',
           latencyMs: 100 // dummy
         }
@@ -210,7 +193,7 @@ export async function POST(req: NextRequest) {
       tool: result.tool,
       visual: result.visual || { enabled: false },
       premiumAudio: premiumAudio, // Contains Base64 data URI if generated
-      modelUsed: model
+      modelUsed: response.model
     });
 
   } catch (error: any) {
@@ -218,3 +201,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
+

@@ -5,7 +5,7 @@
 
 export interface AIRequest {
   model?: string;
-  messages: { role: string; content: string }[];
+  messages: { role: string; content: string | any[] }[];
   temperature?: number;
   max_tokens?: number;
   response_format?: { type: 'json_object' | 'text' };

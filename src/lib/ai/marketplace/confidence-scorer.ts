@@ -16,7 +16,7 @@ export interface ConfidenceInput {
  *   0.10 — unique image URL (not a duplicate)
  *   0.10 — unique restaurant in this batch
  *   0.15 — unique meal name in this batch
- *   0.20 — AI's own confidence estimate (from Groq)
+ *   0.20 — AI's own confidence estimate (from AIOrchestrator)
  *   0.10 — realistic calorie range (150–1400 kcal)
  *   0.05 — valid processing level string
  *   0.10 — realistic protein range (2–80g)

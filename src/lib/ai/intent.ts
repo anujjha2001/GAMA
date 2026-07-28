@@ -1,12 +1,9 @@
-import { getValidatedModel, openRouterClient } from './client';
+import { AIOrchestrator } from './orchestrator';
 import { AURAIntent } from './types';
 
 export async function detectIntent(message: string): Promise<AURAIntent> {
-  const model = await getValidatedModel();
-
   try {
-    const response = await openRouterClient.chat.completions.create({
-      model: model,
+    const response = await AIOrchestrator.generate({
       messages: [
         {
           role: "system",
@@ -30,12 +27,11 @@ Available Tools:
       temperature: 0.1,
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (content) {
-      return JSON.parse(content) as AURAIntent;
+    if (response.content) {
+      return JSON.parse(response.content) as AURAIntent;
     }
   } catch (err) {
-    console.error("Failed to detect intent with Groq:", err);
+    console.error("Failed to detect intent with AIOrchestrator:", err);
   }
 
   // Fallback intent
