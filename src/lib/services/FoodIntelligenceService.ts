@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { openRouterClient, getValidatedModel } from '@/lib/ai/client';
+import { AIOrchestrator } from '@/lib/ai/orchestrator';
 
 export interface FoodNutrition {
   name: string;
@@ -677,7 +677,6 @@ export class FoodIntelligenceService {
    */
   static async explainFacts(food: FoodNutrition): Promise<string> {
     try {
-      const model = await getValidatedModel();
       const prompt = `You are GAMA's production food explain assistant. Based on this verified data:
 - Name: ${food.name}
 - Calories: ${food.calories} kcal
@@ -690,13 +689,12 @@ Explain the following sections in a highly structured, concise format under 150 
 3. Recommended Athlete intake timing.
 DO NOT fabricate numbers or suggest any facts not supported by science or the details provided.`;
 
-      const chatCompletion = await openRouterClient.chat.completions.create({
+      const chatCompletion = await AIOrchestrator.generate({
         messages: [{ role: 'user', content: prompt }],
-        model,
         temperature: 0.1
       });
 
-      return chatCompletion.choices[0]?.message?.content || 'No explanation available.';
+      return chatCompletion.content || 'No explanation available.';
     } catch (e) {
       console.error('[LLM ERROR] explanation failed:', e);
       return ` Factual assessment: 100g of ${food.name} provides ${food.calories} kcal with ${food.protein}g protein, ${food.carbs}g carbohydrates, and ${food.fat}g fat. Verified by ${food.apiSource}.`;

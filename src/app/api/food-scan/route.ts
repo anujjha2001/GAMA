@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
 import { VisionLayer } from '@/lib/ai/services/vision-layer';
 import { FoodIntelligenceService } from '@/lib/services/FoodIntelligenceService';
-import { openRouterClient, getValidatedModel } from '@/lib/ai/client';
+import { AIOrchestrator } from '@/lib/ai/orchestrator';
 import { createHash } from 'crypto';
 
 export const maxDuration = 60;
@@ -284,7 +284,6 @@ You must return a JSON object in this exact format:
       if (!verified) {
         try {
           console.log(`[Offline Database Fallback] Retrieving standard nutrition values for: ${item.food}`);
-          const fallbackModel = await getValidatedModel();
           const dbPrompt = `You are a trusted USDA and IFCT nutrition database retriever. 
 Provide standard nutritional facts for exactly 100g of the food item: "${item.food}".
 Do not guess or estimate visually. Output only standard nutritional table entries.
@@ -305,13 +304,12 @@ Return a JSON object in this exact format:
   "vitaminD": number, // in mcg
   "vitaminB12": number // in mcg
 }`;
-          const completion = await openRouterClient.chat.completions.create({
+          const completion = await AIOrchestrator.generate({
             messages: [{ role: 'user', content: dbPrompt }],
-            model: fallbackModel,
             temperature: 0.1,
             response_format: { type: 'json_object' }
           });
-          const parsedDb = JSON.parse(completion.choices[0]?.message?.content || '{}');
+          const parsedDb = JSON.parse(completion.content || '{}');
           if (parsedDb.calories !== undefined) {
             verified = {
               name: item.food,
@@ -391,7 +389,6 @@ Return a JSON object in this exact format:
     // ----------------------------------------------------
     // STAGE 7 — AI HEALTH ANALYSIS & STAGE 8 — PERSONALIZATION
     // ----------------------------------------------------
-    const analysisModel = await getValidatedModel();
     const healthPrompt = `You are AURA, GAMA's premium AI nutrition architect.
 Perform a strict health and goal personalization analysis for the scanned meal.
 User Demographics & Profile:
@@ -421,14 +418,13 @@ Format:
   "goalRecommendation": string // 1-2 sentences explaining if/why it supports their goal of "${goal}"
 }`;
 
-    const healthAnalysisResult = await openRouterClient.chat.completions.create({
+    const healthAnalysisResult = await AIOrchestrator.generate({
       messages: [{ role: 'user', content: healthPrompt }],
-      model: analysisModel,
       temperature: 0.2,
       response_format: { type: 'json_object' }
     });
 
-    const healthData = JSON.parse(healthAnalysisResult.choices[0]?.message?.content || '{}');
+    const healthData = JSON.parse(healthAnalysisResult.content || '{}');
 
     // Mapped Vision Payload for frontend compatibility
     const overallConfidenceScore = validationData.confidence;
