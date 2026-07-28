@@ -112,7 +112,7 @@ export class VaultService {
           where: { id: docId },
           data: { status: 'scanning', processingStatus: 'RUNNING_OCR' }
         });
-        extractedText = await this.ocrImageWithGroq(fileBuffer, mimeType);
+        extractedText = await this.ocrImageWithVision(fileBuffer, mimeType);
       } else {
         // Text files or fallbacks
         extractedText = fileBuffer.toString('utf-8');
@@ -204,8 +204,7 @@ Extracted Text Content:
 ${extractedText}
 ---`;
 
-      const response = await openRouterClient.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+      const response = await AIOrchestrator.generate({
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -214,7 +213,7 @@ ${extractedText}
         response_format: { type: 'json_object' }
       });
 
-      const responseText = response.choices[0]?.message?.content || '{}';
+      const responseText = response.content || '{}';
       const result: ParseResult = JSON.parse(responseText);
 
       // Step 4: Saving Results Stage
