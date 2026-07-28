@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
-import { Groq } from 'groq-sdk';
+import { AIOrchestrator } from '@/lib/ai/orchestrator';
 import { prisma } from '@/lib/prisma';
 import { searchRealImage } from '@/lib/ai/image-search';
 
@@ -106,15 +106,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
     }
 
-    const { messages, message, history, dashboardState, memoryTags, image, conversationId } = body;    // --- CASE 1: Multimodal Vision (Image Upload) ---
+    const { messages, message, history, dashboardState, memoryTags, image, conversationId } = body;    
+    
+    // --- CASE 1: Multimodal Vision (Image Upload) ---
     if (image) {
-      const apiKey = process.env.GROQ_API_KEY;
-      if (!apiKey) {
-        return NextResponse.json({ error: 'AI service is not configured on the server.' }, { status: 503 });
-      }
-
-      const groq = new Groq({ apiKey });
-
       try {
         const prompt = `You are AURA, a trust-centric AI nutrition companion. 
 You must analyze the uploaded image using this strict pipeline:
@@ -179,8 +174,7 @@ Respond ONLY with a valid JSON object matching this schema:
   }
 }`;
 
-        const completion = await groq.chat.completions.create({
-          model: 'llama-3.2-11b-vision-instruct',
+        const response = await AIOrchestrator.generate({
           messages: [
             {
               role: 'user',
@@ -194,8 +188,7 @@ Respond ONLY with a valid JSON object matching this schema:
           temperature: 0.1
         });
 
-        const responseText = completion.choices[0]?.message?.content || '{}';
-        const parsed = JSON.parse(responseText);
+        const parsed = JSON.parse(response.content || '{}');
 
         if (!parsed.isFood || !parsed.isValidFood) {
           return NextResponse.json({
@@ -262,11 +255,6 @@ Respond ONLY with a valid JSON object matching this schema:
     }
 
     // --- CASE 2 & 3: Visual Router & Structured JSON response ---
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
-      console.error('[AURA] GROQ_API_KEY is not set');
-      return NextResponse.json({ error: 'AI service is not configured on the server.' }, { status: 503 });
-    }
 
     // Extract conversation history & map to DB state
     let conversation;
@@ -323,8 +311,8 @@ Respond ONLY with a valid JSON object matching this schema:
       orderBy: { createdAt: 'asc' }
     });
 
-    // Format for Groq
-    const groqMessages = allMessages.map(m => ({
+    // Format for AI Orchestrator
+    const orchestratorMessages = allMessages.map(m => ({
       role: m.role as 'user' | 'assistant',
       content: m.content
     }));
@@ -365,35 +353,22 @@ ${abnormalList}
 
     const systemPrompt = AURA_JSON_SYSTEM_PROMPT + reportContext;
 
-    const groq = new Groq({ apiKey });
-
-    let completion;
+    let response;
     try {
-      completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+      response = await AIOrchestrator.generate({
         messages: [
           { role: 'system', content: systemPrompt },
-          ...groqMessages,
+          ...orchestratorMessages,
         ],
         response_format: { type: 'json_object' },
         temperature: 0.2,
       });
     } catch (apiErr: any) {
-      console.warn('[AURA] Primary model failed, attempting fallback...', apiErr?.message || apiErr);
-      // Fallback model call using a lighter model
-      completion = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...groqMessages,
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.2,
-      });
+      console.error('[AURA] Orchestrator generation failed:', apiErr?.message || apiErr);
+      throw apiErr;
     }
 
-    const responseText = completion.choices[0]?.message?.content || '{}';
-    const result = JSON.parse(responseText);
+    const result = JSON.parse(response.content || '{}');
 
     // If visual router enabled a search, perform the search on the server side
     if (result.visual && result.visual.enabled && result.visual.query) {
@@ -439,8 +414,9 @@ ${abnormalList}
     const errText = error?.message || '';
     const isRateLimit = errText.includes('rate_limit_exceeded') || errText.includes('Rate limit reached') || errText.includes('429');
     return NextResponse.json(
-      { error: isRateLimit ? 'Groq AI Service rate limit reached. Please try again shortly.' : (error?.message || 'AURA is temporarily unavailable.') },
+      { error: isRateLimit ? 'AI Service rate limit reached. Please try again shortly.' : (error?.message || 'AURA is temporarily unavailable.') },
       { status: isRateLimit ? 429 : 500 }
     );
   }
 }
+

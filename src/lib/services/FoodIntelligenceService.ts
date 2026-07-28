@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { groqClient, getValidatedModel } from '@/lib/ai/client';
+import { openRouterClient, getValidatedModel } from '@/lib/ai/client';
 
 export interface FoodNutrition {
   name: string;
@@ -690,7 +690,7 @@ Explain the following sections in a highly structured, concise format under 150 
 3. Recommended Athlete intake timing.
 DO NOT fabricate numbers or suggest any facts not supported by science or the details provided.`;
 
-      const chatCompletion = await groqClient.chat.completions.create({
+      const chatCompletion = await openRouterClient.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
         model,
         temperature: 0.1

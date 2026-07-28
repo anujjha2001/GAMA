@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { getValidatedModel, groqClient } from './client';
+import { getValidatedModel, openRouterClient } from './client';
 import { SummaryType, RiskLevel, ProcessingStatus, PredictionMetric, RecommendationSeverity, InsightCategory } from '@prisma/client';
 
 // -------------------------------------------------------------
@@ -65,7 +65,7 @@ export class TrendAnalysisService {
 export class RecoveryEngineService {
   static async calculateRecovery(profileId: string, currentData: { sleepHours: number; hrv: number; rhr: number; stressLevel: number; waterIntake: number; exerciseMinutes: number }): Promise<any> {
     const startTime = Date.now();
-    
+
     // Deduplication guard: skip write if a log was created in the last 60 minutes
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const recentLog = await prisma.recoveryScoreLog.findFirst({
@@ -76,7 +76,7 @@ export class RecoveryEngineService {
       console.log(`[RecoveryEngine] Skipping duplicate write for ${profileId} — recent log exists`);
       return recentLog;
     }
-    
+
     const sleepContribution = Math.min(25, Math.max(5, Math.round(currentData.sleepHours * 3.2)));
     const nutritionContribution = 20;
     const stressContribution = Math.min(20, Math.max(0, Math.round((5.0 - currentData.stressLevel) * 4)));
@@ -132,7 +132,7 @@ export class RecoveryEngineService {
 export class BurnoutEngine {
   static async calculateBurnoutRisk(profileId: string, currentData: { sleepDebt: number; stressLevel: number; mood: number; hrv: number }): Promise<any> {
     const startTime = Date.now();
-    
+
     // Deduplication guard: skip write if a log was created in the last 60 minutes
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const recentLog = await prisma.burnoutScoreLog.findFirst({
@@ -143,7 +143,7 @@ export class BurnoutEngine {
       console.log(`[BurnoutEngine] Skipping duplicate write for ${profileId} — recent log exists`);
       return recentLog;
     }
-    
+
     let riskPoints = 0;
     if (currentData.sleepDebt > 5) riskPoints += 30;
     if (currentData.stressLevel > 3.5) riskPoints += 30;
@@ -158,7 +158,7 @@ export class BurnoutEngine {
     const reasons: string[] = [];
     if (currentData.sleepDebt > 5) reasons.push("Accumulating sleep debt");
     if (currentData.stressLevel > 3.5) reasons.push("Chronic high stress");
-    
+
     const recommendations: string[] = [];
     if (riskLevel === RiskLevel.HIGH) recommendations.push("Schedule immediate offline recovery day");
     else recommendations.push("Maintain balanced activity levels");

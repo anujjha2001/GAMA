@@ -127,6 +127,12 @@ export default function LiveOrderPage() {
   // Testimonials Carousel Slide State
   const [testimonialIndex, setTestimonialIndex] = React.useState(0);
 
+  // ── AI Recommendation Feed State ──────────────────────────────────────────────
+  const [recommendations, setRecommendations] = React.useState<Meal[]>([]);
+  const [isLoadingRecs, setIsLoadingRecs] = React.useState(false);
+  const [recsSeed, setRecsSeed] = React.useState<number>(() => Date.now());
+  const [recsError, setRecsError] = React.useState<string | null>(null);
+
   const testimonials = [
     {
       quote: "GAMA has completely synchronized my eating with my fitness loops. Ordering calorie-optimized foods on Swiggy has never been this seamless!",
@@ -151,7 +157,15 @@ export default function LiveOrderPage() {
     }
   ];
 
-  // Default Healthy Favorites when search is empty
+  // ── Build a privacy-safe biometric summary (no raw values exposed to AI) ────
+  const buildBiometricSummary = React.useCallback(() => {
+    const sleepStatus = sleepHours < 6 ? 'poor sleep' : sleepHours < 7.5 ? 'moderate sleep' : 'good sleep';
+    const stressStatus = stressLevel > 7 ? 'high stress levels' : stressLevel > 4 ? 'moderate stress' : 'low stress';
+    const hrvStatus = hrv > 70 ? 'strong HRV recovery' : hrv > 50 ? 'moderate HRV baseline' : 'low HRV, needs recovery focus';
+    return `${sleepStatus}, ${stressStatus}, ${hrvStatus}`;
+  }, [sleepHours, stressLevel, hrv]);
+
+  // Default healthy favorites placeholder used as a temporary type-only reference
   const defaultFavorites: Meal[] = [
     {
       id: "fav-1",
@@ -487,6 +501,54 @@ export default function LiveOrderPage() {
     generateWeeklyPlan();
   }, [plannerGoal]);
 
+  // ── Load AI recommendations whenever seed changes or page mounts ─────────────
+  React.useEffect(() => {
+    if (!mounted) return;
+
+    const controller = new AbortController();
+    setIsLoadingRecs(true);
+    setRecsError(null);
+
+    const workoutContext =
+      currentMood === 'High Recovery' ? 'Heavy workout completed today' :
+      currentMood === 'Low Energy' ? 'Rest day — low activity' :
+      currentMood === 'Stressed' ? 'Stressful day, no workout' :
+      'No workout logged';
+
+    fetch('/api/recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        recsSeed,
+        context: {
+          weather: currentWeather,
+          city: manualCity || 'Bengaluru',
+          fitnessGoal: plannerGoal,
+          biometricSummary: buildBiometricSummary(),
+          workoutToday: workoutContext,
+        },
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.recommendations) && data.recommendations.length > 0) {
+          setRecommendations(data.recommendations);
+          setRecsError(null);
+        } else {
+          setRecsError(data.error || 'Unable to load recommendations. Please refresh.');
+        }
+      })
+      .catch(err => {
+        if (err.name !== 'AbortError') {
+          setRecsError('Connection error. Tap Refresh to try again.');
+        }
+      })
+      .finally(() => setIsLoadingRecs(false));
+
+    return () => controller.abort();
+  }, [recsSeed, mounted]);
+
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       if ((window as any).Razorpay) {
@@ -792,8 +854,8 @@ export default function LiveOrderPage() {
     }
   };
 
-  // Dynamic Meals mapping
-  const mealsListToRender = searchQuery.trim() === '' ? defaultFavorites : meals;
+  // Dynamic Meals mapping — search results OR AI recommendation feed
+  const mealsListToRender = searchQuery.trim() === '' ? recommendations : meals;
 
   return (
     <div className="min-h-screen bg-[#070709] text-[#eae3dc] relative overflow-x-hidden font-sans">
@@ -1129,10 +1191,72 @@ export default function LiveOrderPage() {
                 >
                   ❤️ Saved Spots Only
                 </button>
+
+                {/* Refresh AI Feed — only visible when search is empty */}
+                {searchQuery.trim() === '' && (
+                  <button
+                    onClick={() => setRecsSeed(Date.now())}
+                    disabled={isLoadingRecs}
+                    className={`ml-auto px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all flex items-center gap-1.5 ${
+                      isLoadingRecs
+                        ? 'opacity-50 cursor-not-allowed bg-[#1a1614] text-neutral-500 border-white/5'
+                        : 'cursor-pointer bg-[#1a1614] text-neutral-400 border-white/5 hover:text-amber-400 hover:border-amber-500/20'
+                    }`}
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isLoadingRecs ? 'animate-spin' : ''}`} />
+                    {isLoadingRecs ? 'Refreshing...' : 'Refresh Feed'}
+                  </button>
+                )}
               </div>
 
-              {/* Grid representation */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Grid representation — skeleton / error / empty / loaded states */}
+              {searchQuery.trim() === '' && isLoadingRecs ? (
+                /* ── Skeleton loading ──────────────────────────────────────── */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="rounded-[28px] bg-[#1a1614] border border-white/5 overflow-hidden animate-pulse">
+                      <div className="h-44 bg-white/5" />
+                      <div className="p-4 space-y-3">
+                        <div className="h-3 bg-white/5 rounded-full w-3/4" />
+                        <div className="grid grid-cols-4 gap-1">
+                          {Array.from({ length: 4 }).map((_, j) => (
+                            <div key={j} className="h-8 bg-white/5 rounded-xl" />
+                          ))}
+                        </div>
+                        <div className="h-12 bg-white/5 rounded-xl" />
+                        <div className="flex justify-between pt-1">
+                          <div className="h-4 bg-white/5 rounded w-10" />
+                          <div className="h-6 bg-white/5 rounded-lg w-16" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : searchQuery.trim() === '' && recsError ? (
+                /* ── Error state ───────────────────────────────────────────── */
+                <div className="text-center py-14 bg-[#1a1614] rounded-2xl border border-white/5 space-y-4">
+                  <p className="text-xs text-neutral-500 uppercase font-black font-display-jakarta">{recsError}</p>
+                  <button
+                    onClick={() => setRecsSeed(Date.now())}
+                    className="px-6 py-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-[10px] font-black uppercase tracking-wider cursor-pointer hover:bg-amber-500/20 transition-colors"
+                  >
+                    <RefreshCw className="w-3 h-3 inline-block mr-1.5" />Try Again
+                  </button>
+                </div>
+              ) : searchQuery.trim() === '' && recommendations.length === 0 ? (
+                /* ── Empty state ───────────────────────────────────────────── */
+                <div className="text-center py-14 bg-[#1a1614] rounded-2xl border border-white/5">
+                  <p className="text-xs text-neutral-500 uppercase font-black font-display-jakarta mb-3">AURA is building your personalized discovery feed...</p>
+                  <button
+                    onClick={() => setRecsSeed(Date.now())}
+                    className="px-6 py-2.5 bg-[#1a1614] border border-white/10 text-neutral-300 rounded-full text-[10px] font-black uppercase tracking-wider cursor-pointer hover:border-white/20 transition-colors flex items-center gap-2 mx-auto"
+                  >
+                    <RefreshCw className="w-3 h-3" />Discover Now
+                  </button>
+                </div>
+              ) : (
+                /* ── Recommendations / Search results grid ─────────────────── */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {mealsListToRender.map((meal) => {
                   const isCompared = compareList.find(c => c.id === meal.id);
                   const isFav = favMeals.some(m => m.mealId === meal.id || m.mealId === `meal-${searchQuery}-${meal.restaurantId}`);
@@ -1267,7 +1391,8 @@ export default function LiveOrderPage() {
                     </motion.div>
                   );
                 })}
-              </div>
+                </div>
+              )}
 
               {searchQuery.trim() !== '' && hasMore && (
                 <div ref={loaderRef} className="h-10 w-full flex items-center justify-center pt-4">

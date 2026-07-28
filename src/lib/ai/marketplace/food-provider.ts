@@ -41,6 +41,10 @@ export interface Meal {
   alternativeName: string;
   alternativeId: string;
   expectedFeeling: 'Energized' | 'Heavy' | 'Sleepy' | 'Perfect Before Workout' | 'Perfect Before Sleep';
+  /** Cuisine type — used for diversity enforcement (max 2 per cuisine in feed) */
+  cuisineType?: string;
+  /** Confidence score 0.0–1.0 from ConfidenceScorer — used for ranking */
+  confidence?: number;
 }
 
 export interface Restaurant {

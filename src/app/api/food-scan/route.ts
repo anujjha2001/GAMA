@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
 import { VisionLayer } from '@/lib/ai/services/vision-layer';
 import { FoodIntelligenceService } from '@/lib/services/FoodIntelligenceService';
-import { groqClient, getValidatedModel } from '@/lib/ai/client';
+import { openRouterClient, getValidatedModel } from '@/lib/ai/client';
 import { createHash } from 'crypto';
 
 export const maxDuration = 60;
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     if (cachedAnalysis) {
       console.log(`[Food Scan Cache Hit] Found completed scan for hash: ${imageHash}`);
-      
+
       // Load user goal meta for personalized recommendation even on cache hits
       let goalRecommendation = 'This meal matches your daily nutrition outline.';
       if (user) {
@@ -305,7 +305,7 @@ Return a JSON object in this exact format:
   "vitaminD": number, // in mcg
   "vitaminB12": number // in mcg
 }`;
-          const completion = await groqClient.chat.completions.create({
+          const completion = await openRouterClient.chat.completions.create({
             messages: [{ role: 'user', content: dbPrompt }],
             model: fallbackModel,
             temperature: 0.1,
@@ -350,9 +350,9 @@ Return a JSON object in this exact format:
 
       if (verified) {
         databaseSourceUsed = verified.apiSource || 'USDA Database';
-        
+
         // Visual portion size multiplier (estimate weight/serving size multiplier)
-        let portionMultiplier = 1.0; 
+        let portionMultiplier = 1.0;
         const portionLower = (item.portion || '').toLowerCase();
         if (portionLower.includes('half')) portionMultiplier = 0.5;
         else if (portionLower.includes('full') || portionLower.includes('plate')) portionMultiplier = 1.0;
@@ -421,7 +421,7 @@ Format:
   "goalRecommendation": string // 1-2 sentences explaining if/why it supports their goal of "${goal}"
 }`;
 
-    const healthAnalysisResult = await groqClient.chat.completions.create({
+    const healthAnalysisResult = await openRouterClient.chat.completions.create({
       messages: [{ role: 'user', content: healthPrompt }],
       model: analysisModel,
       temperature: 0.2,
@@ -433,7 +433,7 @@ Format:
     // Mapped Vision Payload for frontend compatibility
     const overallConfidenceScore = validationData.confidence;
     const finalPortion = segmentationData.foods[0]?.portion || '1 plate';
-    
+
     const visionPayload = {
       isFood: true,
       isValidFood: true,
