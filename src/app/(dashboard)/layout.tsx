@@ -4,7 +4,7 @@ import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, LogOut, ChefHat, ShoppingBag, Flame, Menu, X
+  Home, User, BarChart2, Calendar, Inbox, Sliders, Settings, Award, ShieldAlert, LogOut, ChefHat, ShoppingBag, Flame, Menu, X, Watch
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuraVoiceAssistant from '@/components/aura/AuraVoiceAssistant';
@@ -47,6 +47,7 @@ export default function DashboardLayout({
     { href: '/vault', icon: Inbox, label: 'Vault' },
     { href: '/meals', icon: ChefHat, label: 'Meal Guide' },
     { href: '/workout-studio', icon: Flame, label: 'Workout Studio' },
+    { href: '/devices', icon: Watch, label: 'Devices' },
     { href: '/settings', icon: Sliders, label: 'Settings' }
   ];
 
