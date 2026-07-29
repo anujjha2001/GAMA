@@ -94,6 +94,13 @@ model UserProfile {
   weatherSnapshots         WeatherSnapshot[]
   workouts                 Workout[]
   workoutSessions          WorkoutSession[]
+  deviceConnections        DeviceConnection[]
+  providerTokens           ProviderToken[]
+  healthMetrics            HealthMetric[]
+  deviceAuditLogs          DeviceAuditLog[]
+  primaryDevices           PrimaryDevice[]
+  deviceHealths            DeviceHealth[]
+  metricAggregations       MetricAggregation[]
 }
 
 model Settings {
@@ -1492,4 +1499,181 @@ enum PredictionMetric {
   SLEEP
   BODY_FAT
   HYDRATION
+}
+
+model DeviceConnection {
+  id               String   @id @default(uuid())
+  profileId        String
+  provider         String
+  deviceId         String?
+  modelName        String?
+  batteryLevel     Int?
+  connectionStatus String   @default("DISCONNECTED") // DISCONNECTED, CONNECTING, AUTHORIZING, CONNECTED, SYNCING, HEALTHY, ERROR
+  firmwareVersion  String?
+  lastSync         DateTime?
+  autoSync         Boolean  @default(true)
+  syncFrequencyMin Int      @default(15)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  profile          UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  capabilities     DeviceCapability[]
+  permissions      DevicePermission[]
+
+  @@unique([profileId, provider, deviceId])
+}
+
+model DeviceCapability {
+  id                 String           @id @default(uuid())
+  deviceConnectionId String
+  metricType         String
+  isSupported        Boolean          @default(true)
+  deviceConnection   DeviceConnection @relation(fields: [deviceConnectionId], references: [id], onDelete: Cascade)
+}
+
+model DevicePermission {
+  id                 String           @id @default(uuid())
+  deviceConnectionId String
+  scope              String
+  status             String           @default("REQUESTED") // GRANTED, DENIED, REQUESTED
+  updatedAt          DateTime         @updatedAt
+  deviceConnection   DeviceConnection @relation(fields: [deviceConnectionId], references: [id], onDelete: Cascade)
+}
+
+model ProviderToken {
+  id           String      @id @default(uuid())
+  profileId    String
+  provider     String
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  scopes       String[]
+  status       String      @default("ACTIVE") // ACTIVE, EXPIRED, REVOKED
+  updatedAt    DateTime    @updatedAt
+  profile      UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, provider])
+}
+
+model MetricSource {
+  id              String         @id @default(uuid())
+  name            String
+  provider        String
+  deviceId        String?
+  firmwareVersion String?
+  metrics         HealthMetric[]
+}
+
+model HealthMetric {
+  id               String       @id @default(uuid())
+  profileId        String
+  metricSourceId   String
+  metricType       String
+  value            Json
+  unit             String
+  confidence       Float        @default(1.0)
+  qualityScore     Float        @default(1.0)
+  recordedAt       DateTime
+  syncedAt         DateTime     @default(now())
+  conflictResolved Boolean      @default(false)
+  isCorrected      Boolean      @default(false)
+  profile          UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  source           MetricSource @relation(fields: [metricSourceId], references: [id], onDelete: Restrict)
+
+  @@index([profileId, metricType, recordedAt])
+}
+
+model SyncJob {
+  id          String      @id @default(uuid())
+  profileId   String
+  provider    String
+  status      String      @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, RETRYING
+  startedAt   DateTime?
+  completedAt DateTime?
+  error       String?
+  retryCount  Int         @default(0)
+  events      SyncEvent[]
+}
+
+model SyncEvent {
+  id        String   @id @default(uuid())
+  syncJobId String
+  eventType String
+  message   String
+  timestamp DateTime @default(now())
+  syncJob   SyncJob  @relation(fields: [syncJobId], references: [id], onDelete: Cascade)
+}
+
+model ProviderWebhook {
+  id         String   @id @default(uuid())
+  provider   String
+  eventId    String   @unique
+  payload    Json
+  signature  String?
+  receivedAt DateTime @default(now())
+  status     String   @default("UNPROCESSED") // UNPROCESSED, PROCESSED, FAILED
+}
+
+model DeviceAuditLog {
+  id        String      @id @default(uuid())
+  profileId String
+  device    String
+  action    String
+  details   Json?
+  timestamp DateTime    @default(now())
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model PrimaryDevice {
+  id         String      @id @default(uuid())
+  profileId  String
+  metricType String
+  provider   String
+  deviceId   String?
+  updatedAt  DateTime    @updatedAt
+  profile    UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, metricType])
+}
+
+model DeviceHealth {
+  id               String      @id @default(uuid())
+  profileId        String
+  provider         String
+  deviceId         String?
+  batteryHealth    Int?
+  signalQuality    String?
+  connectionQuality String?
+  latencyMs        Int?
+  lastSuccessfulSync DateTime?
+  lastError        String?
+  healthScore      Int?
+  updatedAt        DateTime    @updatedAt
+  profile          UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, provider, deviceId])
+}
+
+model MetricAggregation {
+  id            String      @id @default(uuid())
+  profileId     String
+  periodType    String      // DAILY, WEEKLY, MONTHLY, YEARLY
+  periodStart   DateTime
+  metricType    String
+  averageValue  Float?
+  totalValue    Float?
+  minValue      Float?
+  maxValue      Float?
+  updatedAt     DateTime    @updatedAt
+  profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, periodType, periodStart, metricType])
+}
+
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  feature   String   @unique
+  isEnabled Boolean  @default(false)
+  users     String[] // Array of profileIds who have access if not globally enabled
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
