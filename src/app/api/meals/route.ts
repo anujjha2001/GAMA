@@ -144,6 +144,18 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, payload } = body;
 
+    // Helper to strip markdown formatting
+    const parseLLMResponse = (content: string) => {
+      if (!content) return {};
+      try {
+        const cleanContent = content.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+        return JSON.parse(cleanContent);
+      } catch (e) {
+        console.error('Failed to parse LLM JSON:', content);
+        return {};
+      }
+    };
+
     // Handle AI Smart Meal Builder
     if (action === 'generate_recipes') {
       const prompt = `You are AURA, a premium AI nutrition architect.
@@ -181,7 +193,7 @@ Each recipe in the array must strictly have this schema:
         temperature: 0.3
       });
 
-      return NextResponse.json(JSON.parse(response.content || '{}'));
+      return NextResponse.json(parseLLMResponse(response.content || ''));
     }
 
     // Handle Restaurant Intelligence
@@ -212,7 +224,7 @@ Each recommendation must have this schema:
         temperature: 0.2
       });
 
-      return NextResponse.json(JSON.parse(response.content || '{}'));
+      return NextResponse.json(parseLLMResponse(response.content || ''));
     }
 
     // Handle Travel Meal Guide
@@ -252,7 +264,7 @@ Return a JSON object matching this schema:
         temperature: 0.2
       });
 
-      return NextResponse.json(JSON.parse(response.content || '{}'));
+      return NextResponse.json(parseLLMResponse(response.content || ''));
     }
 
     // Handle Pantry Scanner
@@ -275,7 +287,7 @@ Return a JSON object matching this schema:
         response_format: { type: 'json_object' }
       });
 
-      return NextResponse.json(JSON.parse(response.content || '{}'));
+      return NextResponse.json(parseLLMResponse(response.content || ''));
     }
 
     return NextResponse.json({ error: 'Action not supported' }, { status: 400 });
