@@ -362,8 +362,11 @@ export function DashboardView() {
       <div className="relative w-full flex-1 rounded-[40px] border border-white/5 overflow-hidden z-10 bg-[#09090b]/80 backdrop-blur-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
 
         {/* Dashboard Hero Background - HD Image */}
-        <img
-          src="/dashboard-hero.png"
+        <motion.img
+          initial={{ scale: 1 }}
+          animate={{ scale: 1.05 }}
+          transition={{ duration: 20, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          src="/Dashboard-hero.png.webp"
           alt="Dashboard Hero"
           className="absolute inset-0 w-full h-full object-cover object-center z-0 opacity-100"
         />
