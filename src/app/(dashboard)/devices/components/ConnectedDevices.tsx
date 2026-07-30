@@ -1,202 +1,230 @@
 'use client';
 
-import { useState, useRef } from "react";
-import { Heart, Moon, Flame, Zap, Droplet, ChevronRight, Watch } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { motion, useAnimation } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import DeviceDetailsModal from "./DeviceDetailsModal";
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import Image from 'next/image';
+import { 
+  Battery, Bluetooth, Activity, Settings2, ShieldCheck, 
+  ChevronRight, HeartPulse, Moon, Zap, Watch, Trash2
+} from 'lucide-react';
+import { deviceRealtimeService } from '@/lib/devices/services/DeviceRealtimeService';
+import { DeviceConnection } from '@prisma/client';
 
 export default function ConnectedDevices() {
-  const [selectedDevice, setSelectedDevice] = useState<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [connections, setConnections] = useState<Partial<DeviceConnection>[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const devices = [
-    {
-      id: "apple-watch",
-      name: "Apple Watch",
-      model: "Ultra 2",
-      status: "Connected",
-      battery: 84,
-      lastSync: "2 min ago",
-      image: "/images/devices/apple-watch.png", 
-      metrics: ["Heart", "Sleep", "Calories", "Activity"]
-    },
-    {
-      id: "galaxy-watch",
-      name: "Galaxy Watch",
-      model: "6 Classic",
-      status: "Connected",
-      battery: 71,
-      lastSync: "3 min ago",
-      image: "/images/devices/galaxy-watch.png",
-      metrics: ["Heart", "Sleep", "Calories", "Activity"]
-    },
-    {
-      id: "fitbit",
-      name: "Fitbit Charge 6",
-      model: "Tracker",
-      status: "Connected",
-      battery: 68,
-      lastSync: "5 min ago",
-      image: "/images/devices/fitbit.png",
-      metrics: ["Heart", "Activity", "Calories"]
-    },
-    {
-      id: "oura",
-      name: "Oura Ring",
-      model: "Gen3",
-      status: "Connected",
-      battery: 72,
-      lastSync: "8 min ago",
-      image: "/images/devices/oura.png",
-      metrics: ["Sleep", "Recovery", "Heart"]
-    },
-    {
-      id: "garmin",
-      name: "Garmin",
-      model: "Fenix 7X",
-      status: "Connected",
-      battery: 55,
-      lastSync: "10 min ago",
-      image: "/images/devices/garmin.png",
-      metrics: ["Heart", "Activity", "Calories"]
-    }
-  ];
+  useEffect(() => {
+    const fetchConnections = async () => {
+      try {
+        const res = await fetch('/api/v1/devices/connections');
+        const json = await res.json();
+        if (json.success) {
+          setConnections(json.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch connections', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchConnections();
 
-  const getMetricIcon = (metric: string) => {
-    switch (metric) {
-      case "Heart": return <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400/20" />;
-      case "Sleep": return <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400/20" />;
-      case "Calories": return <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400/20" />;
-      case "Activity": return <Zap className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/20" />;
-      case "Recovery": return <Droplet className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400/20" />;
-      default: return null;
-    }
-  };
+    // Subscribe to realtime updates
+    const unsubscribe = deviceRealtimeService.subscribeToConnections('mock', (payload: any) => {
+      if (payload.eventType === 'UPDATE' && payload.new) {
+        setConnections(prev => prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } : c));
+      }
+    });
 
-  if (devices.length === 0) {
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-4 glass-panel border-white/5 bg-white/[0.01] rounded-3xl mt-4 border-dashed border-white/20 relative overflow-hidden group">
-        <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-colors duration-1000" />
-        <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 relative z-10">
-          <Watch className="w-8 h-8 text-muted-foreground group-hover:text-emerald-400 transition-colors" />
-        </div>
-        <h3 className="text-xl font-display font-medium text-white mb-2 relative z-10">No Devices Connected</h3>
-        <p className="text-muted-foreground text-sm max-w-md text-center mb-8 relative z-10">Connect your first wearable or medical device to start syncing your health metrics to GAMA automatically.</p>
-        <Button className="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold rounded-full px-8 relative z-10 transition-transform active:scale-95">
-          <Zap className="w-4 h-4 mr-2" />
-          Connect Device
-        </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {[1, 2].map(i => (
+          <div key={i} className="h-64 rounded-3xl bg-white/5 animate-pulse border border-white/5" />
+        ))}
       </div>
     );
   }
 
+  const handleRemove = async (id: string) => {
+    if (!confirm('Are you sure you want to remove this device?')) return;
+    try {
+      const res = await fetch(`/api/v1/devices/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        setConnections(prev => prev.filter(c => c.id !== id));
+      } else {
+        alert('Failed to remove device');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to remove device');
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-4 relative">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      {connections.map((device, i) => (
+        <DeviceCard key={device.id || i} device={device} index={i} onRemove={handleRemove} />
+      ))}
+    </div>
+  );
+}
+
+function DeviceCard({ device, index, onRemove }: { device: Partial<DeviceConnection>; index: number; onRemove: (id: string) => void }) {
+  // Universal premium grey glass theme (Apple style)
+  const theme = {
+    bg: 'bg-white/[0.03]',
+    border: 'border-white/[0.08]',
+    glow: 'group-hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] group-hover:bg-white/[0.05]',
+    accent: 'text-white',
+    image: device.brand?.toLowerCase() === 'garmin' ? '/images/devices/garmin_fenix_8.png' :
+           device.brand?.toLowerCase() === 'oura' ? '/images/devices/oura_ring_gen3.png' :
+           device.brand?.toLowerCase() === 'apple' ? '/images/devices/apple_watch_ultra_2.png' : null
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.5, type: 'spring' }}
+      whileHover={{ y: -4, scale: 1.01 }}
+      className={`group relative overflow-hidden rounded-3xl backdrop-blur-2xl ${theme.bg} border ${theme.border} ${theme.glow} transition-all duration-500`}
+    >
+      {/* Ambient Inner Glow */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
       
-      {/* Horizontal Draggable Container */}
-      <motion.div 
-        ref={containerRef}
-        className="flex gap-4 pb-4 overflow-hidden w-full px-2"
-      >
-        <motion.div 
-          drag="x" 
-          dragConstraints={containerRef} 
-          className="flex gap-4 pr-12 cursor-grab active:cursor-grabbing"
-          whileTap={{ cursor: "grabbing" }}
-        >
-          {devices.map((device, idx) => (
+      {/* Soft Reflection */}
+      <div className="absolute -inset-1/2 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transform rotate-12 translate-y-full group-hover:translate-y-[-100%] transition-all duration-1000 ease-out pointer-events-none" />
+
+      <div className="p-6 md:p-8 flex flex-col md:flex-row gap-8 items-center h-full relative z-10">
+        
+        {/* Device Render (Floating Image) */}
+        <div className="relative w-40 h-40 md:w-48 md:h-48 flex-shrink-0">
+          {theme.image ? (
             <motion.div 
-              key={device.id}
-              onClick={() => setSelectedDevice(device)}
-              initial={{ opacity: 0, scale: 0.9, x: 20 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              transition={{ delay: idx * 0.1, type: "spring", stiffness: 300, damping: 25 }}
-              whileHover={{ y: -8 }}
-              className="min-w-[220px] max-w-[220px] shrink-0"
+              className="w-full h-full relative drop-shadow-2xl"
+              animate={{ y: [0, -8, 0] }}
+              transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
             >
-              <Card className="glass-panel h-full relative group hover:bg-white/10 transition-colors border-white/5 bg-white/[0.03] overflow-hidden">
-                <CardContent className="p-5 flex flex-col gap-4 relative z-10 pointer-events-none">
-                  
-                  {/* Floating Product Image Area */}
-                  <motion.div 
-                    className="h-32 w-full relative flex items-center justify-center p-2 mt-2"
-                    animate={{ y: [0, -6, 0] }}
-                    transition={{ duration: 4 + (idx * 0.5), repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    {/* Fallback styling for images handled inside onError */}
-                    <img 
-                      src={device.image} 
-                      alt={device.name}
-                      className="max-h-full max-w-full object-contain relative z-10 drop-shadow-2xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/logo.jpg';
-                        (e.target as HTMLImageElement).classList.add('rounded-full', 'opacity-30', 'grayscale');
-                      }}
-                    />
-                  </motion.div>
-
-                  {/* Info Area */}
-                  <div className="flex flex-col gap-0.5 mt-2">
-                    <h3 className="font-semibold text-white leading-tight">{device.name}</h3>
-                    <p className="text-muted-foreground text-xs">{device.model || "Standard"}</p>
-                  </div>
-
-                  <div className="flex items-center">
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)] group-hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-shadow">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Connected
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5 text-[11px] mt-1 border-t border-white/5 pt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Battery</span>
-                      <div className="flex items-center gap-2">
-                         <span className="text-white font-medium">{device.battery}%</span>
-                         <div className="w-6 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                           <motion.div 
-                             initial={{ width: 0 }} 
-                             whileInView={{ width: `${device.battery}%` }} 
-                             className="h-full bg-emerald-400"
-                           />
-                         </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Last Sync</span>
-                      <span className="text-white font-medium">{device.lastSync}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2 mt-1">
-                    {device.metrics.map((metric, i) => (
-                      <div key={i} title={metric} className="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                        {getMetricIcon(metric)}
-                      </div>
-                    ))}
-                  </div>
-
-                </CardContent>
-              </Card>
+              <Image 
+                src={theme.image}
+                alt={device.modelName || 'Device'}
+                fill
+                className="object-contain group-hover:scale-105 transition-transform duration-700"
+                sizes="(max-width: 768px) 160px, 192px"
+              />
             </motion.div>
-          ))}
-        </motion.div>
-      </motion.div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-white/5 rounded-full border border-white/10">
+              <Watch className="w-12 h-12 text-slate-500" />
+            </div>
+          )}
+          
+          {/* Connection Status Badge */}
+          <div className="absolute -bottom-2 right-4 bg-slate-900/90 backdrop-blur border border-white/10 px-3 py-1 rounded-full flex items-center gap-2 shadow-lg">
+            {device.connectionStatus === 'HEALTHY' && (
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+            )}
+            {device.connectionStatus === 'SYNCING' && (
+              <Activity className="w-3 h-3 text-sky-400 animate-pulse" />
+            )}
+            <span className="text-[10px] font-medium tracking-wider uppercase text-slate-300">
+              {device.connectionStatus}
+            </span>
+          </div>
+        </div>
 
-      {/* Scroll Hint Arrow (desktop only) */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-16 h-full bg-gradient-to-l from-background to-transparent flex items-center justify-end pointer-events-none hidden md:flex">
-        <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center text-white pointer-events-auto cursor-pointer hover:bg-white/20 transition-colors mr-2 shadow-xl animate-pulse">
-           <ChevronRight className="w-5 h-5" />
+        {/* Device Information */}
+        <div className="flex-1 w-full flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-start mb-1">
+              <h3 className="text-2xl font-display font-medium text-white tracking-tight">
+                {device.brand} {device.modelName}
+              </h3>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => device.id && onRemove(device.id)}
+                  className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-full transition-colors border border-transparent hover:border-rose-500/20"
+                  title="Remove Device"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors border border-transparent hover:border-white/10">
+                  <Settings2 className="w-4 h-4 text-slate-400" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 text-sm text-slate-400 mb-6">
+              <span className="flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" /> FW: {device.firmwareVersion || 'Unknown'}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Bluetooth className="w-3.5 h-3.5 text-blue-400" /> Connected
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Battery Status */}
+            <div className="bg-black/20 rounded-2xl p-4 border border-white/5 relative overflow-hidden group/metric">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Battery</span>
+                <Battery className={`w-4 h-4 ${device.batteryLevel && device.batteryLevel > 20 ? 'text-emerald-400' : 'text-rose-400'}`} />
+              </div>
+              <div className="flex items-end gap-1">
+                <span className="text-2xl font-display text-white">{device.batteryLevel ?? '--'}</span>
+                <span className="text-sm text-slate-400 mb-1">%</span>
+              </div>
+              {/* Battery visual bar */}
+              <div className="absolute bottom-0 left-0 h-1 bg-white/5 w-full">
+                <div 
+                  className={`h-full ${device.batteryLevel && device.batteryLevel > 20 ? 'bg-emerald-500' : 'bg-rose-500'}`} 
+                  style={{ width: `${device.batteryLevel || 0}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Primary Source Badges */}
+            <div className="bg-black/20 rounded-2xl p-4 border border-white/5 flex flex-col justify-center">
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Primary For</span>
+              <div className="flex flex-wrap gap-2">
+                {device.primaryFor?.map(metric => (
+                  <span key={metric} className={`text-xs px-2 py-1 rounded-md bg-white/5 border border-white/10 ${theme.accent} flex items-center gap-1 capitalize`}>
+                    {metric === 'heart_rate' && <HeartPulse className="w-3 h-3" />}
+                    {metric === 'sleep' && <Moon className="w-3 h-3" />}
+                    {metric === 'recovery' && <Zap className="w-3 h-3" />}
+                    {metric.replace('_', ' ')}
+                  </span>
+                ))}
+                {(!device.primaryFor || device.primaryFor.length === 0) && (
+                  <span className="text-xs text-slate-500">None</span>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+            <span className="text-xs text-slate-500">
+              Last sync: {device.lastSync ? new Date(device.lastSync).toLocaleTimeString() : 'Never'}
+            </span>
+            <button className={`text-xs font-medium ${theme.accent} flex items-center gap-1 hover:underline`}>
+              View Details <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+
         </div>
       </div>
-
-      <DeviceDetailsModal 
-        device={selectedDevice} 
-        isOpen={!!selectedDevice} 
-        onClose={() => setSelectedDevice(null)} 
-      />
-    </div>
+    </motion.div>
   );
 }

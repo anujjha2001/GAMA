@@ -101,6 +101,11 @@ model UserProfile {
   primaryDevices           PrimaryDevice[]
   deviceHealths            DeviceHealth[]
   metricAggregations       MetricAggregation[]
+  aiInsights               AIInsight[]
+  syncHistories            SyncHistory[]
+  providerAccounts         ProviderAccount[]
+  deviceSettings           DeviceSettings[]
+  batteryHistories         BatteryHistory[]
 }
 
 model Settings {
@@ -1502,24 +1507,53 @@ enum PredictionMetric {
 }
 
 model DeviceConnection {
-  id               String   @id @default(uuid())
+  id               String             @id @default(uuid())
   profileId        String
   provider         String
   deviceId         String?
+  brand            String?
   modelName        String?
   batteryLevel     Int?
-  connectionStatus String   @default("DISCONNECTED") // DISCONNECTED, CONNECTING, AUTHORIZING, CONNECTED, SYNCING, HEALTHY, ERROR
+  connectionStatus String             @default("DISCONNECTED")
   firmwareVersion  String?
   lastSync         DateTime?
-  autoSync         Boolean  @default(true)
-  syncFrequencyMin Int      @default(15)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  profile          UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  autoSync         Boolean            @default(true)
+  syncFrequencyMin Int                @default(15)
+  primaryFor       String[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  profile          UserProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
   capabilities     DeviceCapability[]
   permissions      DevicePermission[]
+  batteryHistory   BatteryHistory[]
+  settings         DeviceSettings?
 
   @@unique([profileId, provider, deviceId])
+}
+
+model DeviceSettings {
+  id                 String           @id @default(uuid())
+  profileId          String
+  deviceConnectionId String           @unique
+  backgroundSync     Boolean          @default(true)
+  notifications      Boolean          @default(true)
+  metricPreferences  Json?            // e.g., which metrics to sync
+  updatedAt          DateTime         @updatedAt
+  profile            UserProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  deviceConnection   DeviceConnection @relation(fields: [deviceConnectionId], references: [id], onDelete: Cascade)
+}
+
+model BatteryHistory {
+  id                 String           @id @default(uuid())
+  profileId          String
+  deviceConnectionId String
+  batteryLevel       Int
+  isCharging         Boolean          @default(false)
+  recordedAt         DateTime         @default(now())
+  profile            UserProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  deviceConnection   DeviceConnection @relation(fields: [deviceConnectionId], references: [id], onDelete: Cascade)
+
+  @@index([deviceConnectionId, recordedAt])
 }
 
 model DeviceCapability {
@@ -1636,35 +1670,35 @@ model PrimaryDevice {
 }
 
 model DeviceHealth {
-  id               String      @id @default(uuid())
-  profileId        String
-  provider         String
-  deviceId         String?
-  batteryHealth    Int?
-  signalQuality    String?
-  connectionQuality String?
-  latencyMs        Int?
+  id                 String      @id @default(uuid())
+  profileId          String
+  provider           String
+  deviceId           String?
+  batteryHealth      Int?
+  signalQuality      String?
+  connectionQuality  String?
+  latencyMs          Int?
   lastSuccessfulSync DateTime?
-  lastError        String?
-  healthScore      Int?
-  updatedAt        DateTime    @updatedAt
-  profile          UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  lastError          String?
+  healthScore        Int?
+  updatedAt          DateTime    @updatedAt
+  profile            UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([profileId, provider, deviceId])
 }
 
 model MetricAggregation {
-  id            String      @id @default(uuid())
-  profileId     String
-  periodType    String      // DAILY, WEEKLY, MONTHLY, YEARLY
-  periodStart   DateTime
-  metricType    String
-  averageValue  Float?
-  totalValue    Float?
-  minValue      Float?
-  maxValue      Float?
-  updatedAt     DateTime    @updatedAt
-  profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  id           String      @id @default(uuid())
+  profileId    String
+  periodType   String // DAILY, WEEKLY, MONTHLY, YEARLY
+  periodStart  DateTime
+  metricType   String
+  averageValue Float?
+  totalValue   Float?
+  minValue     Float?
+  maxValue     Float?
+  updatedAt    DateTime    @updatedAt
+  profile      UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([profileId, periodType, periodStart, metricType])
 }
@@ -1676,4 +1710,46 @@ model FeatureFlag {
   users     String[] // Array of profileIds who have access if not globally enabled
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model AIInsight {
+  id          String      @id @default(uuid())
+  profileId   String
+  deviceId    String?
+  title       String
+  description String
+  severity    String
+  confidence  Float
+  evidence    String[]
+  status      String      @default("active")
+  dismissed   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model SyncHistory {
+  id             String      @id @default(uuid())
+  profileId      String
+  provider       String
+  status         String
+  duration       Int
+  recordsFetched Int         @default(0)
+  error          String?
+  startedAt      DateTime    @default(now())
+  completedAt    DateTime?
+  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model ProviderAccount {
+  id             String      @id @default(uuid())
+  profileId      String
+  provider       String
+  providerUserId String
+  status         String      @default("connected")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, provider])
 }

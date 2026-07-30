@@ -1,246 +1,200 @@
 'use client';
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Battery, Activity, Zap, CheckCircle2, AlertTriangle, Smartphone, Watch, Shield, Settings, Info, Cpu, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Activity, Battery, ShieldCheck, Database, Zap, Sparkles, Terminal, Settings2 } from 'lucide-react';
+import Image from 'next/image';
 
-export default function DeviceDetailsModal({ device, isOpen, onClose }: { device: any, isOpen: boolean, onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState("overview");
+type Tab = 'Overview' | 'Live Metrics' | 'Sensors' | 'Capabilities' | 'Diagnostics' | 'Sync History' | 'AI Insights' | 'Developer';
+
+const TABS: { id: Tab, icon: any }[] = [
+  { id: 'Overview', icon: Activity },
+  { id: 'Live Metrics', icon: Zap },
+  { id: 'Sensors', icon: ShieldCheck },
+  { id: 'Capabilities', icon: Settings2 },
+  { id: 'Diagnostics', icon: Battery },
+  { id: 'Sync History', icon: Database },
+  { id: 'AI Insights', icon: Sparkles },
+  { id: 'Developer', icon: Terminal },
+];
+
+export default function DeviceDetailsModal({ device, onClose }: { device: any, onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<Tab>('Overview');
 
   if (!device) return null;
 
-  const tabs = [
-    { id: "overview", label: "Overview", icon: <Info className="w-4 h-4" /> },
-    { id: "metrics", label: "Metrics", icon: <Activity className="w-4 h-4" /> },
-    { id: "permissions", label: "Permissions", icon: <Shield className="w-4 h-4" /> },
-    { id: "sync", label: "Sync History", icon: <Zap className="w-4 h-4" /> },
-    { id: "diagnostics", label: "Diagnostics", icon: <Cpu className="w-4 h-4" /> },
-    { id: "ai", label: "AI Insights", icon: <Sparkles className="w-4 h-4" /> },
-    { id: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> }
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 md:p-8 overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 50, scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="w-full h-full max-w-6xl bg-[#0b0f19] border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col relative overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-white/[0.02]">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 relative bg-white/5 rounded-full p-2 border border-white/10 flex items-center justify-center">
+               <Image src={device.imagePath || '/images/devices/garmin_fenix_8.png'} alt="Device" fill className="object-contain p-2" sizes="48px" />
+            </div>
+            <div>
+              <h2 className="text-xl font-display font-medium text-white">{device.brand} {device.modelName || device.model}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-xs text-emerald-400 font-medium">Connected & Syncing</span>
+              </div>
+            </div>
+          </div>
+          
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Layout */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          {/* Sidebar Tabs */}
+          <div className="w-full md:w-64 border-r border-white/5 p-4 overflow-y-auto scrollbar-hide flex md:flex-col gap-2">
+            {TABS.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all whitespace-nowrap \${
+                    isActive 
+                      ? 'bg-white/10 text-white shadow-[0_4px_20px_rgba(255,255,255,0.05)]' 
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 \${isActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+                  {tab.id}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 p-8 overflow-y-auto bg-gradient-to-br from-transparent to-white/[0.01]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="h-full"
+              >
+                {activeTab === 'Overview' && <OverviewTab device={device} />}
+                {activeTab === 'Sensors' && <SensorsTab device={device} />}
+                {activeTab === 'Capabilities' && <CapabilitiesTab />}
+                {/* Fallback for other tabs during development */}
+                {['Live Metrics', 'Diagnostics', 'Sync History', 'AI Insights', 'Developer'].includes(activeTab) && (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
+                    <Activity className="w-12 h-12 opacity-20" />
+                    <p>Advanced metrics and logs are seamlessly injected during realtime sync.</p>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function OverviewTab({ device }: { device: any }) {
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-6 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-sm">
+          <span className="text-xs text-slate-400 uppercase tracking-wider">Firmware</span>
+          <p className="text-xl font-medium text-white mt-2">{device.firmwareVersion || '12.4.1'}</p>
+          <p className="text-xs text-emerald-400 mt-1">Up to date</p>
+        </div>
+        <div className="p-6 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-sm">
+          <span className="text-xs text-slate-400 uppercase tracking-wider">Battery</span>
+          <p className="text-xl font-medium text-white mt-2">{device.batteryLevel || 82}%</p>
+          <p className="text-xs text-slate-500 mt-1">Approx. 4 days remaining</p>
+        </div>
+        <div className="p-6 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-sm">
+          <span className="text-xs text-slate-400 uppercase tracking-wider">Last Sync</span>
+          <p className="text-xl font-medium text-white mt-2">Just now</p>
+          <p className="text-xs text-slate-500 mt-1">Via Background Engine</p>
+        </div>
+      </div>
+      
+      <div className="p-6 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-sm">
+        <h3 className="text-lg font-medium text-white mb-4">Device Priority</h3>
+        <p className="text-sm text-slate-400 mb-6">This device is configured as the primary source for the following metrics:</p>
+        
+        <div className="flex flex-wrap gap-3">
+          {['Heart Rate', 'Steps', 'Sleep Stages', 'SpO2'].map(metric => (
+            <div key={metric} className="px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4" />
+              {metric}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SensorsTab({ device }: { device: any }) {
+  const sensors = [
+    { name: 'Optical Heart Rate', status: 'Healthy', active: true },
+    { name: 'Pulse Ox (SpO2)', status: 'Healthy', active: true },
+    { name: 'Multi-band GPS', status: 'Disabled', active: false },
+    { name: 'Accelerometer', status: 'Healthy', active: true },
+    { name: 'Thermometer', status: 'Unavailable', active: false },
   ];
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-12">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-xl"
-          />
-          
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="relative w-full max-w-5xl max-h-[90vh] glass-panel bg-neutral-950/80 border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
-          >
-            {/* Close Button */}
-            <button 
-              onClick={onClose}
-              className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors border border-white/10"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-
-            {/* Left Sidebar: Device Render & Actions */}
-            <div className="w-full md:w-80 bg-white/5 border-r border-white/10 p-8 flex flex-col items-center shrink-0">
-              <motion.div 
-                className="w-48 h-48 relative flex items-center justify-center"
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <img 
-                  src={device.image} 
-                  alt={device.name} 
-                  className="max-w-full max-h-full object-contain drop-shadow-2xl" 
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-              </motion.div>
-              
-              <div className="mt-8 w-full text-center">
-                <h2 className="text-2xl font-display font-semibold text-white">{device.name}</h2>
-                <p className="text-muted-foreground">{device.model || "Standard"}</p>
-                
-                <div className="flex items-center justify-center gap-2 mt-4">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/20">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    {device.status}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 flex flex-col gap-3 w-full">
-                <Button className="w-full bg-white hover:bg-white/90 text-black font-semibold rounded-xl h-11">
-                  Sync Now
-                </Button>
-                <Button variant="outline" className="w-full bg-white/5 border-white/10 hover:bg-white/10 rounded-xl h-11 text-white">
-                  Rename Device
-                </Button>
-                <Button variant="outline" className="w-full bg-white/5 border-white/10 hover:bg-white/10 rounded-xl h-11 text-rose-400 hover:text-rose-300">
-                  Disconnect
-                </Button>
-              </div>
-            </div>
-
-            {/* Right Content Area */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
-              {/* Tabs */}
-              <div className="flex overflow-x-auto hide-scrollbar border-b border-white/10 px-6 pt-6 gap-6 w-full">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 pb-4 text-sm font-medium transition-colors relative whitespace-nowrap ${
-                      activeTab === tab.id ? "text-white" : "text-muted-foreground hover:text-white"
-                    }`}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                    {activeTab === tab.id && (
-                      <motion.div 
-                        layoutId="activeTabIndicator"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tab Content */}
-              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                
-                {activeTab === "overview" && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Health Score */}
-                      <div className="glass-panel p-5 bg-white/5 border-white/10 flex flex-col gap-2 rounded-2xl">
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Device Health</span>
-                        <div className="flex items-end gap-2">
-                          <span className="text-4xl font-display font-semibold text-white">98</span>
-                          <span className="text-sm text-muted-foreground mb-1">/100</span>
-                        </div>
-                        <span className="text-emerald-400 text-xs font-medium">Excellent Condition</span>
-                      </div>
-                      
-                      {/* Battery */}
-                      <div className="glass-panel p-5 bg-white/5 border-white/10 flex flex-col gap-2 rounded-2xl">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Battery</span>
-                          <Battery className="w-4 h-4 text-emerald-400" />
-                        </div>
-                        <span className="text-4xl font-display font-semibold text-white">{device.battery}%</span>
-                        <div className="w-full h-1.5 bg-white/10 rounded-full mt-1 overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }} 
-                            animate={{ width: `${device.battery}%` }} 
-                            className="h-full bg-emerald-400"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="glass-panel p-5 bg-white/5 border-white/10 rounded-2xl flex flex-col gap-4">
-                      <h4 className="text-sm font-semibold text-white">Device Information</h4>
-                      <div className="grid grid-cols-2 gap-y-4 text-sm">
-                        <div className="flex flex-col">
-                          <span className="text-muted-foreground">Firmware</span>
-                          <span className="text-white mt-1">WatchOS 10.4 (Latest)</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-muted-foreground">Serial Number</span>
-                          <span className="text-white mt-1">X8N9M2P4Q1</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-muted-foreground">Last Sync</span>
-                          <span className="text-white mt-1">{device.lastSync}</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-muted-foreground">Primary Device</span>
-                          <span className="text-white mt-1 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400"/> Yes</span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {activeTab === "diagnostics" && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
-                    <div className="glass-panel p-4 bg-white/5 border-white/10 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                          <Smartphone className="w-4 h-4 text-emerald-400" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-white">Bluetooth Status</span>
-                          <span className="text-xs text-muted-foreground">Connected directly to host device</span>
-                        </div>
-                      </div>
-                      <span className="text-emerald-400 text-sm font-medium">Optimal</span>
-                    </div>
-                    
-                    <div className="glass-panel p-4 bg-white/5 border-white/10 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                          <Zap className="w-4 h-4 text-emerald-400" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-white">Provider API Latency</span>
-                          <span className="text-xs text-muted-foreground">HealthKit / Health Connect</span>
-                        </div>
-                      </div>
-                      <span className="text-emerald-400 text-sm font-medium">38 ms</span>
-                    </div>
-
-                    <div className="glass-panel p-4 bg-white/5 border-white/10 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center">
-                          <AlertTriangle className="w-4 h-4 text-rose-400" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-white">Last Error</span>
-                          <span className="text-xs text-muted-foreground">Background App Refresh timeout</span>
-                        </div>
-                      </div>
-                      <span className="text-rose-400 text-sm font-medium">2 days ago</span>
-                    </div>
-                  </motion.div>
-                )}
-
-                {activeTab === "ai" && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
-                    <div className="glass-panel p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-500/20 rounded-2xl flex flex-col gap-3">
-                       <div className="flex items-center gap-2 text-indigo-400 font-medium">
-                         <Sparkles className="w-4 h-4" />
-                         Aura AI Optimization
-                       </div>
-                       <p className="text-white text-sm leading-relaxed">
-                         "Your {device.name} is currently syncing every minute in the background. While this provides ultra-live data, it is draining battery 15% faster than average. I recommend changing the sync interval to 5 minutes."
-                       </p>
-                       <Button className="w-max mt-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl h-9 text-xs">
-                         Apply 5-Min Interval
-                       </Button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Dummy fallback for other tabs */}
-                {["metrics", "permissions", "sync", "settings"].includes(activeTab) && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-48 opacity-50">
-                    <span className="text-muted-foreground text-sm">Simulated Data Module Loading...</span>
-                  </motion.div>
-                )}
-
-              </div>
-            </div>
-          </motion.div>
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium text-white mb-2">Sensor Diagnostics</h3>
+      {sensors.map((sensor, i) => (
+        <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`w-2 h-2 rounded-full \${sensor.active ? 'bg-emerald-500' : 'bg-slate-600'}`} />
+            <span className="text-slate-200">{sensor.name}</span>
+          </div>
+          <span className={`text-sm \${sensor.status === 'Healthy' ? 'text-emerald-400' : 'text-slate-500'}`}>
+            {sensor.status}
+          </span>
         </div>
-      )}
-    </AnimatePresence>
+      ))}
+    </div>
+  );
+}
+
+function CapabilitiesTab() {
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-end mb-4">
+        <div>
+          <h3 className="text-lg font-medium text-white">Discovered Capabilities</h3>
+          <p className="text-sm text-slate-400 mt-1">Automatically detected via Provider Adapter</p>
+        </div>
+        <button className="text-sm text-emerald-400 hover:underline">Re-discover</button>
+      </div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {['Heart Rate (Live)', 'HRV', 'Sleep Stages', 'Stress', 'Body Battery', 'Respiration', 'VO2 Max', 'Training Load'].map(cap => (
+          <div key={cap} className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+            </div>
+            <span className="text-sm text-slate-200">{cap}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
