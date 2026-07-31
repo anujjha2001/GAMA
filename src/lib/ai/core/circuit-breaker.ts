@@ -1,34 +1,62 @@
+import { AI_CONFIG } from '../config';
+
+type State = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+
+interface CircuitState {
+  state: State;
+  failures: number;
+  lastFailureTime: number;
+}
+
 export class CircuitBreaker {
-  private static failures: Record<string, number> = {};
-  private static disabledUntil: Record<string, number> = {};
-  private static readonly MAX_FAILURES = 5;
-  private static readonly COOLDOWN_MS = 60 * 1000; // 60 seconds
+  private static circuits = new Map<string, CircuitState>();
 
-  static recordFailure(providerId: string) {
-    this.failures[providerId] = (this.failures[providerId] || 0) + 1;
-    if (this.failures[providerId] >= this.MAX_FAILURES) {
-      this.trip(providerId);
+  private static getState(id: string): CircuitState {
+    if (!this.circuits.has(id)) {
+      this.circuits.set(id, { state: 'CLOSED', failures: 0, lastFailureTime: 0 });
     }
+    return this.circuits.get(id)!;
   }
 
-  static recordSuccess(providerId: string) {
-    this.failures[providerId] = 0;
-    this.disabledUntil[providerId] = 0;
-  }
-
-  static trip(providerId: string) {
-    console.warn(`[CircuitBreaker] Provider ${providerId} has failed ${this.MAX_FAILURES} times. Tripping circuit for ${this.COOLDOWN_MS / 1000}s.`);
-    this.disabledUntil[providerId] = Date.now() + this.COOLDOWN_MS;
-  }
-
-  static isAvailable(providerId: string): boolean {
-    if (this.disabledUntil[providerId] && Date.now() < this.disabledUntil[providerId]) {
-      return false; // Circuit is open (tripped)
-    }
+  static isAvailable(id: string): boolean {
+    const circuit = this.getState(id);
     
-    // Half-open state: time has passed, allow one request through to test
-    // If it succeeds, recordSuccess will clear failures.
-    // If it fails, recordFailure will immediately trip it again.
+    if (circuit.state === 'CLOSED') {
+      return true;
+    }
+
+    if (circuit.state === 'OPEN') {
+      const now = Date.now();
+      // Auto-recover to HALF_OPEN after cooldown
+      if (now - circuit.lastFailureTime > AI_CONFIG.circuitBreaker.cooldownMs) {
+        circuit.state = 'HALF_OPEN';
+        console.log(`[CircuitBreaker] Provider ${id} transitioned to HALF_OPEN`);
+        return true;
+      }
+      return false;
+    }
+
+    // HALF_OPEN allows 1 request to pass through
     return true; 
+  }
+
+  static recordSuccess(id: string) {
+    const circuit = this.getState(id);
+    if (circuit.state === 'HALF_OPEN' || circuit.failures > 0) {
+      circuit.state = 'CLOSED';
+      circuit.failures = 0;
+      console.log(`[CircuitBreaker] Provider ${id} recovered, transitioned to CLOSED`);
+    }
+  }
+
+  static recordFailure(id: string) {
+    const circuit = this.getState(id);
+    circuit.failures += 1;
+    circuit.lastFailureTime = Date.now();
+
+    if (circuit.state === 'HALF_OPEN' || circuit.failures >= AI_CONFIG.circuitBreaker.failureThreshold) {
+      circuit.state = 'OPEN';
+      console.warn(`[CircuitBreaker] Provider ${id} tripped OPEN after ${circuit.failures} failures`);
+    }
   }
 }

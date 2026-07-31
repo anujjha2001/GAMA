@@ -1,67 +1,70 @@
 import { prisma } from '@/lib/prisma';
 
-export interface TraceContext {
-  traceId: string;
-  correlationId: string;
-  conversationId?: string;
-  userId?: string;
-}
-
 export class Tracing {
-  static createTraceContext(userId?: string, conversationId?: string): TraceContext {
+  /**
+   * Generates a context object with Trace ID and Correlation ID
+   */
+  static createTraceContext(userId: string, conversationId?: string) {
     return {
       traceId: crypto.randomUUID(),
       correlationId: crypto.randomUUID(),
-      conversationId,
-      userId
+      userId,
+      conversationId
     };
   }
 
+  /**
+   * Logs observability metrics as Structured JSON (for Grafana/Datadog)
+   * and optionally persists critical metrics to the Database.
+   */
   static async logMetrics(params: {
-    ctx: TraceContext;
+    ctx: any;
     providerId: string;
     requestType: string;
     latencyMs: number;
     promptTokens: number;
     completionTokens: number;
-    cost?: number;
     success: boolean;
     failureReason?: string;
   }) {
-    // 1. Structured log for Datadog / Logstash
-    console.log(JSON.stringify({
-      event: 'aura_request',
-      ...params.ctx,
+    
+    const logPayload = {
+      timestamp: new Date().toISOString(),
+      traceId: params.ctx.traceId,
+      correlationId: params.ctx.correlationId,
+      userId: params.ctx.userId,
+      conversationId: params.ctx.conversationId,
       providerId: params.providerId,
       requestType: params.requestType,
       latencyMs: params.latencyMs,
       promptTokens: params.promptTokens,
       completionTokens: params.completionTokens,
-      cost: params.cost,
       success: params.success,
       failureReason: params.failureReason
-    }));
+    };
 
-    // 2. Persist in Database (fire and forget)
-    if (params.ctx.userId) {
-      prisma.observabilityLog.create({
+    // Output strictly as JSON for external log aggregators (no console.log string interpolation)
+    console.log(JSON.stringify(logPayload));
+
+    // Persist to DB for the internal Admin Console / Live Dashboard
+    try {
+      await prisma.aIAuditLog.create({
         data: {
           profileId: params.ctx.userId,
-          traceId: params.ctx.traceId,
-          correlationId: params.ctx.correlationId,
-          conversationId: params.ctx.conversationId,
-          providerId: params.providerId,
-          requestType: params.requestType,
+          action: params.requestType,
+          prompt: `[${params.providerId}] Trace: ${params.ctx.traceId}`,
+          model: params.providerId,
+          response: params.success ? 'SUCCESS' : `FAILURE: ${params.failureReason}`,
           latencyMs: params.latencyMs,
-          promptTokens: params.promptTokens,
-          completionTokens: params.completionTokens,
-          cost: params.cost,
-          success: params.success,
-          failureReason: params.failureReason
+          tokensUsed: params.promptTokens + params.completionTokens
         }
-      }).catch((err: any) => {
-        console.error('[Tracing] Failed to persist ObservabilityLog:', err);
       });
+    } catch (e: any) {
+      // Never fail the main request due to observability failure
+      console.error(JSON.stringify({
+        event: 'observability_persist_error',
+        error: e.message
+      }));
     }
   }
 }

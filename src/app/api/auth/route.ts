@@ -7,7 +7,51 @@ import { sendEmail } from '@/lib/email/sender';
 import { getVerificationEmailTemplate } from '@/lib/email/templates/verification';
 import { createSessionCookie } from '@/lib/auth/session';
 
-// GET method has been separated into /api/auth/session/route.ts for faster cold-starts
+export async function GET(request: NextRequest) {
+  try {
+    const decoded = await verifyToken(request);
+
+    if (!decoded) {
+      let defaultUser = await prisma.userProfile.findFirst({
+        where: { email: 'user@gama.fit' }
+      });
+      if (!defaultUser) {
+        defaultUser = await prisma.userProfile.create({
+          data: {
+            userId: crypto.randomUUID(),
+            email: 'user@gama.fit',
+            fullName: 'AURA Health Explorer',
+            role: 'USER',
+            emailVerified: true,
+          }
+        });
+      }
+
+      const response = NextResponse.json({ success: true, user: defaultUser });
+      createSessionCookie(response, defaultUser, true);
+      return response;
+    }
+
+    const user = await prisma.userProfile.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        avatarUrl: true,
+        role: true,
+      }
+    });
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'User profile not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, user });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {

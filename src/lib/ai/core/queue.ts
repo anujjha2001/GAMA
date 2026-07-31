@@ -1,43 +1,71 @@
-export interface IQueueProvider {
-  enqueue<T>(queueName: string, task: () => Promise<T>): Promise<T>;
+export type Priority = 'EMERGENCY' | 'PREMIUM' | 'NORMAL' | 'BACKGROUND';
+
+interface QueueTask<T> {
+  id: string;
+  priority: Priority;
+  execute: () => Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: any) => void;
 }
 
-export class MemoryQueueProvider implements IQueueProvider {
-  private queues: Record<string, {
-    tasks: { id: string, fn: () => Promise<any>, resolve: (val: any) => void, reject: (err: any) => void }[];
-    isProcessing: boolean;
-  }> = {};
+export class GlobalQueue {
+  private static queues: Record<Priority, QueueTask<any>[]> = {
+    'EMERGENCY': [],
+    'PREMIUM': [],
+    'NORMAL': [],
+    'BACKGROUND': []
+  };
+  
+  private static activeCount = 0;
+  private static MAX_CONCURRENT = 100; // Configurable based on scaling
 
-  async enqueue<T>(queueName: string, task: () => Promise<T>): Promise<T> {
-    if (!this.queues[queueName]) {
-      this.queues[queueName] = { tasks: [], isProcessing: false };
-    }
-
-    return new Promise<T>((resolve, reject) => {
-      this.queues[queueName].tasks.push({ id: Math.random().toString(), fn: task, resolve, reject });
-      this.processQueue(queueName);
+  /**
+   * Enqueues a task based on priority. 
+   * In a true distributed system (Redis/BullMQ), this would push to a Redis list.
+   */
+  static enqueue<T>(priority: Priority, execute: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const task: QueueTask<T> = {
+        id: crypto.randomUUID(),
+        priority,
+        execute,
+        resolve,
+        reject
+      };
+      
+      this.queues[priority].push(task);
+      this.processNext();
     });
   }
 
-  private async processQueue(queueName: string) {
-    const q = this.queues[queueName];
-    if (q.isProcessing || q.tasks.length === 0) return;
-
-    q.isProcessing = true;
-    while (q.tasks.length > 0) {
-      const taskObj = q.tasks.shift();
-      if (!taskObj) continue;
-
-      try {
-        const result = await taskObj.fn();
-        taskObj.resolve(result);
-      } catch (err) {
-        taskObj.reject(err);
-      }
+  private static processNext() {
+    if (this.activeCount >= this.MAX_CONCURRENT) {
+      return; // Max capacity reached, back-pressure applied
     }
-    q.isProcessing = false;
+
+    // Pull from highest priority first
+    let taskToRun: QueueTask<any> | undefined;
+    
+    if (this.queues['EMERGENCY'].length > 0) {
+      taskToRun = this.queues['EMERGENCY'].shift();
+    } else if (this.queues['PREMIUM'].length > 0) {
+      taskToRun = this.queues['PREMIUM'].shift();
+    } else if (this.queues['NORMAL'].length > 0) {
+      taskToRun = this.queues['NORMAL'].shift();
+    } else if (this.queues['BACKGROUND'].length > 0) {
+      taskToRun = this.queues['BACKGROUND'].shift();
+    }
+
+    if (!taskToRun) return;
+
+    this.activeCount++;
+    
+    taskToRun.execute()
+      .then(taskToRun.resolve)
+      .catch(taskToRun.reject)
+      .finally(() => {
+        this.activeCount--;
+        this.processNext();
+      });
   }
 }
-
-// In production, you would conditionally export RedisQueueProvider here
-export const globalQueue = new MemoryQueueProvider();

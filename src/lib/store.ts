@@ -77,6 +77,23 @@ interface HealthState {
     deepWorkMin?: number;
   };
 
+  // Background Customization
+  dashboardBackgroundType: string;
+  dashboardBackgroundUrl: string;
+  dashboardBackgroundOverlay: {
+    blur: number;
+    brightness: number;
+    opacity: number;
+    darkOverlay: number;
+    contrast: number;
+    saturation: number;
+  };
+  dashboardPlaybackOptions: {
+    autoplay: boolean;
+    loop: boolean;
+    muted: boolean;
+  };
+
   // Actions
   setSteps: (steps: number | ((prev: number) => number)) => void;
   setSleepHours: (hours: number | ((prev: number) => number)) => void;
@@ -95,6 +112,10 @@ interface HealthState {
   updateDocStatus: (id: string, status: VaultDoc['status'], goals?: string[], plan?: VaultDoc['actionPlan']) => void;
   
   addStory: (story: Omit<HealthStory, 'id' | 'timestamp'>) => void;
+  
+  setDashboardBackground: (type: string, url: string) => void;
+  setDashboardOverlay: (overlay: Partial<HealthState['dashboardBackgroundOverlay']>) => void;
+  setDashboardPlayback: (options: Partial<HealthState['dashboardPlaybackOptions']>) => void;
 }
 
 // Helper to compute wellness score
@@ -112,6 +133,23 @@ export const useHealthStore = create<HealthState>((set, get) => ({
   hrv: 80,
   stressLevel: 2.7,
   heartRate: 63,
+  
+  // Dashboard Background Defaults
+  dashboardBackgroundType: 'preset',
+  dashboardBackgroundUrl: '/dashboard.mp4.gif',
+  dashboardBackgroundOverlay: {
+    blur: 0,
+    brightness: 110,
+    opacity: 100,
+    darkOverlay: 20,
+    contrast: 110,
+    saturation: 125,
+  },
+  dashboardPlaybackOptions: {
+    autoplay: true,
+    loop: true,
+    muted: true,
+  },
   
   memoryTags: [
     { id: 'm1', category: 'preference', value: 'Prefers plant-based proteins', timestamp: '2026-07-10' },
@@ -241,5 +279,18 @@ export const useHealthStore = create<HealthState>((set, get) => ({
       },
       ...state.stories
     ]
+  })),
+
+  setDashboardBackground: (type, url) => set(() => ({
+    dashboardBackgroundType: type,
+    dashboardBackgroundUrl: url
+  })),
+
+  setDashboardOverlay: (overlay) => set((state) => ({
+    dashboardBackgroundOverlay: { ...state.dashboardBackgroundOverlay, ...overlay }
+  })),
+
+  setDashboardPlayback: (options) => set((state) => ({
+    dashboardPlaybackOptions: { ...state.dashboardPlaybackOptions, ...options }
   }))
 }));

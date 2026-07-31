@@ -47,6 +47,25 @@ export function useAura() {
       });
 
       if (!response.ok) {
+        if (response.status === 429) {
+          try {
+            const data = await response.json();
+            if (data.fallbackMessage) {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now().toString() + 'rate-limit',
+                  role: 'assistant',
+                  content: data.fallbackMessage
+                }
+              ]);
+              setIsLoading(false);
+              return;
+            }
+          } catch (e) {
+            // fallback to throw if json parse fails
+          }
+        }
         throw new Error(`Server error ${response.status}`);
       }
 

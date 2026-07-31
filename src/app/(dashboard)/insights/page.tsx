@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import useSWR from 'swr';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Activity, Thermometer, Wind, CheckCircle2, AlertTriangle, Cpu, Droplets, Zap } from 'lucide-react';
 import { simulateAnomaly, resolveAnomaly } from './actions';
@@ -41,12 +41,59 @@ export default function InsightsHUD() {
     setIsResolving(false);
   };
 
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
+  const scrollYProgress = useTransform(scrollY, [0, 800], [0, 1]);
+  const yHero = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const opacityHero = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants: any = {
+    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      transition: { type: "spring" as const, stiffness: 300, damping: 30, mass: 1 }
+    }
+  };
+
   if (error) return <div className="p-10 text-rose-500 font-mono">SYSTEM ERROR: FAILED TO CONNECT TO DATABASE.</div>;
 
   return (
-    <div className={`min-h-screen bg-[#0a0a0a] text-white p-4 lg:p-8 flex flex-col ${inter.className}`}>
+    <div ref={containerRef} className={`flex flex-col gap-12 pb-32 w-full relative min-h-screen font-sans text-[#eae3dc] ${inter.className}`}>
+      {/* Premium Immersive Background */}
+      <div className="fixed inset-0 pointer-events-none -z-20 overflow-hidden bg-[#070709]">
+        <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none z-0" />
+        <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none z-0" />
+        <div
+          className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
+          style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-transparent to-transparent" />
+      </div>
 
-      {/* 1. Global Header (Slim Top Bar) */}
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="w-full flex flex-col gap-12 z-10">
+        <motion.div style={{ y: yHero, opacity: opacityHero }} className="relative pt-16 pb-8 flex flex-col items-center text-center max-w-3xl mx-auto">
+          <div className="px-3 py-1 text-[10px] font-black tracking-widest bg-white/5 text-neutral-400 border border-white/10 uppercase rounded-full mb-4">
+            System Monitoring
+          </div>
+          <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white mb-4 leading-none">
+            Deep Insights
+          </h1>
+          <p className="text-sm text-neutral-400 max-w-xl">
+            Live AI explainability, predictive analysis, and system diagnostics.
+          </p>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="w-full relative px-4 lg:px-8 flex flex-col gap-6">
       <header className="w-full h-12 bg-black/60 backdrop-blur-[12px] border border-white/10 rounded-2xl flex items-center justify-between px-6 mb-6 shadow-[inset_0_0_20px_rgba(255,255,255,0.02)] relative overflow-hidden">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -326,6 +373,8 @@ export default function InsightsHUD() {
           border-radius: 4px;
         }
       `}} />
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

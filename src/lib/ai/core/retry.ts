@@ -1,45 +1,41 @@
-export class RetryService {
-  static async withExponentialBackoff<T>(
+export class RetryEngine {
+  /**
+   * Executes a block with exponential backoff and jitter.
+   * Only retries on specific retryable errors.
+   */
+  static async execute<T>(
     operation: () => Promise<T>,
     maxRetries: number = 3,
-    baseDelayMs: number = 1000
+    baseDelayMs: number = 500
   ): Promise<T> {
     let attempt = 0;
     
-    while (attempt < maxRetries) {
+    while (true) {
       try {
         return await operation();
       } catch (error: any) {
         attempt++;
         
-        const isRetryable = this.isRetryableError(error);
-        if (!isRetryable || attempt >= maxRetries) {
+        const msg = error.message?.toLowerCase() || '';
+        const isRetryable = 
+          msg.includes('timeout') || 
+          msg.includes('429') || 
+          msg.includes('502') || 
+          msg.includes('503') || 
+          msg.includes('504') ||
+          msg.includes('network');
+
+        if (!isRetryable || attempt > maxRetries) {
           throw error;
         }
 
-        // Exponential backoff with jitter
-        const jitter = Math.random() * 200;
-        const delay = (baseDelayMs * Math.pow(2, attempt - 1)) + jitter;
+        // Exponential backoff with Full Jitter
+        // https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+        const delay = Math.random() * (baseDelayMs * Math.pow(2, attempt - 1));
+        console.warn(`[RetryEngine] Attempt ${attempt} failed. Retrying in ${Math.round(delay)}ms...`);
         
-        console.log(`[RetryService] Attempt ${attempt} failed. Retrying in ${Math.round(delay)}ms...`);
-        await new Promise(res => setTimeout(res, delay));
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    throw new Error("Max retries exceeded");
-  }
-
-  private static isRetryableError(error: any): boolean {
-    const msg = error?.message?.toLowerCase() || "";
-    // 429 Too Many Requests, 500 Internal, 502 Bad Gateway, 503 Unavailable, 504 Gateway Timeout, fetch failed
-    return (
-      msg.includes("429") || 
-      msg.includes("500") || 
-      msg.includes("502") || 
-      msg.includes("503") || 
-      msg.includes("504") || 
-      msg.includes("timeout") ||
-      msg.includes("fetch failed") ||
-      msg.includes("econnreset")
-    );
   }
 }

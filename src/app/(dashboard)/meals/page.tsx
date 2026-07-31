@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import useSWR from 'swr';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import {
   ChefHat, Apple, Utensils, Flame, Droplets, Camera, Plus, Search,
@@ -418,6 +418,30 @@ export default function MealGuidePage() {
     }
   };
 
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
+  const scrollYProgress = useTransform(scrollY, [0, 800], [0, 1]);
+  const yHero = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const opacityHero = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants: any = {
+    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      transition: { type: "spring" as const, stiffness: 300, damping: 30, mass: 1 }
+    }
+  };
+
   if (error) return <div className="p-10 text-rose-500 font-mono">SYSTEM ERROR: FAILED TO CONNECT TO MEALS API.</div>;
   if (!data) return (
     <div className="flex flex-col items-center justify-center min-h-[500px] gap-4">
@@ -442,63 +466,32 @@ export default function MealGuidePage() {
   };
 
   return (
-    <div className={`min-h-screen bg-[#0a0a0a] text-white p-4 lg:p-8 flex flex-col w-full ${inter.className}`}>
-
-      {/* 3D Animated Landing Hero (Premium Parallax + Particle Effect simulated via styling) */}
-      <div className="relative w-full h-[220px] rounded-[32px] overflow-hidden border border-white/10 mb-8 bg-gradient-to-br from-neutral-900/90 via-black to-[#13110d] flex items-center justify-between px-8 md:px-12 shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
-        {/* Glow Spheres */}
-        <div className="absolute top-10 left-1/4 w-32 h-32 rounded-full bg-white/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-5 right-1/3 w-40 h-40 rounded-full bg-emerald-500/10 blur-3xl animate-pulse" />
-
-        <div className="relative z-10 max-w-xl">
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="flex items-center gap-3 mb-2"
-          >
-            <span className="px-3 py-1 text-[10px] font-black tracking-widest bg-white/10 text-neutral-300 border border-white/10 uppercase rounded-full">
-              Live AI Nutrition OS
-            </span>
-
-
-          </motion.div>
-          <motion.h1
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-2xl md:text-whitexl font-black text-white tracking-tight leading-none"
-          >
-            Your Personal AI Nutrition Companion
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-xs text-neutral-400 mt-2.5 leading-relaxed"
-          >
-            AURA continuously analyzes your meals, nutrition, goals, and health profile to create personalized meal recommendations that evolve with your lifestyle.
-          </motion.p>
-        </div>
-
-        {/* Floating animated 3D Plate Mockup */}
-        <div className="hidden lg:flex items-center justify-center relative w-48 h-48 select-none">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 30, ease: 'linear' }}
-            className="w-40 h-40 rounded-full border border-white/5 bg-gradient-to-tr from-white/5 to-white/10 backdrop-blur-md shadow-2xl flex items-center justify-center"
-          >
-            <div className="absolute inset-0 rounded-full border border-white/10 flex items-center justify-center overflow-hidden">
-              <img src="/logo.jpg?v=2" alt="GAMA" className="w-full h-full object-cover opacity-80 animate-black" />
-            </div>
-            {/* Orbiting particles representing macronutrients */}
-            <div className="absolute top-1 left-1 w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-bounce" />
-            <div className="absolute bottom-4 right-1 w-4 h-4 rounded-full bg-white text-black font-semibold shadow-[0_0_10px_#00f0ff]" />
-            <div className="absolute top-1/2 right-2 w-3.5 h-3.5 rounded-full bg-sky-500 shadow-[0_0_10px_#0ea5e9]" />
-          </motion.div>
-        </div>
+    <div ref={containerRef} className={`flex flex-col gap-12 pb-32 w-full relative min-h-screen font-sans text-[#eae3dc] ${inter.className}`}>
+      {/* Premium Immersive Background */}
+      <div className="fixed inset-0 pointer-events-none -z-20 overflow-hidden bg-[#070709]">
+        <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] rounded-full bg-amber-500/5 blur-[120px] pointer-events-none z-0" />
+        <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none z-0" />
+        <div
+          className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
+          style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-transparent to-transparent" />
       </div>
 
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="w-full flex flex-col gap-12 z-10">
+        <motion.div style={{ y: yHero, opacity: opacityHero }} className="relative pt-16 pb-8 flex flex-col items-center text-center max-w-3xl mx-auto">
+          <div className="px-3 py-1 text-[10px] font-black tracking-widest bg-white/5 text-neutral-400 border border-white/10 uppercase rounded-full mb-4">
+            Live AI Nutrition OS
+          </div>
+          <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white mb-4 leading-none">
+            Your Personal AI Nutrition Companion
+          </h1>
+          <p className="text-sm text-neutral-400 max-w-xl">
+            AURA continuously analyzes your meals, nutrition, goals, and health profile to create personalized meal recommendations that evolve with your lifestyle.
+          </p>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="w-full relative px-4 lg:px-8 flex flex-col gap-6">
       {/* Welcome Section Metrics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <div className="bg-card/60 backdrop-blur-2xl border border-border p-4 rounded-2xl flex flex-col justify-between">
@@ -935,6 +928,127 @@ export default function MealGuidePage() {
                                                   <span className="font-bold text-emerald-400">{mealScanResult.healthierAlternative}</span>
                                                 </div>
                                                 <button onClick={() => toast.success(`Added ${mealScanResult.healthierAlternative} to grocery list`)} className="bg-emerald-500 text-black px-2 py-1 rounded text-[8px] font-black uppercase">Swap</button>
+                                              </div>
+                                            )}
+
+                                            {/* Stage 6 - Food Origin */}
+                                            {mealScanResult.origin && (
+                                              <div className="border-t border-[#2c1e15] pt-3 mt-3 space-y-1.5 text-[9px]">
+                                                <span className="text-amber-400 font-extrabold block">🌍 Food Origin & History</span>
+                                                <div className="flex gap-2">
+                                                  <span className="text-neutral-500 font-bold">Origin:</span>
+                                                  <span className="text-neutral-300 font-extrabold">{mealScanResult.origin.city}, {mealScanResult.origin.country} ({mealScanResult.origin.region})</span>
+                                                </div>
+                                                <p className="text-neutral-400 leading-relaxed"><span className="text-neutral-500 font-bold">History:</span> {mealScanResult.origin.history}</p>
+                                                {mealScanResult.origin.facts && mealScanResult.origin.facts.length > 0 && (
+                                                  <div className="mt-1">
+                                                    <span className="text-neutral-500 font-extrabold block">Fun Facts:</span>
+                                                    <ul className="list-disc pl-3.5 text-neutral-400 space-y-0.5 mt-0.5">
+                                                      {mealScanResult.origin.facts.map((fact: string, idx: number) => (
+                                                        <li key={idx}>{fact}</li>
+                                                      ))}
+                                                    </ul>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            )}
+
+                                            {/* Stage 7 - Health Benefits Scores */}
+                                            {mealScanResult.scores && (
+                                              <div className="border-t border-[#2c1e15] pt-3 mt-3 space-y-2 text-[9px]">
+                                                <span className="text-emerald-400 font-extrabold block">📊 AURA Health Impact Scores</span>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                  <div className="bg-black/20 p-1.5 rounded-lg flex justify-between">
+                                                    <span className="text-neutral-500">Muscle Gain:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.scores.muscleGain}/100</span>
+                                                  </div>
+                                                  <div className="bg-black/20 p-1.5 rounded-lg flex justify-between">
+                                                    <span className="text-neutral-500">Weight Loss:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.scores.weightLoss}/100</span>
+                                                  </div>
+                                                  <div className="bg-black/20 p-1.5 rounded-lg flex justify-between">
+                                                    <span className="text-neutral-500">Heart Health:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.scores.heartHealth}/100</span>
+                                                  </div>
+                                                  <div className="bg-black/20 p-1.5 rounded-lg flex justify-between">
+                                                    <span className="text-neutral-500">Diabetes Friendly:</span>
+                                                    <span className={`font-bold ${mealScanResult.scores.diabetesFriendly === 'Yes' ? 'text-emerald-400' : 'text-rose-400'}`}>{mealScanResult.scores.diabetesFriendly}</span>
+                                                  </div>
+                                                  <div className="bg-black/20 p-1.5 rounded-lg flex justify-between">
+                                                    <span className="text-neutral-500">Gut Health:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.scores.gutHealth}/100</span>
+                                                  </div>
+                                                  <div className="bg-black/20 p-1.5 rounded-lg flex justify-between">
+                                                    <span className="text-neutral-500">Energy Level:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.scores.energy}/100</span>
+                                                  </div>
+                                                  <div className="bg-black/20 p-1.5 rounded-lg flex justify-between">
+                                                    <span className="text-neutral-500">Recovery:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.scores.recovery}/100</span>
+                                                  </div>
+                                                  <div className="bg-black/20 p-1.5 rounded-lg flex justify-between">
+                                                    <span className="text-neutral-500">Satiety:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.scores.satiety}/100</span>
+                                                  </div>
+                                                  <div className="bg-black/20 p-1.5 rounded-lg flex justify-between">
+                                                    <span className="text-neutral-500">Hydration:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.scores.hydration}/100</span>
+                                                  </div>
+                                                  <div className="bg-black/20 p-1.5 rounded-lg flex justify-between">
+                                                    <span className="text-neutral-500">Inflammation:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.scores.inflammation}/100</span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* Stage 9 - Alternatives Options */}
+                                            {mealScanResult.alternativesList && (
+                                              <div className="border-t border-[#2c1e15] pt-3 mt-3 space-y-1.5 text-[9px]">
+                                                <span className="text-emerald-400 font-extrabold block">🥗 Personalized Alternatives</span>
+                                                <div className="space-y-1 bg-black/25 p-2 rounded-xl">
+                                                  <div className="flex justify-between items-center py-0.5">
+                                                    <span className="text-neutral-500">Higher Protein:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.alternativesList.highProtein}</span>
+                                                  </div>
+                                                  <div className="flex justify-between items-center py-0.5">
+                                                    <span className="text-neutral-500">Lower Calorie:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.alternativesList.lowCalorie}</span>
+                                                  </div>
+                                                  <div className="flex justify-between items-center py-0.5">
+                                                    <span className="text-neutral-500">Vegan Option:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.alternativesList.vegan}</span>
+                                                  </div>
+                                                  <div className="flex justify-between items-center py-0.5">
+                                                    <span className="text-neutral-500">Budget Option:</span>
+                                                    <span className="font-bold text-white">{mealScanResult.alternativesList.budget}</span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* AI Confidence Metric Grid */}
+                                            {mealScanResult.confidenceMetrics && (
+                                              <div className="border-t border-[#2c1e15] pt-3 mt-3 space-y-1.5 text-[9px]">
+                                                <span className="text-neutral-400 font-extrabold block uppercase tracking-widest text-[8px]">AI Confidence Metrics</span>
+                                                <div className="grid grid-cols-2 gap-1.5 text-neutral-400">
+                                                  <div className="flex justify-between bg-black/15 px-2 py-1 rounded">
+                                                    <span>Food Detection:</span>
+                                                    <span className="font-bold text-emerald-400">{mealScanResult.confidenceMetrics.foodDetection}%</span>
+                                                  </div>
+                                                  <div className="flex justify-between bg-black/15 px-2 py-1 rounded">
+                                                    <span>Recognition:</span>
+                                                    <span className="font-bold text-emerald-400">{mealScanResult.confidenceMetrics.recognitionConfidence}%</span>
+                                                  </div>
+                                                  <div className="flex justify-between bg-black/15 px-2 py-1 rounded">
+                                                    <span>Database Match:</span>
+                                                    <span className="font-bold text-emerald-400">{mealScanResult.confidenceMetrics.databaseMatch}%</span>
+                                                  </div>
+                                                  <div className="flex justify-between bg-black/15 px-2 py-1 rounded">
+                                                    <span>Nutrition:</span>
+                                                    <span className="font-bold text-emerald-400">{mealScanResult.confidenceMetrics.nutritionConfidence}%</span>
+                                                  </div>
+                                                </div>
                                               </div>
                                             )}
                                           </div>
@@ -1626,9 +1740,9 @@ export default function MealGuidePage() {
           </div>
 
         </div>
-
-      </div>
-
+        </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

@@ -119,13 +119,17 @@ model UserProfile {
 model Settings {
   id               String      @id @default(uuid())
   profileId        String      @unique
-  theme            String      @default("dark")
-  notifications    Boolean     @default(true)
-  language         String      @default("en")
-  privacyShareData Boolean     @default(false)
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-  profile          UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  theme                      String      @default("dark")
+  notifications              Boolean     @default(true)
+  language                   String      @default("en")
+  privacyShareData           Boolean     @default(false)
+  dashboardBackgroundType    String?     @default("preset")
+  dashboardBackgroundUrl     String?     @default("/dashboard.mp4.gif")
+  dashboardBackgroundOverlay Json?
+  dashboardPlaybackOptions   Json?
+  createdAt                  DateTime    @default(now())
+  updatedAt                  DateTime    @updatedAt
+  profile                    UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model UserPreference {

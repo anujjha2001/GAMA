@@ -3,7 +3,7 @@
 'use client';
 
 import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import {
    Play, Pause, RotateCcw, Video, VideoOff, Volume2, VolumeX,
    Sparkles, Award, RefreshCw, FileText, ChevronRight, AlertCircle, Dumbbell
@@ -333,12 +333,57 @@ export default function WorkoutStudioPage() {
       toast.success('Workout session counters reset.');
    };
 
-   return (
-      <div className="min-h-screen bg-[#070709] text-white p-6 md:p-10 flex flex-col gap-6 relative overflow-hidden font-sans">
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
+  const scrollYProgress = useTransform(scrollY, [0, 800], [0, 1]);
+  const yHero = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const opacityHero = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-         {/* Volumetric background lights matching the GAMA theme */}
-         <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none z-0" />
-         <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none z-0" />
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants: any = {
+    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      transition: { type: "spring" as const, stiffness: 300, damping: 30, mass: 1 }
+    }
+  };
+
+   return (
+    <div ref={containerRef} className="flex flex-col gap-12 pb-32 w-full relative min-h-screen font-sans text-[#eae3dc]">
+      {/* Premium Immersive Background */}
+      <div className="fixed inset-0 pointer-events-none -z-20 overflow-hidden bg-[#070709]">
+        <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none z-0" />
+        <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none z-0" />
+        <div
+          className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
+          style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-transparent to-transparent" />
+      </div>
+
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="w-full flex flex-col gap-12 z-10">
+        <motion.div style={{ y: yHero, opacity: opacityHero }} className="relative pt-16 pb-8 flex flex-col items-center text-center max-w-3xl mx-auto">
+          <div className="px-3 py-1 text-[10px] font-black tracking-widest bg-white/5 text-neutral-400 border border-white/10 uppercase rounded-full mb-4">
+            Workout Studio
+          </div>
+          <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white mb-4 leading-none">
+            Live Rep Counter & Form AI
+          </h1>
+          <p className="text-sm text-neutral-400 max-w-xl">
+            Real-time biometric tracking, smart coaching, and safety evaluation.
+          </p>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="w-full relative px-4 lg:px-8 flex flex-col gap-6">
 
          {/* DYNAMIC ISLAND (TOP HUD BAR) */}
          <div className="w-full flex justify-center z-10">
@@ -648,6 +693,8 @@ export default function WorkoutStudioPage() {
 
          {/* Health OS Panels Layer */ }
    <HealthOSPanels />
-      </div >
+        </motion.div>
+      </motion.div>
+    </div>
    );
 }
