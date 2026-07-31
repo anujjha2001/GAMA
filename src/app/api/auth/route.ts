@@ -7,34 +7,7 @@ import { sendEmail } from '@/lib/email/sender';
 import { getVerificationEmailTemplate } from '@/lib/email/templates/verification';
 import { createSessionCookie } from '@/lib/auth/session';
 
-export async function GET(request: NextRequest) {
-  try {
-    const decoded = await verifyToken(request);
-    if (!decoded) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const user = await prisma.userProfile.findUnique({
-      where: { id: decoded.id },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        avatarUrl: true,
-        role: true,
-        emailVerified: true,
-      },
-    });
-
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'User profile not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true, user });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
-  }
-}
+// GET method has been separated into /api/auth/session/route.ts for faster cold-starts
 
 export async function POST(request: NextRequest) {
   try {

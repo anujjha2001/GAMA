@@ -46,7 +46,10 @@ export default function HomePage() {
 
   React.useEffect(() => {
     fetch('/api/auth')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
       .then(data => {
         if (data.success && data.user) {
           setUserRole(data.user.role || 'USER');
@@ -183,6 +186,9 @@ export default function HomePage() {
     // Ensure the user has an active session (calling GET /api/auth initiates a default user session if none exists)
     try {
       const authRes = await fetch('/api/auth');
+      if (!authRes.ok) {
+        throw new Error(`HTTP error! status: ${authRes.status}`);
+      }
       const authData = await authRes.json();
       if (!authData.success) {
         toast.error('Authentication failed. Please try again.');

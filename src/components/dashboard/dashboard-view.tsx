@@ -382,7 +382,7 @@ export function DashboardView() {
           <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-6 relative z-10">
             {/* AURA Interactive Input Bar */}
             <div className="flex-1 flex flex-col items-start max-w-2xl text-left">
-              <span className="text-[10px] font-black tracking-widest uppercase text-white mb-1">Health Operating System</span>
+              <span className="text-[10px] font-black tracking-widest uppercase text-white mb-1"></span>
               <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
                 AURA
 

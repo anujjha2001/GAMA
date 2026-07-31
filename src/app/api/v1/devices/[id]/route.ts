@@ -3,11 +3,11 @@ import { prisma } from '@/lib/prisma';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const profileId = "default-user-profile-id"; // TODO: real auth
-    const id = params.id;
     const body = await request.json();
 
     // Verify ownership
@@ -26,18 +26,18 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.error(`[PATCH /api/v1/devices/${params.id}] Error:`, error);
+    console.error(`[PATCH /api/v1/devices/[id]] Error:`, error);
     return NextResponse.json({ success: false, error: 'Failed to update device' }, { status: 500 });
   }
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const profileId = "default-user-profile-id"; // TODO: real auth
-    const id = params.id;
 
     // Verify ownership
     const existing = await prisma.deviceConnection.findUnique({
@@ -54,7 +54,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(`[DELETE /api/v1/devices/${params.id}] Error:`, error);
+    console.error(`[DELETE /api/v1/devices/[id]] Error:`, error);
     return NextResponse.json({ success: false, error: 'Failed to delete device' }, { status: 500 });
   }
 }
