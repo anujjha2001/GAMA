@@ -7,6 +7,14 @@ import { AI_CONFIG } from '../config';
 
 export class ProviderRouter {
   static async route(request: AIRequest, queryContext: 'medical' | 'summarization' | 'vision' | 'general' = 'general'): Promise<Response> {
+    // Dynamically initialize providers to support paths (like voice API) that bypass the main gateway
+    try {
+      const { AIGateway } = await import('./gateway');
+      await AIGateway.initProviders();
+    } catch (e) {
+      console.error('[ProviderRouter] Dynamic provider initialization failed:', e);
+    }
+
     const providers = ProviderRegistry.getHealthyProviders(queryContext);
     
     if (providers.length === 0) {

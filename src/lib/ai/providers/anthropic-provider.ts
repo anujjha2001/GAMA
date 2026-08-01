@@ -28,8 +28,13 @@ export class AnthropicProvider implements IProvider {
       return true;
     });
 
+    let model = request.model || this.defaultModel;
+    if (!model.startsWith('claude-')) {
+      model = this.defaultModel;
+    }
+
     const payload = {
-      model: request.model || this.defaultModel,
+      model: model,
       system: systemPrompt.trim(),
       messages: anthropicMessages,
       temperature: request.temperature ?? 0.7,

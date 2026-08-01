@@ -7,15 +7,14 @@ export class StartupValidator {
    * Disables invalid providers immediately before they handle user traffic.
    */
   static async validateProviders() {
-    console.log('[AURA Startup] Validating Enterprise AI Providers...');
+    console.log('[AURA Startup] Validating Enterprise AI Providers in parallel...');
     const providers = ProviderRegistry.getAllProviders();
 
-    for (const provider of providers) {
+    await Promise.all(providers.map(async (provider) => {
       try {
         // We do a lightweight abortable fetch to validate the endpoint.
-        // We aren't doing a real generate to save tokens, but we can check if it returns 401/404.
         const testController = new AbortController();
-        const timeout = setTimeout(() => testController.abort(), 5000); // 5 second timeout for health checks
+        const timeout = setTimeout(() => testController.abort(), 4000); // 4 second timeout for validation
 
         try {
           const response = await provider.generate(
@@ -24,8 +23,6 @@ export class StartupValidator {
           );
           
           if (!response.ok) {
-            // A 400 Bad Request might happen if the model is bad, but 401/403 means auth is definitely broken.
-            // 404 means the endpoint/model is invalid.
             if (response.status === 401 || response.status === 403 || response.status === 404) {
               throw new Error(`Critical Provider Error: HTTP ${response.status}`);
             }
@@ -39,11 +36,16 @@ export class StartupValidator {
           clearTimeout(timeout);
         }
       } catch (err: any) {
-        // If validation fails, we instantly mark it unavailable and log internally.
-        HealthMonitor.markUnavailable(provider.id, `Startup Validation Failed: ${err.message}`);
-        // The provider remains in the registry but HealthMonitor says it's unavailable, 
-        // so it will never be routed to.
+        const errMsg = err.message || String(err);
+        const isDefinitiveFailure = errMsg.includes('HTTP 401') || errMsg.includes('HTTP 403') || errMsg.includes('HTTP 404');
+        
+        if (isDefinitiveFailure) {
+          HealthMonitor.markUnavailable(provider.id, `Startup Validation Failed (Definitive): ${errMsg}`);
+        } else {
+          console.warn(`[AURA Startup] Provider ${provider.id} validation warning (transient): ${errMsg}. Keeping provider enabled.`);
+          HealthMonitor.markAvailable(provider.id); // Ensure it is available
+        }
       }
-    }
+    }));
   }
 }

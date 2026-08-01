@@ -21,7 +21,7 @@ Schema:
   "tool": {
     "name": "meal_guide" | "food_scanner" | "health_vault" | "insights" | "none",
     "actionType": "NAVIGATE" | "TRIGGER_SCANNER" | "NONE",
-    "parameter": "route or target highlights"
+    "parameter": "The exact route path (e.g., '/meals', '/vault', '/insights', '/dashboard') or '' if none."
   }
 }`
       }
