@@ -1,128 +1,77 @@
-import { AI_CONFIG } from './config';
-import { AIRequest, AIResponse, AIProvider } from './client';
+import { ProviderRouter } from './core/provider-router';
+import { AIRequest } from './client';
+
+export interface AIResponse {
+  content: string;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+  };
+  provider: string;
+  model: string;
+}
 
 /**
- * Base Fetch Provider that implements standard OpenAI-compatible API schemas.
- * Used by both Poolside and OpenRouter.
+ * Legacy AI Orchestrator adapter for standard monolithic endpoints.
+ * It routes requests through the new Enterprise ProviderRouter, accumulates the
+ * stream, and returns a standard AIResponse to maintain backwards compatibility.
  */
-class FetchProvider implements AIProvider {
-  constructor(
-    public readonly name: string,
-    private readonly baseURL: string,
-    private readonly defaultModel: string,
-    private readonly apiKey: string
-  ) {}
-
-  async generate(request: AIRequest): Promise<AIResponse> {
-    if (!this.apiKey) {
-      throw new Error(`[${this.name}] AI Provider Authentication Failed: API Key missing`);
-    }
-
-    const payload = {
-      model: request.model || this.defaultModel,
-      messages: request.messages,
-      temperature: request.temperature ?? AI_CONFIG.temperature,
-      max_tokens: request.max_tokens ?? AI_CONFIG.maxTokens,
-      response_format: request.response_format,
-    };
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.apiKey}`
-    };
-
-    if (this.name === 'OpenRouter') {
-      headers['HTTP-Referer'] = 'https://gama.fit';
-      headers['X-Title'] = 'GAMA AI Orchestrator';
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), AI_CONFIG.timeoutMs);
+export class AIOrchestrator {
+  static async generate(request: AIRequest): Promise<AIResponse> {
+    const startMs = Date.now();
+    
+    // We enforce streaming at the router level for consistency,
+    // and just accumulate it here for legacy callers.
+    request.stream = true;
 
     try {
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
+      // 1. Send request through the Enterprise Router (Failover, Circuit Breaker, Retries included)
+      const response = await ProviderRouter.route(request, 'general');
+      
+      const providerId = response.headers.get('X-Aura-Provider-Id') || 'unknown';
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        if (response.status === 401) {
-          throw new Error(`[${this.name}] AI Provider Authentication Failed`);
-        }
-        if (response.status === 429) {
-          throw new Error(`[${this.name}] Provider Rate Limited`);
-        }
-        throw new Error(`[${this.name}] Provider API Error ${response.status}: ${errText}`);
+      // 2. Consume the stream fully
+      if (!response.body) throw new Error("No response body from provider");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let content = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        content += decoder.decode(value, { stream: true });
       }
 
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content ?? '{}';
+      const latency = Date.now() - startMs;
+      
+      // We estimate usage for legacy endpoints, as the exact usage requires parsing trailing SSE chunks
+      const completionTokens = Math.ceil(content.length / 4);
+
+      // Structured Logging
+      console.log(JSON.stringify({
+        event: 'legacy_ai_orchestrator_generate',
+        provider: providerId,
+        latencyMs: latency,
+        promptTokens: 0,
+        completionTokens,
+        fallbackUsed: false, // The router handles this invisibly now
+        success: true
+      }));
 
       return {
         content,
         usage: {
-          promptTokens: data.usage?.prompt_tokens || 0,
-          completionTokens: data.usage?.completion_tokens || 0
+          promptTokens: 0,
+          completionTokens
         },
-        provider: this.name,
-        model: payload.model
+        provider: providerId,
+        model: request.model || 'dynamic'
       };
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        throw new Error(`[${this.name}] Provider Request Timed Out`);
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
+      
+    } catch (err: any) {
+      console.error(`[Legacy AIOrchestrator] Fatal Error:`, err.message);
+      throw new Error('AI Provider Temporarily Unavailable: ' + err.message);
     }
-  }
-}
-
-export class AIOrchestrator {
-  private static providers: AIProvider[] = [
-    new FetchProvider('Poolside', AI_CONFIG.providers.poolside.baseURL, AI_CONFIG.providers.poolside.defaultModel, AI_CONFIG.providers.poolside.apiKey),
-    new FetchProvider('OpenRouter', AI_CONFIG.providers.openrouter.baseURL, AI_CONFIG.providers.openrouter.defaultModel, AI_CONFIG.providers.openrouter.apiKey)
-  ];
-
-  static async generate(request: AIRequest): Promise<AIResponse> {
-    const errors: string[] = [];
-
-    // Prioritize configured default provider, fallback to others
-    const orderedProviders = [
-      ...this.providers.filter(p => p.name.toLowerCase() === AI_CONFIG.defaultProvider),
-      ...this.providers.filter(p => p.name.toLowerCase() !== AI_CONFIG.defaultProvider)
-    ];
-
-    for (const provider of orderedProviders) {
-      const startMs = Date.now();
-      try {
-        const response = await provider.generate(request);
-        const latency = Date.now() - startMs;
-        
-        // Structured Logging
-        console.log(JSON.stringify({
-          event: 'ai_orchestrator_generate',
-          provider: response.provider,
-          model: response.model,
-          latencyMs: latency,
-          promptTokens: response.usage.promptTokens,
-          completionTokens: response.usage.completionTokens,
-          fallbackUsed: provider.name.toLowerCase() !== AI_CONFIG.defaultProvider,
-          retryCount: errors.length
-        }));
-
-        return response;
-      } catch (err: any) {
-        errors.push(err.message);
-        console.warn(`[AIOrchestrator] ${provider.name} failed. Attempting next provider... Reason:`, err.message);
-      }
-    }
-
-    // All providers failed
-    console.error(`[AIOrchestrator] All providers failed. Errors: ${errors.join(' | ')}`);
-    throw new Error('AI Provider Temporarily Unavailable');
   }
 }

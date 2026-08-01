@@ -19,7 +19,10 @@ export default function DashboardLayout({
   React.useEffect(() => {
     // Fetch logged in user profile data to sync display name
     fetch('/api/auth')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('Network error');
+        return res.json();
+      })
       .then((data) => {
         if (data.success && data.user) {
           try { localStorage.setItem('gama_user_name', data.user.fullName); } catch { }

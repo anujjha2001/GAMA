@@ -10,7 +10,7 @@ export async function GET(request: Request) {
         profileId,
         // Optional: filter by device category if we had one in DB, for now fetch recent
       },
-      orderBy: { detectedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
       take: 3
     });
     

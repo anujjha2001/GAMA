@@ -35,7 +35,7 @@ export function useAura() {
     const apiMessages = newMessages.filter(m => m.content.trim().length > 0);
 
     try {
-      const response = await fetch('/api/aura', {
+      const response = await fetch('/api/v1/aura', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -47,13 +47,46 @@ export function useAura() {
       });
 
       if (!response.ok) {
-        const errBody = await response.json().catch(() => ({}));
-        throw new Error(errBody.error || `Server error ${response.status}`);
+        if (response.status === 429) {
+          try {
+            const data = await response.json();
+            if (data.fallbackMessage) {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now().toString() + 'rate-limit',
+                  role: 'assistant',
+                  content: data.fallbackMessage
+                }
+              ]);
+              setIsLoading(false);
+              return;
+            }
+          } catch (e) {
+            // fallback to throw if json parse fails
+          }
+        }
+        throw new Error(`Server error ${response.status}`);
       }
 
       const contentType = response.headers.get('Content-Type') || '';
       if (contentType.includes('application/json')) {
         const data = await response.json();
+        
+        // Handle Graceful Fallback from the Gateway
+        if (data.success === false && data.fallbackMessage) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString() + 'fallback',
+              role: 'assistant',
+              content: data.fallbackMessage
+            }
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
         if (data.conversationId) {
           setConversationId(data.conversationId);
         }

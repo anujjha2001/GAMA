@@ -2,11 +2,12 @@
 
 import * as React from 'react';
 import { useHealthStore } from '@/lib/store';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import {
   Moon, Shield, RefreshCw, Trash2, Plus, Check, Save, HardDrive, BellRing, Heart, Radio
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { DashboardAppearancePanel } from '@/components/settings/DashboardAppearancePanel';
 
 export default function SettingsPage() {
   const [mounted, setMounted] = React.useState(false);
@@ -18,6 +19,12 @@ export default function SettingsPage() {
 
   const [newTagVal, setNewTagVal] = React.useState('');
   const [newTagCat, setNewTagCat] = React.useState<'preference' | 'medical' | 'dislike' | 'goal'>('preference');
+
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
+  const scrollYProgress = useTransform(scrollY, [0, 800], [0, 1]);
+  const yHero = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const opacityHero = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   React.useEffect(() => {
     setMounted(true);
@@ -36,21 +43,51 @@ export default function SettingsPage() {
     setNewTagVal('');
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants: any = {
+    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      transition: { type: "spring" as const, stiffness: 300, damping: 30, mass: 1 }
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="relative rounded-[32px] overflow-hidden bg-black/35 backdrop-blur-xl p-6 md:p-8 flex flex-col justify-between min-h-[160px] border border-white/10 hover:border-white/20 transition-all duration-300">
-        <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-black-500/10 via-transparent to-transparent pointer-events-none" />
-        <div className="space-y-2">
-          <span className="text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-1.5">
-            <Radio className="w-3.5 h-3.5 animate-pulse" /> Core Preferences & Sync
-          </span>
-          <h1 className="text-whitexl font-bold tracking-tight">Settings Portal</h1>
-          <p className="text-xs text-muted-foreground max-w-xl">
+    <div ref={containerRef} className="flex flex-col gap-12 pb-32 w-full relative min-h-screen font-sans text-[#eae3dc]">
+      {/* Premium Immersive Background */}
+      <div className="fixed inset-0 pointer-events-none -z-20 overflow-hidden bg-[#070709]">
+        <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none z-0" />
+        <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none z-0" />
+        <div
+          className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
+          style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-transparent to-transparent" />
+      </div>
+
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="w-full flex flex-col gap-12 z-10">
+        <motion.div style={{ y: yHero, opacity: opacityHero }} className="relative pt-16 pb-8 flex flex-col items-center text-center max-w-3xl mx-auto">
+          <div className="px-3 py-1 text-[10px] font-black tracking-widest bg-white/5 text-neutral-400 border border-white/10 uppercase rounded-full mb-4">
+            Core Preferences & Sync
+          </div>
+          <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white mb-4 leading-none">
+            Settings Portal
+          </h1>
+          <p className="text-sm text-neutral-400 max-w-xl">
             Configure AURA's neural pathways, synchronize biometric wearables, and review long-term health memories stored locally.
           </p>
-        </div>
-      </div>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="w-full relative px-4 lg:px-8 flex flex-col gap-6">
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Theme & Profile Panel */}
@@ -239,6 +276,11 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Full-width Background Personalization Panel */}
+      <DashboardAppearancePanel />
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
