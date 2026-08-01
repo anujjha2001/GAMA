@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useHealthStore } from '@/lib/store';
-import { Upload, Image as ImageIcon, Video, SlidersHorizontal, Eye, Save } from 'lucide-react';
+import { Upload, Image as ImageIcon, Video, SlidersHorizontal, Eye, Save, Move } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PRESETS = [
@@ -11,6 +11,11 @@ const PRESETS = [
   { id: 'p3', type: 'video', url: '/dashboard-2-motion.mp4', thumb: '/dashboard-2.png' },
   { id: 'p4', type: 'video', url: '/dashboard-3-motion.mp4', thumb: '/dashboard-3.png' },
   { id: 'p5', type: 'motion', url: 'css-motion', thumb: '/dashboard-bg-clean.png' },
+  { id: 'p6', type: 'moveable', url: '/dashboard-4.png', thumb: '/dashboard-4.png' },
+  { id: 'p7', type: 'moveable', url: '/dashboard-5.png', thumb: '/dashboard-5.png' },
+  { id: 'p8', type: 'moveable', url: '/dashboard-6.png', thumb: '/dashboard-6.png' },
+  { id: 'p9', type: 'video', url: '/dashboard-7.mp4.mp4', thumb: '/dashboard-7.mp4.mp4' },
+  { id: 'p10', type: 'video', url: '/dashboard-8.mp4.mp4', thumb: '/dashboard-8.mp4.mp4' },
 ];
 
 export function DashboardAppearancePanel() {
@@ -22,20 +27,21 @@ export function DashboardAppearancePanel() {
     setDashboardOverlay
   } = useHealthStore();
 
-  const overlay = dashboardBackgroundOverlay || {
-    blur: 0,
-    brightness: 110,
-    opacity: 100,
-    darkOverlay: 20,
-    contrast: 110,
-    saturation: 125,
+  const overlay = {
+    blur: dashboardBackgroundOverlay?.blur ?? 0,
+    brightness: dashboardBackgroundOverlay?.brightness ?? 110,
+    opacity: dashboardBackgroundOverlay?.opacity ?? 100,
+    darkOverlay: dashboardBackgroundOverlay?.darkOverlay ?? 20,
+    contrast: dashboardBackgroundOverlay?.contrast ?? 110,
+    saturation: dashboardBackgroundOverlay?.saturation ?? 125,
+    scale: (dashboardBackgroundOverlay as any)?.scale ?? 100,
   };
 
   const [isUploading, setIsUploading] = React.useState(false);
 
   const handleSelectPreset = (type: string, url: string) => {
     setDashboardBackground(type, url);
-    saveSettings(type, url, dashboardBackgroundOverlay);
+    saveSettings(type, url, overlay);
   };
 
   const handleOverlayChange = (key: keyof typeof overlay, value: number) => {
@@ -44,7 +50,7 @@ export function DashboardAppearancePanel() {
     // Debounce save in real app, here we save immediately for simplicity or just on release
   };
 
-  const saveSettings = async (type = dashboardBackgroundType, url = dashboardBackgroundUrl, overlayData = overlay) => {
+  const saveSettings = async (type = dashboardBackgroundType, url = dashboardBackgroundUrl, overlayData: any = overlay) => {
     try {
       await fetch('/api/settings/background', {
         method: 'POST',
@@ -118,7 +124,11 @@ export function DashboardAppearancePanel() {
                   dashboardBackgroundUrl === p.url ? 'border-white' : 'border-white/10 hover:border-white/30'
                 }`}
               >
-                <img src={p.thumb} className="w-full h-full object-cover" alt="preset" />
+                {p.thumb.includes('.mp4') ? (
+                  <video src={p.thumb} className="w-full h-full object-cover" autoPlay loop muted playsInline />
+                ) : (
+                  <img src={p.thumb} className="w-full h-full object-cover" alt="preset" />
+                )}
                 {p.type === 'video' && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                     <Video className="w-4 h-4 text-white/70" />
@@ -127,6 +137,12 @@ export function DashboardAppearancePanel() {
                 {p.type === 'motion' && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                     <span className="text-[9px] font-black tracking-widest text-white">CSS FX</span>
+                  </div>
+                )}
+                {p.type === 'moveable' && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/25 gap-1">
+                    <Move className="w-4 h-4 text-white/80 animate-pulse" />
+                    <span className="text-[7px] font-black tracking-widest text-white bg-black/55 px-1.5 py-0.5 rounded-md">MOVEABLE</span>
                   </div>
                 )}
               </button>
@@ -186,6 +202,14 @@ export function DashboardAppearancePanel() {
                 <span className="font-semibold">{overlay.saturation}%</span>
               </div>
               <input type="range" min="0" max="200" step="10" value={overlay.saturation} onChange={(e) => handleOverlayChange('saturation', parseInt(e.target.value))} className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white" />
+            </div>
+
+            <div>
+              <div className="flex justify-between text-[11px] mb-1">
+                <span className="text-neutral-400">Background Scale / Size</span>
+                <span className="font-semibold">{overlay.scale ?? 100}%</span>
+              </div>
+              <input type="range" min="50" max="200" step="5" value={overlay.scale ?? 100} onChange={(e) => handleOverlayChange('scale', parseInt(e.target.value))} className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white" />
             </div>
           </div>
         </div>

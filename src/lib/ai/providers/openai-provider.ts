@@ -18,8 +18,14 @@ export class OpenAIProvider implements IProvider {
       throw new Error(`[${this.id}] API Key missing`);
     }
 
+    let model = request.model || 'gpt-4o';
+    // Fallback if the requested model is not a valid OpenAI model ID
+    if (!model.startsWith('gpt-') && !model.startsWith('o1-') && !model.startsWith('o3-')) {
+      model = 'gpt-4o';
+    }
+
     const payload = {
-      model: request.model || 'gpt-4o',
+      model: model,
       messages: request.messages,
       temperature: request.temperature ?? 0.7,
       max_tokens: request.max_tokens,

@@ -23,8 +23,13 @@ export class PoolsideProvider implements IProvider {
       throw new Error(`[${this.id}] API Key missing`);
     }
 
+    let model = request.model || this.defaultModel || 'poolside-v1';
+    if (!model.startsWith('poolside-')) {
+      model = this.defaultModel || 'poolside-v1';
+    }
+
     const payload = {
-      model: request.model || this.defaultModel,
+      model: model,
       messages: request.messages,
       temperature: request.temperature ?? 0.7,
       max_tokens: request.max_tokens,

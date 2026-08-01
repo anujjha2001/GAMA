@@ -89,6 +89,52 @@ export default function AuraVoiceAssistant() {
   const startListeningRef = React.useRef<any>(null);
   const wakeUpRef = React.useRef<any>(null);
 
+  const transcriptionRef = React.useRef('');
+  const isSpeechRecActiveRef = React.useRef(false);
+  const utteranceRef = React.useRef<SpeechSynthesisUtterance | null>(null);
+
+  const isMobileDevice = () => {
+    if (typeof window === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
+  const unlockAudioAndTTS = () => {
+    if (typeof window === 'undefined') return;
+    try {
+      // 1. Unlock SpeechSynthesis
+      if (window.speechSynthesis) {
+        const u = new SpeechSynthesisUtterance('');
+        window.speechSynthesis.speak(u);
+      }
+      
+      // 2. Unlock AudioContext
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        const ctx = new AudioContextClass();
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+      }
+    } catch (e) {
+      console.warn('Audio/TTS unlock failed:', e);
+    }
+  };
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      const handleVoices = () => {
+        window.speechSynthesis.getVoices();
+      };
+      window.speechSynthesis.onvoiceschanged = handleVoices;
+      handleVoices();
+    }
+  }, []);
+
 
   // Initialize Speech Recognition
   React.useEffect(() => {
@@ -103,6 +149,7 @@ export default function AuraVoiceAssistant() {
 
         rec.onstart = () => {
           setVoiceState('LISTENING');
+          isSpeechRecActiveRef.current = true;
           // If AURA is currently speaking, barge-in!
           if (window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
@@ -127,11 +174,13 @@ export default function AuraVoiceAssistant() {
 
           const currentText = finalTranscript || interimTranscript;
           setTranscription(currentText);
+          transcriptionRef.current = currentText;
         };
 
         rec.onend = () => {
+          isSpeechRecActiveRef.current = false;
           // If transcription has content, trigger completion
-          const currentTranscription = stateRef.current.transcription;
+          const currentTranscription = transcriptionRef.current;
           if (currentTranscription.trim()) {
             handleVoiceSubmitRef.current(currentTranscription);
           } else {
@@ -148,6 +197,7 @@ export default function AuraVoiceAssistant() {
         };
 
         rec.onerror = (e: any) => {
+          isSpeechRecActiveRef.current = false;
           if (e.error === 'aborted' || e.error === 'no-speech') return;
           console.warn('Speech recognition error:', e.error);
           if (e.error === 'not-allowed') {
@@ -159,7 +209,7 @@ export default function AuraVoiceAssistant() {
 
         recognitionRef.current = rec;
 
-        // 2. Setup Standby Wake Word Recognition
+        // 2. Setup Standby Wake Word Recognition (Only on non-mobile to prevent continuous mic capture indicators on phones)
         const wakeRec = new SpeechRecognition();
         wakeRec.continuous = true;
         wakeRec.interimResults = false;
@@ -174,15 +224,17 @@ export default function AuraVoiceAssistant() {
         };
 
         wakeRec.onend = () => {
-          // Keep wake word detection running in background if assistant is closed
-          if (!stateRef.current.isOpen) {
+          // Keep wake word detection running in background if assistant is closed on desktop
+          if (!stateRef.current.isOpen && !isMobileDevice()) {
             try { wakeRec.start(); } catch (e) { }
           }
         };
 
         wakeWordRecRef.current = wakeRec;
-        // Start background wake word engine
-        try { wakeRec.start(); } catch (e) { }
+        // Start background wake word engine on non-mobile
+        if (!isMobileDevice()) {
+          try { wakeRec.start(); } catch (e) { }
+        }
       }
     }
 
@@ -195,10 +247,12 @@ export default function AuraVoiceAssistant() {
 
   // Wake Word Activation
   const wakeUp = () => {
+    unlockAudioAndTTS();
     playWakeChime();
     setIsOpen(true);
     setVoiceState('WAKE');
     setTranscription('');
+    transcriptionRef.current = '';
     setCaption('AURA: Online. Listening...');
     toast.success('AURA activated via wake word!');
 
@@ -214,13 +268,15 @@ export default function AuraVoiceAssistant() {
 
   // Start active microphone streaming and analysis
   const startListening = async () => {
+    unlockAudioAndTTS();
     setTranscription('');
+    transcriptionRef.current = '';
     setCaption('');
     setVisualData(null);
     setVoiceState('LISTENING');
 
-    // Start browser Speech Recognition
-    if (recognitionRef.current) {
+    // Start browser Speech Recognition safely
+    if (recognitionRef.current && !isSpeechRecActiveRef.current) {
       try {
         recognitionRef.current.start();
       } catch (e) {
@@ -228,26 +284,28 @@ export default function AuraVoiceAssistant() {
       }
     }
 
-    // Initialize Web Audio API Volume Waveform
-    try {
-      if (!audioStreamRef.current) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioStreamRef.current = stream;
+    // Initialize Web Audio API Volume Waveform (Skip mic capture on mobile to prevent conflicts with SpeechRecognition)
+    if (!isMobileDevice()) {
+      try {
+        if (!audioStreamRef.current) {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioStreamRef.current = stream;
 
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        const audioContext = new AudioContextClass();
-        const source = audioContext.createMediaStreamSource(stream);
-        const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 64;
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          const audioContext = new AudioContextClass();
+          const source = audioContext.createMediaStreamSource(stream);
+          const analyser = audioContext.createAnalyser();
+          analyser.fftSize = 64;
 
-        source.connect(analyser);
-        audioContextRef.current = audioContext;
-        analyserRef.current = analyser;
+          source.connect(analyser);
+          audioContextRef.current = audioContext;
+          analyserRef.current = analyser;
+        }
+      } catch (err) {
+        console.warn('Could not initialize audio visualizer:', err);
       }
-      drawWaveform();
-    } catch (err) {
-      console.warn('Could not initialize audio visualizer:', err);
     }
+    drawWaveform();
   };
 
   // Stop listening
@@ -324,10 +382,19 @@ export default function AuraVoiceAssistant() {
     toast.info(`Executing voice tool: ${toolName.replace('_', ' ')}`);
 
     if (actionType === 'NAVIGATE') {
-      const targetPath = parameter || `/dashboard`;
+      let targetPath = parameter;
+      if (!targetPath || typeof targetPath !== 'string' || !targetPath.startsWith('/')) {
+        // Fallback mapping based on tool name
+        if (toolName === 'meal_guide') targetPath = '/meals';
+        else if (toolName === 'health_vault') targetPath = '/vault';
+        else if (toolName === 'insights') targetPath = '/insights';
+        else if (toolName === 'schedule') targetPath = '/schedule';
+        else if (toolName === 'settings') targetPath = '/settings';
+        else targetPath = '/dashboard';
+      }
       router.push(targetPath);
       setVoiceState('SPEAKING');
-    } else if (toolName === 'food_scanner') {
+    } else if (toolName === 'food_scanner' || actionType === 'TRIGGER_SCANNER') {
       router.push('/meals');
       setVoiceState('SPEAKING');
       // Delay to let route load, then trigger scanner click
@@ -361,8 +428,11 @@ export default function AuraVoiceAssistant() {
 
   // Fallback Web Speech Synthesis
   const playBrowserTTS = (text: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
+    utteranceRef.current = utterance;
 
     // Choose premium sounding voice
     const voices = window.speechSynthesis.getVoices();
@@ -375,64 +445,95 @@ export default function AuraVoiceAssistant() {
     utterance.pitch = 1.0;
 
     utterance.onend = () => {
+      utteranceRef.current = null;
       if (stateRef.current.isOpen) startListening();
     };
 
+    utterance.onerror = () => {
+      utteranceRef.current = null;
+      if (stateRef.current.isOpen) startListening();
+    };
+
+    // Android/Chrome reset synthesis engine: speak empty silence first
+    try {
+      const resetUtterance = new SpeechSynthesisUtterance('');
+      window.speechSynthesis.speak(resetUtterance);
+    } catch (e) {}
+
     window.speechSynthesis.speak(utterance);
+
+    // Chrome bug: SpeechSynthesis can hang if we don't trigger resume
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
   };
 
-  // Render volume waveform on Canvas
+  // Render volume waveform on Canvas (Uses microphone data on laptop, smooth fallback wave on mobile)
   const drawWaveform = () => {
     const canvas = canvasRef.current;
     const analyser = analyserRef.current;
-    if (!canvas || !analyser) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
+    let phase = 0;
 
     const draw = () => {
       if (voiceState !== 'LISTENING' && voiceState !== 'UNDERSTANDING' && voiceState !== 'SPEAKING') {
-        // Draw flat line or thinking spinners instead
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         return;
       }
 
       animationFrameRef.current = requestAnimationFrame(draw);
-      analyser.getByteFrequencyData(dataArray);
+      phase += 0.15;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.lineWidth = 3;
 
-      // Draw mirrored audio waveform
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
       gradient.addColorStop(0, 'rgba(168, 85, 247, 0.1)'); // Indigo/Purple
       gradient.addColorStop(0.5, '#a855f7');
       gradient.addColorStop(1, 'rgba(59, 130, 246, 0.1)'); // Blue
-
       ctx.strokeStyle = gradient;
-      ctx.beginPath();
 
-      const sliceWidth = canvas.width / bufferLength;
-      let x = 0;
+      if (analyser && !isMobileDevice()) {
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyser.getByteFrequencyData(dataArray);
 
-      for (let i = 0; i < bufferLength; i++) {
-        const v = dataArray[i] / 128.0;
-        const y = (v * canvas.height) / 2;
+        ctx.beginPath();
+        const sliceWidth = canvas.width / bufferLength;
+        let x = 0;
 
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
+        for (let i = 0; i < bufferLength; i++) {
+          const v = dataArray[i] / 128.0;
+          const y = (v * canvas.height) / 2;
+
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+          x += sliceWidth;
         }
-
-        x += sliceWidth;
+        ctx.lineTo(canvas.width, canvas.height / 2);
+        ctx.stroke();
+      } else {
+        // Beautiful simulated sine wave on mobile to avoid mic capture clashing
+        ctx.beginPath();
+        for (let x = 0; x < canvas.width; x++) {
+          const angle = (x / canvas.width) * Math.PI * 4 + phase;
+          const baseAmp = voiceState === 'LISTENING' ? 12 : voiceState === 'SPEAKING' ? 8 : 4;
+          const y = canvas.height / 2 + Math.sin(angle) * baseAmp * Math.sin((x / canvas.width) * Math.PI);
+          if (x === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
       }
-
-      ctx.lineTo(canvas.width, canvas.height / 2);
-      ctx.stroke();
     };
 
     draw();
@@ -443,6 +544,7 @@ export default function AuraVoiceAssistant() {
     setIsOpen(false);
     setVoiceState('IDLE');
     setTranscription('');
+    transcriptionRef.current = '';
     setCaption('');
     setVisualData(null);
     setSessionId(null);
@@ -464,8 +566,8 @@ export default function AuraVoiceAssistant() {
       cancelAnimationFrame(animationFrameRef.current);
     }
 
-    // Restart standby wake-word recognition
-    if (wakeWordRecRef.current) {
+    // Restart standby wake-word recognition on desktop
+    if (wakeWordRecRef.current && !isMobileDevice()) {
       try { wakeWordRecRef.current.start(); } catch (e) { }
     }
   };

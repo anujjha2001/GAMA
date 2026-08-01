@@ -28,7 +28,7 @@ export class AURAOrchestrator {
     await AURAEventBus.publish('fsm_transition', { state });
   }
 
-  static async processVoiceRequest(profileId: string, message: string, history: any[] = []): Promise<any> {
+  static async processVoiceRequest(profileId: string, message: string, history: any[] = [], modelOverride?: string): Promise<any> {
     const startTime = Date.now();
     let dbTime = 0;
     let aiTime = 0;
@@ -59,7 +59,7 @@ export class AURAOrchestrator {
       { role: 'user', content: message }
     ];
 
-    const aiRes = await AIGateway.generateText(messages);
+    const aiRes = await AIGateway.generateText(messages, modelOverride);
     aiTime = Date.now() - aiStart;
 
     let responseData: any;

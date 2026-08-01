@@ -224,23 +224,23 @@ export async function POST(req: NextRequest) {
         todayStart.setHours(0, 0, 0, 0);
 
         const mealsToday = await prisma.meal.findMany({
-          where: { profileId: user.id, date: { gte: todayStart } }
+          where: { profileId: user.id, loggedAt: { gte: todayStart } }
         });
         mealsToday.forEach(m => {
-          currentCaloriesToday += m.totalCalories;
+          currentCaloriesToday += m.totalCals;
           currentProteinToday += m.totalProtein;
         });
 
         const workoutsToday = await prisma.workout.findFirst({
-          where: { profileId: user.id, date: { gte: todayStart } }
+          where: { profileId: user.id, recordedAt: { gte: todayStart } }
         });
         workoutLoggedToday = !!workoutsToday;
 
         const latestSleep = await prisma.sleepLog.findFirst({
           where: { profileId: user.id },
-          orderBy: { date: 'desc' }
+          orderBy: { recordedAt: 'desc' }
         });
-        if (latestSleep) sleepScoreLatest = latestSleep.sleepScore || 80;
+        if (latestSleep) sleepScoreLatest = latestSleep.qualityScore || 80;
 
         const latestRecovery = await prisma.recoveryScoreLog.findFirst({
           where: { profileId: user.id },
