@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth'; // Assuming standard next-auth usage in GAMA, or custom auth
 // Use a generic mock user ID for now if session isn't available to keep UI alive without auth walls during dev
 
 export async function GET(request: Request) {

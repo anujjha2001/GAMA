@@ -86,7 +86,9 @@ export interface GroceryItem {
 
 export interface FoodProvider {
   name: string;
-  getRestaurants(options: {
+  isOfficialApiAvailable: boolean;
+
+  searchRestaurants(options: {
     lat?: number;
     lng?: number;
     vegOnly?: boolean;
@@ -96,7 +98,8 @@ export interface FoodProvider {
     page?: number;
     limit?: number;
   }): Promise<Restaurant[]>;
-  getMeals(options: {
+
+  searchMeals(options: {
     restaurantId?: string;
     vegOnly?: boolean;
     highProtein?: boolean;
@@ -105,7 +108,18 @@ export interface FoodProvider {
     page?: number;
     limit?: number;
   }): Promise<Meal[]>;
-  getGroceryItems(category?: string, page?: number, limit?: number): Promise<GroceryItem[]>;
+
+  checkAvailability(branchId: string, mealId: string): Promise<{
+    isAvailable: boolean;
+    price: number;
+    etaMin: number;
+    etaMax: number;
+    deliveryFee: number;
+  }>;
+
+  getDeepLink(branchId: string, mealId: string): string;
+  
+  getRestaurant(id: string): Promise<Restaurant | null>;
 }
 
 export class FoodProviderManager {

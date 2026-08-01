@@ -1,33 +1,30 @@
 /**
  * Centralized AI Configuration
- * Replacing Groq with Unified Poolside & OpenRouter architecture.
+ * Enterprise Architecture with multi-provider failover.
  */
 
-const getOpenRouterKey = (): string => {
-  return (
-    process.env.OPENROUTER_API_KEY ||
-    process.env.Google_Places_API ||
-    process.env.Edamam_API ||
-    process.env.Indian_Food_Composition_Tables ||
-    process.env.FatSecret_Platform_API ||
-    process.env.Open_FoodFacts_API ||
-    ''
-  );
-};
-
 export const AI_CONFIG = {
-  defaultProvider: (process.env.DEFAULT_AI_PROVIDER || 'openrouter') as 'poolside' | 'openrouter',
   providers: {
+    openai: {
+      apiKey: process.env.OPENAI_API_KEY || ''
+    },
+    anthropic: {
+      apiKey: process.env.ANTHROPIC_API_KEY || ''
+    },
+    gemini: {
+      apiKey: process.env.GEMINI_API_KEY || ''
+    },
     poolside: {
-      baseURL: 'https://api.poolside.ai/v1',
-      defaultModel: process.env.DEFAULT_MODEL || 'poolside-llama-3',
       apiKey: process.env.POOLSIDE_API_KEY || ''
     },
     openrouter: {
-      baseURL: 'https://openrouter.ai/api/v1',
-      defaultModel: process.env.DEFAULT_MODEL || 'meta-llama/llama-3.3-70b-instruct',
-      apiKey: getOpenRouterKey()
+      apiKey: process.env.OPENROUTER_API_KEY || ''
     }
+  },
+  circuitBreaker: {
+    failureThreshold: 3,
+    cooldownMs: 30000,
+    timeoutMs: 15000
   },
   timeoutMs: 30000,
   maxRetries: 3,
