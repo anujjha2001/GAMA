@@ -71,6 +71,24 @@ export function DashboardView() {
   // --- Web Speech API Refs ---
   const recognitionRef = React.useRef<any>(null);
 
+  // --- Live Moveable Background Mouse Tracker ---
+  const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || dashboardBackgroundType !== 'moveable') return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
+      const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+      setMousePosition({ x, y });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [dashboardBackgroundType]);
+
   // --- Load Initial State from LocalStorage ---
   React.useEffect(() => {
     setMounted(true);
@@ -338,7 +356,7 @@ export function DashboardView() {
           initial={{ scale: 1 }}
           animate={{ scale: 1.03 }}
           transition={{ duration: 15, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' }}
-          className="absolute inset-0 z-0"
+          className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden"
         >
           {dashboardBackgroundType === 'video' || dashboardBackgroundUrl?.endsWith('.mp4') ? (
             <video
@@ -349,6 +367,7 @@ export function DashboardView() {
               playsInline
               className="w-full h-full object-cover object-center transition-all duration-1000"
               style={{
+                transform: `scale(${((dashboardBackgroundOverlay as any)?.scale ?? 100) / 100})`,
                 filter: `brightness(${dashboardBackgroundOverlay?.brightness ?? 110}%) contrast(${dashboardBackgroundOverlay?.contrast ?? 110}%) saturate(${dashboardBackgroundOverlay?.saturation ?? 125}%) blur(${dashboardBackgroundOverlay?.blur ?? 0}px)`,
               }}
             />
@@ -358,16 +377,41 @@ export function DashboardView() {
                  filter: `brightness(${dashboardBackgroundOverlay?.brightness ?? 110}%) contrast(${dashboardBackgroundOverlay?.contrast ?? 110}%) saturate(${dashboardBackgroundOverlay?.saturation ?? 125}%) blur(${dashboardBackgroundOverlay?.blur ?? 0}px)`,
                }}
              />
+          ) : dashboardBackgroundType === 'moveable' ? (
+            <div className="w-full h-full relative overflow-hidden flex items-center justify-center">
+              {dashboardBackgroundUrl === '/dashboard-4.png' && (
+                <img
+                  src={dashboardBackgroundUrl}
+                  alt="Blurred Background Underlay"
+                  className="w-full h-full object-cover opacity-90 blur-[10px] scale-110 absolute inset-0 pointer-events-none"
+                  style={{
+                    filter: `brightness(${dashboardBackgroundOverlay?.brightness ?? 110}%) contrast(${dashboardBackgroundOverlay?.contrast ?? 110}%) saturate(${dashboardBackgroundOverlay?.saturation ?? 125}%)`,
+                  }}
+                />
+              )}
+              <img
+                src={dashboardBackgroundUrl}
+                alt="Dashboard Moveable Background"
+                className={`w-full h-full ${dashboardBackgroundUrl === '/dashboard-4.png' ? 'object-contain' : 'object-cover object-center'}`}
+                style={{
+                  transform: `translate(${mousePosition.x * 25}px, ${mousePosition.y * 25}px) scale(${((dashboardBackgroundOverlay as any)?.scale ?? 100) / 100 * 1.06})`,
+                  transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)',
+                  filter: `brightness(${dashboardBackgroundOverlay?.brightness ?? 110}%) contrast(${dashboardBackgroundOverlay?.contrast ?? 110}%) saturate(${dashboardBackgroundOverlay?.saturation ?? 125}%) blur(${dashboardBackgroundOverlay?.blur ?? 0}px)`,
+                }}
+              />
+            </div>
           ) : (
             <img
               src={dashboardBackgroundUrl}
               alt="Dashboard Background"
               className="w-full h-full object-cover object-center transition-all duration-1000"
               style={{
+                transform: `scale(${((dashboardBackgroundOverlay as any)?.scale ?? 100) / 100})`,
                 filter: `brightness(${dashboardBackgroundOverlay?.brightness ?? 110}%) contrast(${dashboardBackgroundOverlay?.contrast ?? 110}%) saturate(${dashboardBackgroundOverlay?.saturation ?? 125}%) blur(${dashboardBackgroundOverlay?.blur ?? 0}px)`,
               }}
             />
           )}
+
           <div className="absolute inset-0 z-10 transition-all duration-1000" style={{ backgroundColor: `rgba(0,0,0,${(dashboardBackgroundOverlay?.darkOverlay ?? 20) / 100})` }} />
         </motion.div>
 
@@ -457,51 +501,11 @@ export function DashboardView() {
         animate="visible"
         className="w-full flex flex-col gap-16 z-10 pt-16 relative"
       >
-        {/* Top Right User Profile */}
-        <div className="absolute top-4 right-4 lg:right-8 z-50">
-          <div className="flex items-center gap-4 bg-black/40 backdrop-blur-xl px-5 py-3 rounded-2xl border border-white/5 shadow-lg">
-            <button
-              onClick={() => {
-                setSteps(19840);
-                setSleepHours(7.75);
-                setHrv(80);
-                setStressLevel(2.7);
-                toast.success("Metrics reset to baseline values.");
-              }}
-              title="Reset Metrics to Default"
-              className="w-9 h-9 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/10 transition-all flex items-center justify-center text-neutral-400 hover:text-white cursor-pointer shadow"
-            >
-              <RefreshCw className="w-4.5 h-4.5" />
-            </button>
-            <div className="flex items-center gap-3">
-              <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=120&auto=format&fit=crop"
-                alt="User Avatar"
-                className="w-10 h-10 rounded-xl object-cover border border-white/10 shadow"
-              />
-              <div className="text-left">
-                <h4 className="text-sm font-extrabold text-white leading-tight">
-                  {(() => {
-                    if (typeof window !== 'undefined') {
-                      const storedName = localStorage.getItem('gama_user_name');
-                      if (storedName) return storedName;
-                    }
-                    return 'Alvie Wahed';
-                  })()}
-                </h4>
-                <span className="text-[10px] text-neutral-400 block tracking-wider uppercase font-bold">User Profile</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <motion.div
           style={{ y: yHero, opacity: opacityHero }}
           className="relative pt-8 pb-16 flex flex-col items-center text-center max-w-4xl mx-auto px-4"
         >
-          <div className="px-4 py-1.5 text-[10px] font-black tracking-widest bg-white/5 text-neutral-400 border border-white/10 uppercase rounded-full mb-6">
-            Intelligence Center
-          </div>
           <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white mb-6 leading-none">
             Welcome to GAMA
           </h1>
@@ -1131,6 +1135,44 @@ export function DashboardView() {
 
               </div>
 
+            </div>
+
+            {/* User Profile Section at the bottom */}
+            <div className="flex justify-center mt-6 z-30">
+              <div className="flex items-center gap-4 bg-black/40 backdrop-blur-xl px-5 py-3 rounded-2xl border border-white/5 shadow-lg">
+                <button
+                  onClick={() => {
+                    setSteps(19840);
+                    setSleepHours(7.75);
+                    setHrv(80);
+                    setStressLevel(2.7);
+                    toast.success("Metrics reset to baseline values.");
+                  }}
+                  title="Reset Metrics to Default"
+                  className="w-9 h-9 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/10 transition-all flex items-center justify-center text-neutral-400 hover:text-white cursor-pointer shadow"
+                >
+                  <RefreshCw className="w-4.5 h-4.5" />
+                </button>
+                <div className="flex items-center gap-3">
+                  <img
+                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=120&auto=format&fit=crop"
+                    alt="User Avatar"
+                    className="w-10 h-10 rounded-xl object-cover border border-white/10 shadow"
+                  />
+                  <div className="text-left">
+                    <h4 className="text-sm font-extrabold text-white leading-tight">
+                      {(() => {
+                        if (typeof window !== 'undefined') {
+                          const storedName = localStorage.getItem('gama_user_name');
+                          if (storedName) return storedName;
+                        }
+                        return 'Alvie Wahed';
+                      })()}
+                    </h4>
+                    <span className="text-[10px] text-neutral-400 block tracking-wider uppercase font-bold">User Profile</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>

@@ -32,6 +32,11 @@ export class GeminiProvider implements IProvider {
       parts: [{ text: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) }]
     }));
 
+    let model = request.model || this.defaultModel;
+    if (!model.startsWith('gemini-')) {
+      model = this.defaultModel;
+    }
+
     const payload: any = {
       contents,
       generationConfig: {
@@ -50,7 +55,7 @@ export class GeminiProvider implements IProvider {
 
     const endpoint = request.stream !== false ? 'streamGenerateContent?alt=sse' : 'generateContent';
     
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${request.model || this.defaultModel}:${endpoint}&key=${this.apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:${endpoint}&key=${this.apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

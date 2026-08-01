@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
     }
 
-    const { message, history, sessionId } = body;
+    const { message, history, sessionId, modelOverride } = body;
     if (!message) {
       return NextResponse.json({ error: 'Message transcript is required.' }, { status: 400 });
     }
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Process voice command via Central Orchestrator
-    const result = await AURAOrchestrator.processVoiceRequest(user.id, message, history || []);
+    const result = await AURAOrchestrator.processVoiceRequest(user.id, message, history || [], modelOverride);
 
     // 3. Generate premium audio if speech keys are present
     let premiumAudio = null;

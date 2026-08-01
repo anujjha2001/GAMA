@@ -15,7 +15,7 @@ export class AIGateway {
   private static initialized = false;
   private static initPromise: Promise<void> | null = null;
 
-  private static async initProviders() {
+  public static async initProviders() {
     if (this.initialized) return;
     if (this.initPromise) return this.initPromise;
     
@@ -54,7 +54,10 @@ export class AIGateway {
       }
 
 
-      await StartupValidator.validateProviders();
+      // Run validation in the background so it doesn't block the first request
+      StartupValidator.validateProviders().catch(err => {
+        console.error('[AURA Startup] Provider validation background task failed:', err);
+      });
       
       this.initialized = true;
       this.initPromise = null;

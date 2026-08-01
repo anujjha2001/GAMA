@@ -23,8 +23,15 @@ export class OpenRouterProvider implements IProvider {
       throw new Error(`[${this.id}] API Key missing`);
     }
 
+    let model = request.model || this.defaultModel || 'google/gemini-2.5-flash';
+    if (model === 'llama-3.1-8b-instant') {
+      model = 'meta-llama/llama-3.1-8b-instruct';
+    } else if (model === 'llama-3.3-70b-versatile') {
+      model = 'meta-llama/llama-3.3-70b-instruct';
+    }
+
     const payload = {
-      model: request.model || this.defaultModel,
+      model: model,
       messages: request.messages,
       temperature: request.temperature ?? 0.7,
       max_tokens: request.max_tokens || 4000,
