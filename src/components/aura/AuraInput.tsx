@@ -26,7 +26,16 @@ export function AuraInput({
   uploadingFiles = {}
 }: AuraInputProps) {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const [showSlashMenu, setShowSlashMenu] = React.useState(false);
+
+  // Auto focus the input element when mounted
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Slash commands catalog
   const slashCommands = [
@@ -178,6 +187,7 @@ export function AuraInput({
         </button>
 
         <textarea
+          ref={textareaRef}
           id="aura-chat-textarea"
           name="aura-chat-textarea"
           value={input || ''}
