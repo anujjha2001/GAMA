@@ -4,13 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// Dynamic import for pdf-parse to safely process PDFs during upload
-let pdfParser: any;
-try {
-  pdfParser = require('pdf-parse');
-} catch (e) {
-  console.warn('[Aura Upload] pdf-parse library could not be loaded statically. PDF text extraction will fall back.');
-}
+
 
 export const maxDuration = 60;
 
@@ -59,15 +53,22 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Save File Locally under public/uploads/aura/
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'aura');
-    await fs.mkdir(uploadDir, { recursive: true });
+    // Save File with Serverless / Read-Only Filesystem Fallback
+    let fileUrl = '';
+    try {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'aura');
+      await fs.mkdir(uploadDir, { recursive: true });
 
-    const cleanFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const filePath = path.join(uploadDir, cleanFileName);
-    await fs.writeFile(filePath, buffer);
+      const cleanFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const filePath = path.join(uploadDir, cleanFileName);
+      await fs.writeFile(filePath, buffer);
 
-    const fileUrl = `/uploads/aura/${cleanFileName}`;
+      fileUrl = `/uploads/aura/${cleanFileName}`;
+    } catch (writeErr) {
+      console.warn('[Aura Upload] Local filesystem write failed (likely serverless/Vercel). Falling back to base64 Data URI.', writeErr);
+      const base64Content = buffer.toString('base64');
+      fileUrl = `data:${fileType || 'application/octet-stream'};base64,${base64Content}`;
+    }
 
     // 4. File Type Classification & Text Extraction
     let classification = 'General File';
@@ -86,10 +87,9 @@ export async function POST(req: NextRequest) {
     // Text parsing for PDF / CSV / Text
     if (fileType.includes('pdf') || nameLower.endsWith('.pdf')) {
       try {
-        if (pdfParser) {
-          const parsed = await pdfParser(buffer);
-          extractedText = parsed.text || '';
-        }
+        const pdfParser = require('pdf-parse');
+        const parsed = await pdfParser(buffer);
+        extractedText = parsed.text || '';
       } catch (err) {
         console.error('[Aura Upload] pdf-parse failed:', err);
       }

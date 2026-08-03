@@ -209,7 +209,7 @@ export function AuraChatPanel({
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 15 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="w-full max-w-6xl h-[85vh] bg-neutral-950/45 border border-white/10 rounded-[32px] shadow-2xl relative z-40 flex overflow-hidden backdrop-blur-2xl"
+            className="w-full max-w-5xl h-[600px] bg-neutral-950/45 border border-white/10 rounded-[32px] shadow-2xl relative z-40 flex overflow-hidden backdrop-blur-2xl"
           >
             
             {/* 1. Drag & Drop File Upload Visual Overlay */}
