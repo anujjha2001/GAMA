@@ -33,3 +33,17 @@ export function verifyOtp(submittedOtp: string, storedHash: string): boolean {
     return false;
   }
 }
+
+/**
+ * Detects if the current environment is production for OTP.
+ * Optional developer mode may exist only if explicitly enabled with environment variable:
+ * OTP_MODE=development
+ * Otherwise (e.g. if NODE_ENV=production, or OTP_MODE=production, or OTP_MODE is not set),
+ * it is always production.
+ */
+export function isProductionOtpMode(): boolean {
+  if (process.env.NODE_ENV === 'production' || process.env.OTP_MODE === 'production') {
+    return true;
+  }
+  return process.env.OTP_MODE !== 'development';
+}

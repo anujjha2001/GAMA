@@ -36,7 +36,21 @@ export default function VaultPage() {
   const [activeTab, setActiveTab] = React.useState<'summary' | 'nutrition' | 'exercise' | 'biomarkers'>('summary');
 
   // Aura Chat Integration
-  const { messages, setMessages: setChatHistory, input, setInput, handleSubmit, isLoading, conversationId, loadConversation, startNewChat } = useAura();
+  const { 
+    messages, 
+    setMessages: setChatHistory, 
+    input, 
+    setInput, 
+    handleSubmit, 
+    isLoading, 
+    conversationId, 
+    loadConversation, 
+    startNewChat,
+    attachments,
+    uploadFile,
+    removeAttachment,
+    uploadingFiles
+  } = useAura();
   const [isChatOpen, setIsChatOpen] = React.useState(false);
 
   // Loading States
@@ -1018,6 +1032,10 @@ export default function VaultPage() {
         conversationId={conversationId}
         onSelectConversation={loadConversation}
         onNewChat={startNewChat}
+        attachments={attachments}
+        uploadFile={uploadFile}
+        removeAttachment={removeAttachment}
+        uploadingFiles={uploadingFiles}
       />
         </motion.div>
       </motion.div>

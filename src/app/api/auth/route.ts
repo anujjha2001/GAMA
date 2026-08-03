@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { signToken, verifyToken } from '@/lib/jwt';
-import { generateOtp, hashOtp } from '@/lib/auth/otp';
+import { generateOtp, hashOtp, isProductionOtpMode } from '@/lib/auth/otp';
 import { sendEmail } from '@/lib/email/sender';
 import { getVerificationEmailTemplate } from '@/lib/email/templates/verification';
 import { createSessionCookie } from '@/lib/auth/session';
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       // Generate 6-digit OTP
       const otpCode = generateOtp();
       const hashedOtpVal = hashOtp(otpCode);
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
       // Clean up old OTP records
       await prisma.verificationOtp.deleteMany({
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; text-align: center; margin: 30px 0; color: #f97316;">
             ${otpCode}
           </div>
-          <p style="color: #a3a3a3; font-size: 12px;">This code will expire in 5 minutes. If you did not request this, you can safely ignore this email.</p>
+          <p style="color: #a3a3a3; font-size: 12px;">This code will expire in 10 minutes. If you did not request this, you can safely ignore this email.</p>
         </div>
       `;
 
@@ -144,10 +144,21 @@ export async function POST(request: NextRequest) {
         html: htmlContent,
       });
 
+      if (!emailSent) {
+        console.error('[FORGOT-PASSWORD] Email delivery failed for', emailNormalized);
+        await prisma.verificationOtp.deleteMany({
+          where: { email: emailNormalized },
+        }).catch(() => {});
+        return NextResponse.json(
+          { success: false, error: "We couldn't send the verification email. Please try again in a few moments." },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Password reset code sent successfully',
-        ...((!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) ? { devOtp: otpCode } : {}),
+        ...(!isProductionOtpMode() ? { devOtp: otpCode } : {}),
       });
     }
 

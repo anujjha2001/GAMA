@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { isProductionOtpMode } from '../auth/otp';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -20,11 +21,15 @@ export async function sendEmail(options: {
   const maxRetries = 3;
   let attempt = 0;
 
+  const isProd = isProductionOtpMode();
+
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.error('[EMAIL SENDER] Missing GMAIL_USER or GMAIL_APP_PASSWORD in environment variables.');
-    // Fail silently or print to logs so dev mode works
-    console.log(`[EMAIL SENDER BYPASS] Would send email to ${options.to} with subject "${options.subject}"`);
-    return true; 
+    if (!isProd) {
+      console.log(`[EMAIL SENDER BYPASS] Would send email to ${options.to} with subject "${options.subject}"`);
+      return true;
+    }
+    return false;
   }
 
   while (attempt < maxRetries) {
