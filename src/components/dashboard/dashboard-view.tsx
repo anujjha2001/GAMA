@@ -48,7 +48,21 @@ export function DashboardView() {
   } = useHealthStore();
 
   // AURA Chat & Interface States
-  const { messages, setMessages: setChatHistory, input, setInput, handleSubmit, isLoading, conversationId, loadConversation, startNewChat } = useAura();
+  const { 
+    messages, 
+    setMessages: setChatHistory, 
+    input, 
+    setInput, 
+    handleSubmit, 
+    isLoading, 
+    conversationId, 
+    loadConversation, 
+    startNewChat,
+    attachments,
+    uploadFile,
+    removeAttachment,
+    uploadingFiles
+  } = useAura();
   const [isChatOpen, setIsChatOpen] = React.useState(false);
   const [isListening, setIsListening] = React.useState(false);
 
@@ -141,6 +155,21 @@ export function DashboardView() {
       console.warn("Could not save to localStorage:", e);
     }
   }, [steps, sleepHours, hrv, stressLevel, mounted]);
+
+  // Keyboard shortcut listener: Ctrl+K or Cmd+K toggles AURA Chat, Escape closes it
+  React.useEffect(() => {
+    if (!mounted) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsChatOpen(prev => !prev);
+      } else if (e.key === 'Escape') {
+        setIsChatOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mounted]);
 
   // --- Health Intelligence Engine Run ---
   const getRawData = () => {
@@ -587,6 +616,10 @@ export function DashboardView() {
               conversationId={conversationId}
               onSelectConversation={loadConversation}
               onNewChat={startNewChat}
+              attachments={attachments}
+              uploadFile={uploadFile}
+              removeAttachment={removeAttachment}
+              uploadingFiles={uploadingFiles}
             />
 
             {/* Health Alerts Warning Banner */}
