@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyPassword } from '@/lib/auth/password';
-import { generateOtp, hashOtp } from '@/lib/auth/otp';
+import { generateOtp, hashOtp, isProductionOtpMode } from '@/lib/auth/otp';
 import { sendEmail } from '@/lib/email/sender';
 import { getVerificationEmailTemplate } from '@/lib/email/templates/verification';
 import { createSessionCookie } from '@/lib/auth/session';
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       // Generate a new OTP and redirect to verification
       const plaintextOtp = generateOtp();
       const hashedOtpVal = hashOtp(plaintextOtp);
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
       await prisma.verificationOtp.deleteMany({
         where: { email: emailNormalized },
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Send verification email
-      const emailHtml = getVerificationEmailTemplate(plaintextOtp);
+      const emailHtml = getVerificationEmailTemplate(plaintextOtp, user.fullName || undefined);
       const emailSent = await sendEmail({
         to: emailNormalized,
         subject: 'Verify your GAMA Account',
@@ -64,6 +64,13 @@ export async function POST(request: NextRequest) {
 
       if (!emailSent) {
         console.error('[LOGIN] Email delivery failed for unverified user', emailNormalized);
+        await prisma.verificationOtp.deleteMany({
+          where: { email: emailNormalized },
+        }).catch(() => {});
+        return NextResponse.json(
+          { success: false, error: "We couldn't send the verification email. Please try again in a few moments." },
+          { status: 500 }
+        );
       }
 
       await prisma.auditLog.create({
@@ -80,7 +87,7 @@ export async function POST(request: NextRequest) {
         success: false,
         needsVerification: true,
         email: emailNormalized,
-        ...((!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) ? { devOtp: plaintextOtp } : {}),
+        ...(!isProductionOtpMode() ? { devOtp: plaintextOtp } : {}),
       });
     }
 

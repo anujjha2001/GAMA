@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { generateOtp, hashOtp } from '@/lib/auth/otp';
+import { generateOtp, hashOtp, isProductionOtpMode } from '@/lib/auth/otp';
 import { sendEmail } from '@/lib/email/sender';
 import { getVerificationEmailTemplate } from '@/lib/email/templates/verification';
 
@@ -41,9 +41,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Maximum resend limit check: max 5 resend requests within 1 hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const sentCount = await prisma.auditLog.count({
+      where: {
+        profileId: user.id,
+        action: { in: ['OTP_SENT', 'OTP_RESENT'] },
+        createdAt: { gte: oneHourAgo },
+      },
+    });
+
+    if (sentCount >= 5) {
+      return NextResponse.json(
+        { success: false, error: 'Maximum resend limit reached. Please try again in an hour.' },
+        { status: 429 }
+      );
+    }
+
     const plaintextOtp = generateOtp();
     const hashedOtpVal = hashOtp(plaintextOtp);
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Invalidate old OTP
     await prisma.verificationOtp.deleteMany({
@@ -61,7 +78,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send email
-    const emailHtml = getVerificationEmailTemplate(plaintextOtp);
+    const emailHtml = getVerificationEmailTemplate(plaintextOtp, user.fullName || undefined);
     const emailSent = await sendEmail({
       to: emailNormalized,
       subject: 'Verify your GAMA Account',
@@ -70,6 +87,13 @@ export async function POST(request: NextRequest) {
 
     if (!emailSent) {
       console.error('[SEND-OTP] Email delivery failed for', emailNormalized);
+      await prisma.verificationOtp.deleteMany({
+        where: { email: emailNormalized },
+      }).catch(() => {});
+      return NextResponse.json(
+        { success: false, error: "We couldn't send the verification email. Please try again in a few moments." },
+        { status: 500 }
+      );
     }
 
     // Log security audit
@@ -87,7 +111,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Verification code sent.',
       email: emailNormalized,
-      ...((!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) ? { devOtp: plaintextOtp } : {}),
+      ...(!isProductionOtpMode() ? { devOtp: plaintextOtp } : {}),
     });
   } catch (error: any) {
     console.error('Send OTP handler error:', error);

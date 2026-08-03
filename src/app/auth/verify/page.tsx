@@ -238,10 +238,6 @@ function VerifyEmailPageContent() {
       }
 
       toast.success('A new verification email has been sent!');
-      if (data.devOtp) {
-        console.log('[DEV MODE] OTP Code:', data.devOtp);
-        toast.info(`[Dev Mode] Verification OTP: ${data.devOtp}`, { duration: 10000 });
-      }
 
       setCountdown(60);
       setCanResend(false);

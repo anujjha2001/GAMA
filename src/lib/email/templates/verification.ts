@@ -1,7 +1,7 @@
 /**
  * Generates custom branded HTML template for GAMA verification.
  */
-export function getVerificationEmailTemplate(otp: string): string {
+export function getVerificationEmailTemplate(otp: string, userName?: string): string {
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -100,14 +100,16 @@ export function getVerificationEmailTemplate(otp: string): string {
         </div>
         
         <h1 class="title">Welcome to GAMA</h1>
+        ${userName ? `<p style="font-size: 16px; color: #ffffff; text-align: center; margin-bottom: 16px;">Hello ${userName},</p>` : ''}
         <p class="subtitle">Enter the following verification code to activate your account and start your personalized AI health intelligence journey.</p>
         
         <div class="otp-container">
           <div class="otp-code">${otp}</div>
-          <div class="expiry-notice">Expires in 5 minutes</div>
+          <div class="expiry-notice">Expires in 10 minutes</div>
         </div>
         
-        <p class="subtitle" style="margin-bottom: 0;">If you did not request this email, please ignore this message. Your security is our priority.</p>
+        <p class="subtitle" style="margin-bottom: 0;">Didn't request this? If you didn't make this request, you can safely ignore this email.</p>
+        <p class="subtitle" style="font-size: 11px; margin-top: 12px; color: #71717a;">Security Notice: This is a one-time verification code. Never share your OTP with anyone. GAMA staff will never ask for your OTP.</p>
         
         <div class="divider"></div>
         

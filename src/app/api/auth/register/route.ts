@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, validatePasswordStrength } from '@/lib/auth/password';
-import { generateOtp, hashOtp } from '@/lib/auth/otp';
+import { generateOtp, hashOtp, isProductionOtpMode } from '@/lib/auth/otp';
 import { sendEmail } from '@/lib/email/sender';
 import { getVerificationEmailTemplate } from '@/lib/email/templates/verification';
 import crypto from 'crypto';
@@ -24,8 +24,16 @@ export async function POST(request: NextRequest) {
     } = body;
 
     const emailNormalized = email?.toLowerCase().trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!emailNormalized || !password || !confirmPassword || !firstName || !lastName || !username) {
+    if (!emailNormalized || !emailRegex.test(emailNormalized)) {
+      return NextResponse.json(
+        { success: false, error: 'Please enter a valid email address.' },
+        { status: 400 }
+      );
+    }
+
+    if (!password || !confirmPassword || !firstName || !lastName || !username) {
       return NextResponse.json(
         { success: false, error: 'All required registration fields must be filled.' },
         { status: 400 }
@@ -102,7 +110,7 @@ export async function POST(request: NextRequest) {
     // Generate secure 6-digit OTP
     const plaintextOtp = generateOtp();
     const hashedOtpVal = hashOtp(plaintextOtp);
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Delete any old OTPs for this email first
     await prisma.verificationOtp.deleteMany({
@@ -120,7 +128,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send email
-    const emailHtml = getVerificationEmailTemplate(plaintextOtp);
+    const emailHtml = getVerificationEmailTemplate(plaintextOtp, `${firstName} ${lastName}`);
     const emailSent = await sendEmail({
       to: emailNormalized,
       subject: 'Verify your GAMA Account',
@@ -129,6 +137,17 @@ export async function POST(request: NextRequest) {
 
     if (!emailSent) {
       console.error('[REGISTER] Email delivery failed for', emailNormalized);
+      // Clean up the created VerificationOtp and UserProfile due to delivery failure
+      await prisma.verificationOtp.deleteMany({
+        where: { email: emailNormalized },
+      }).catch(() => {});
+      await prisma.userProfile.delete({
+        where: { id: user.id },
+      }).catch(() => {});
+      return NextResponse.json(
+        { success: false, error: "We couldn't send the verification email. Please try again in a few moments." },
+        { status: 500 }
+      );
     }
 
     // Log registration audit log
@@ -146,8 +165,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Registration successful. Verification code sent.',
       email: emailNormalized,
-      // For development local testing, return devOtp if Gmail credentials aren't set
-      ...((!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) ? { devOtp: plaintextOtp } : {}),
+      ...(!isProductionOtpMode() ? { devOtp: plaintextOtp } : {}),
     });
   } catch (error: any) {
     console.error('Registration handler error:', error);

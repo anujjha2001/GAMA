@@ -214,10 +214,6 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
         }
 
         toast.success('Registration successful! Verification email sent.');
-        if (data.devOtp) {
-          console.log('[DEV MODE] OTP Code:', data.devOtp);
-          toast.info(`[Dev Mode] Verification OTP: ${data.devOtp}`, { duration: 10000 });
-        }
         router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
       } catch (err: any) {
         toast.error(err.message || 'Failed to register');
@@ -247,10 +243,6 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
           }
 
           toast.success('Password reset code sent to your email!');
-          if (data.devOtp) {
-            console.log('[DEV MODE] Recovery OTP Code:', data.devOtp);
-            toast.info(`[Dev Mode] Recovery OTP: ${data.devOtp}`, { duration: 10000 });
-          }
           setShowOtpScreen(true);
         } catch (err: any) {
           toast.error(err.message || 'Failed to initiate recovery');
@@ -300,10 +292,6 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
       if (!data.success) {
         if (data.needsVerification) {
           toast.error('Email not verified. Redirecting to verification...');
-          if (data.devOtp) {
-            console.log('[DEV MODE] OTP Code:', data.devOtp);
-            toast.info(`[Dev Mode] Verification OTP: ${data.devOtp}`, { duration: 10000 });
-          }
           router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
           return;
         }
