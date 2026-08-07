@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import AuthPage from '../auth/page';
+import AuthPageContent from '../auth/AuthPageContent';
 
 export default function LoginPage() {
-  return <AuthPage initialMode="login" />;
+  return <AuthPageContent initialMode="login" />;
 }

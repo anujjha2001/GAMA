@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import AuthPage from '../auth/page';
+import AuthPageContent from '../auth/AuthPageContent';
 
 export default function ForgotPasswordPage() {
-  return <AuthPage initialMode="forgot" />;
+  return <AuthPageContent initialMode="forgot" />;
 }
