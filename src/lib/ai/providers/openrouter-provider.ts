@@ -34,7 +34,7 @@ export class OpenRouterProvider implements IProvider {
       model: model,
       messages: request.messages,
       temperature: request.temperature ?? 0.7,
-      max_tokens: request.max_tokens || 4000,
+      max_tokens: request.max_tokens || 2000,
       stream: request.stream !== false,
       response_format: request.response_format,
     };
